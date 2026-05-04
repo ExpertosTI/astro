@@ -5,7 +5,8 @@ import {
   motion, AnimatePresence,
   useScroll, useTransform, useSpring, MotionValue, useMotionValueEvent, useTime,
 } from "framer-motion";
-import { editionData } from "@/content/edition";
+import { editionData as localEditionData } from "@/content/edition";
+import { insforge, type InsforgeEdition } from "@/lib/insforge";
 import styles from "./astro-hero.module.css";
 
 /* ────────────────────────────────────────────────────────
@@ -240,6 +241,24 @@ export function AstroHero() {
   const [notifyMessage, setNotifyMessage] = useState("");
   const [typingStarted, setTypingStarted] = useState(false);
   const [typedLocation, setTypedLocation] = useState("");
+  const [editionData, setEditionData] = useState(localEditionData);
+
+  // Sincronización con Insforge para datos dinámicos
+  useEffect(() => {
+    async function syncData() {
+      const remoteData = await insforge.getActiveEdition();
+      if (remoteData) {
+        setEditionData(prev => ({
+          ...prev,
+          ...remoteData,
+          // Mapeo de campos de DB a campos de UI si varían
+          location: remoteData.location || prev.location,
+          coordinates: remoteData.coordinates || prev.coordinates
+        }));
+      }
+    }
+    syncData();
+  }, []);
 
   // Si el video tarda demasiado, liberar intro sin forzar estado de video cargado.
   useEffect(() => {
@@ -346,12 +365,12 @@ export function AstroHero() {
     return "+1 809 555 0000";
   }, [contactChannel]);
 
-  const handleNotifySubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleNotifySubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const value = contactValue.trim();
     if (!value) return;
 
-    // Persistencia local para que el formulario sí cumpla función de captura.
+    // 1. Persistencia local para redundancia (offline-first style)
     const payload = {
       value,
       channel: contactChannel,
@@ -360,9 +379,22 @@ export function AstroHero() {
 
     try {
       persistNotifyLead(window.localStorage, payload);
-      setNotifyMessage("Recibido. Te notificaremos al abrir el evento.");
-    } catch {
-      setNotifyMessage("Recibido. Te notificaremos al abrir el evento.");
+    } catch (e) {
+      console.warn("LocalStorage persist failed", e);
+    }
+
+    // 2. Enviar a Insforge
+    const success = await insforge.saveLead({
+      contact_value: value,
+      channel: contactChannel,
+      project_id: "astro-sdq",
+      metadata: { source: "web-landing", viewport: `${viewport.w}x${viewport.h}` }
+    });
+
+    if (success) {
+      setNotifyMessage("RECIBIDO. Tu contacto ha sido registrado en la base de datos.");
+    } else {
+      setNotifyMessage("RECIBIDO. (Sincronización de respaldo activa)");
     }
 
     setNotifySent(true);
