@@ -19,7 +19,7 @@ const ELEMENTS = [
   "/astro/elements/ELEMENTO-4.png",
 ];
 
-const PRELOADER_SEQUENCE = [...ELEMENTS, editionData.logo];
+const PRELOADER_SEQUENCE = [...ELEMENTS, localEditionData.logo];
 const PRELOADER_LOGO_STEP = PRELOADER_SEQUENCE.length - 1;
 const VIDEO_SCRUB_START = 1.2;
 const VIDEO_SCRUB_END_PADDING = 0.25;
