@@ -1,0 +1,715 @@
+"use client";
+
+import { useEffect, useRef, useState, useMemo } from "react";
+import {
+  motion, AnimatePresence,
+  useScroll, useTransform, useSpring, MotionValue, useMotionValueEvent, useTime,
+} from "framer-motion";
+import { editionData } from "@/content/edition";
+import styles from "./astro-hero.module.css";
+
+/* ────────────────────────────────────────────────────────
+   PRELOADER: loop hasta que ready (video cargado) + 1 ciclo completo
+──────────────────────────────────────────────────────── */
+const ELEMENTS = [
+  "/astro/elements/ELMENTO-1.png",
+  "/astro/elements/ELEMENTO-2.png",
+  "/astro/elements/ELEMENTO-3.png",
+  "/astro/elements/ELEMENTO-4.png",
+];
+
+const PRELOADER_SEQUENCE = [...ELEMENTS, editionData.logo];
+const PRELOADER_LOGO_STEP = PRELOADER_SEQUENCE.length - 1;
+const VIDEO_SCRUB_START = 1.2;
+const VIDEO_SCRUB_END_PADDING = 0.25;
+const MOBILE_WEBM_SRC: string | null = null;
+const NOTIFY_STORAGE_KEY = "astro-notify-leads";
+const MAX_NOTIFY_LEADS = 100;
+
+type ContactChannel = "mail" | "ig" | "fb" | "whatsapp";
+type NotifyLead = { value: string; channel: ContactChannel; createdAt: string };
+
+function readNotifyLeads(storage: Storage): NotifyLead[] {
+  try {
+    const raw = storage.getItem(NOTIFY_STORAGE_KEY);
+    if (!raw) return [];
+
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+
+    return parsed
+      .filter((item): item is NotifyLead => (
+        typeof item === "object"
+        && item !== null
+        && typeof item.value === "string"
+        && typeof item.channel === "string"
+        && typeof item.createdAt === "string"
+      ))
+      .slice(-MAX_NOTIFY_LEADS);
+  } catch {
+    return [];
+  }
+}
+
+function persistNotifyLead(storage: Storage, lead: NotifyLead) {
+  const leads = readNotifyLeads(storage);
+  leads.push(lead);
+  storage.setItem(NOTIFY_STORAGE_KEY, JSON.stringify(leads.slice(-MAX_NOTIFY_LEADS)));
+}
+
+function ChannelIcon({ channel }: { channel: ContactChannel }) {
+  if (channel === "mail") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true" className={styles.channelIcon}>
+        <path d="M3 6h18v12H3z" fill="none" stroke="currentColor" strokeWidth="1.8" />
+        <path d="M3 7l9 7 9-7" fill="none" stroke="currentColor" strokeWidth="1.8" />
+      </svg>
+    );
+  }
+  if (channel === "ig") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true" className={styles.channelIcon}>
+        <rect x="4" y="4" width="16" height="16" rx="4" fill="none" stroke="currentColor" strokeWidth="1.8" />
+        <circle cx="12" cy="12" r="3.7" fill="none" stroke="currentColor" strokeWidth="1.8" />
+        <circle cx="17.2" cy="6.8" r="1" fill="currentColor" />
+      </svg>
+    );
+  }
+  if (channel === "fb") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true" className={styles.channelIcon}>
+        <path d="M13 21v-7h2.4l.4-3H13V9.2c0-.9.3-1.5 1.6-1.5h1.4V5.1c-.2 0-1-.1-2-.1-2 0-3.4 1.2-3.4 3.5V11H8.2v3h2.4v7h2.4z" fill="currentColor" />
+      </svg>
+    );
+  }
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className={styles.channelIcon}>
+      <path d="M12 3.2A8.8 8.8 0 0 0 4.6 17.8L3.5 22l4.3-1.1A8.8 8.8 0 1 0 12 3.2z" fill="none" stroke="currentColor" strokeWidth="1.8" />
+      <path d="M8.4 9.1c.1-.2.2-.2.4-.2h.8c.1 0 .3 0 .4.3l.6 1.5c.1.2.1.3 0 .5l-.5.7c-.1.2-.1.3 0 .5.3.5 1 .9 1.4 1.2.5.3.9.5 1.4.2l.7-.4c.2-.1.3-.1.5 0l1.4.7c.2.1.2.2.2.4v.8c0 .2-.1.3-.2.4-.3.3-.8.5-1.3.5-2.9 0-6-3-6-5.9 0-.5.2-1 .4-1.2z" fill="currentColor" />
+    </svg>
+  );
+}
+
+function Preloader({ onDone, ready }: { onDone: () => void; ready: boolean }) {
+  const [step, setStep] = useState(0);
+  const [isExiting, setIsExiting] = useState(false);
+
+  // Secuencia lineal: elementos 1→2→3→4→logo
+  // El último frame (logo) se queda visible hasta que el video esté listo.
+  useEffect(() => {
+    if (step < PRELOADER_LOGO_STEP) {
+      const t = setTimeout(() => setStep((s) => s + 1), 520);
+      return () => clearTimeout(t);
+    }
+
+    if (step === PRELOADER_LOGO_STEP && ready && !isExiting) {
+      setIsExiting(true);
+    }
+
+    return undefined;
+  }, [step, ready, isExiting]);
+
+  useEffect(() => {
+    if (!isExiting) return;
+    const t = setTimeout(onDone, 760);
+    return () => clearTimeout(t);
+  }, [isExiting, onDone]);
+
+  return (
+    <motion.div
+      className={styles.preloader}
+      initial={{ opacity: 1 }}
+      animate={isExiting
+        ? {
+            opacity: [1, 1, 0.25, 0.9, 0],
+            x: [0, -4, 7, -3, 0],
+            filter: ["brightness(1)", "brightness(1.35)", "contrast(1.3)", "brightness(1.2)", "brightness(0.8)"],
+          }
+        : { opacity: 1, x: 0, filter: "brightness(1)" }}
+      transition={{ duration: isExiting ? 0.72 : 0.2, ease: "easeInOut" }}
+      exit={{ opacity: 0, transition: { duration: 0.25, ease: "easeInOut" } }}
+    >
+      <div className={`${styles.missionHud} ${isExiting ? styles.missionHudActive : ""}`}>
+        <p className={styles.missionText}>MISSION CONTROL // ASTRO SDQ LINKED</p>
+      </div>
+      <div className={styles.preloaderInner}>
+        {PRELOADER_SEQUENCE.map((src, i) => (
+          <motion.div
+            key={src}
+            className={styles.preloaderElement}
+            initial={{ opacity: 0, scale: 0.88 }}
+            animate={i === step ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.88 }}
+            transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={src}
+              alt={i === PRELOADER_LOGO_STEP ? "logo astro" : `elemento ${i + 1}`}
+              className={i === PRELOADER_LOGO_STEP ? styles.preloaderLogoImg : styles.preloaderImg}
+            />
+          </motion.div>
+        ))}
+      </div>
+    </motion.div>
+  );
+}
+
+/* ────────────────────────────────────────────────────────
+   RING: CSS puro para spin (60fps garantizado, sin conflicto con Framer)
+──────────────────────────────────────────────────────── */
+function CornerRing({
+  src, size, rotZ, speed, originX, originY, fieldX, fieldY, driftX, driftY, swayX, swayY, phase, variant, progress,
+}: {
+  src: string; size: string; rotZ: number; speed: number;
+  originX: number; originY: number; fieldX: number; fieldY: number; driftX: number; driftY: number;
+  swayX: number; swayY: number; phase: number; variant: string; progress: MotionValue<number>;
+}) {
+  const wrap = (value: number, limit: number) => {
+    const span = limit * 2;
+    return ((((value + limit) % span) + span) % span) - limit;
+  };
+
+  // Movimiento tipo Pac-Man: deriva lineal y reentrada por el lado opuesto.
+  const dx = useTransform(progress, (value) => {
+    const travelX = originX + driftX * value + phase * swayX * 0.65;
+    return wrap(travelX, fieldX);
+  });
+  const dy = useTransform(progress, (value) => {
+    const travelY = originY + driftY * value + phase * swayY * 0.55;
+    return wrap(travelY, fieldY);
+  });
+  // Rotación por scroll (solo en wrapper externo, NO en el div que gira con CSS)
+  const scrollRot = useTransform(progress, (value) => rotZ + value * speed * 12);
+  const ringOpacity = useTransform(progress, (value) => {
+    const reveal = Math.max(0.24, Math.min(1, value / 0.12));
+    const nearFar = 0.5 + 0.5 * Math.sin(value * 2.2 + phase);
+    return reveal * (0.5 + nearFar * 0.44);
+  });
+  const ringScale = useTransform(progress, (value) => {
+    const nearFar = 0.5 + 0.5 * Math.sin(value * 2.2 + phase);
+    const micro = 0.5 + 0.5 * Math.sin(value * 4.4 + phase * 1.7);
+    const focus = nearFar * 0.85 + (1 - micro) * 0.15;
+    return 0.56 + focus * 0.6;
+  });
+  const ringBlur = useTransform(progress, (value) => {
+    const nearFar = 0.5 + 0.5 * Math.sin(value * 2.2 + phase);
+    const micro = 0.5 + 0.5 * Math.sin(value * 4.4 + phase * 1.7);
+    const focus = nearFar * 0.85 + (1 - micro) * 0.15;
+    const depth = 1 - focus;
+    // Lejos => mas blur. Cerca => mejor enfoque.
+    return 0.15 + depth * 5.8;
+  });
+  const ringFilter = useTransform(ringBlur, (value) => `blur(${Math.max(0.15, value).toFixed(2)}px)`);
+
+  return (
+    <motion.div
+      className={styles.orbitalRing}
+      style={{
+        width: size,
+        aspectRatio: "1 / 1",
+        x: dx,
+        y: dy,
+        rotate: scrollRot,
+        scale: ringScale,
+        opacity: ringOpacity,
+        filter: ringFilter,
+      }}
+    >
+      <div className={`${styles.ringAura} ${styles[variant]}`} />
+      {/* CSS spin: independiente de Framer, siempre 60fps */}
+      <div className={`${styles.ringSpinner} ${styles[variant]} ${styles[`${variant}Asset`]}`} />
+    </motion.div>
+  );
+}
+
+/* ────────────────────────────────────────────────────────
+   HERO PRINCIPAL
+──────────────────────────────────────────────────────── */
+export function AstroHero() {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const videoRef  = useRef<HTMLVideoElement | null>(null);
+  const lastScrubTimeRef = useRef(-1);
+  const [preloaderDone, setPreloaderDone] = useState(false);
+  const [videoReady, setVideoReady]       = useState(false);
+  const [introReady, setIntroReady]       = useState(false);
+  const [viewport, setViewport] = useState({ w: 1920, h: 1080 });
+  const [isMobile, setIsMobile] = useState(false);
+  const [contactChannel, setContactChannel] = useState<ContactChannel>("mail");
+  const [contactValue, setContactValue] = useState("");
+  const [notifySent, setNotifySent] = useState(false);
+  const [notifyMessage, setNotifyMessage] = useState("");
+  const [typingStarted, setTypingStarted] = useState(false);
+  const [typedLocation, setTypedLocation] = useState("");
+
+  // Si el video tarda demasiado, liberar intro sin forzar estado de video cargado.
+  useEffect(() => {
+    const t = setTimeout(() => setIntroReady(true), 1800);
+    return () => clearTimeout(t);
+  }, []);
+
+  useEffect(() => {
+    const onResize = () => {
+      setViewport({ w: window.innerWidth, h: window.innerHeight });
+      setIsMobile(window.innerWidth <= 768);
+    };
+    onResize();
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
+  useEffect(() => {
+    if (!isMobile) return;
+    const video = videoRef.current;
+    if (!video) return;
+    // Fuerza inicio de buffering temprano para mejorar la percepción de carga.
+    video.load();
+  }, [isMobile]);
+
+  const handleIntroDone = () => {
+    setPreloaderDone(true);
+  };
+
+  const { scrollYProgress } = useScroll();
+  const smoothProgress = useSpring(scrollYProgress, { stiffness: 60, damping: 25, restDelta: 0.0005 });
+  const time = useTime();
+
+  const ringAutoProgress = useTransform(time, (latest) => (preloaderDone ? latest / 3200 : 0));
+
+  const ringsProgress = useTransform(() => {
+    const auto = ringAutoProgress.get();
+    const v = smoothProgress.get();
+    // Deriva autónoma con empuje notable por scroll.
+    return auto * 0.88 + v * (isMobile ? 3.8 : 2.9);
+  });
+
+  const swipeOpacity = useTransform(smoothProgress, [0, 0.03, 0.2, 0.28], [0, 1, 1, 0]);
+  const desktopColorReveal = useTransform(smoothProgress, [0.06, 0.56], [0, 1]);
+  const desktopLowerMaskOpacity = useTransform(smoothProgress, [0, 0.28], [0.8, 0.14]);
+  const desktopNebulaOpacity = useTransform(smoothProgress, [0.1, 0.26, 0.48, 0.76, 1], [0, 0.26, 0.7, 0.95, 0.78]);
+  const desktopRayOpacity = useTransform(smoothProgress, [0.16, 0.36, 0.58, 0.84, 1], [0, 0.52, 0.18, 0.82, 0.36]);
+  const desktopNebulaX = useTransform(smoothProgress, [0, 1], [-22, 28]);
+  const desktopNebulaY = useTransform(smoothProgress, [0, 1], [24, -16]);
+  const desktopNebulaScale = useTransform(smoothProgress, [0, 1], [0.92, 1.24]);
+  const desktopNebulaRotate = useTransform(smoothProgress, [0, 1], [-7, 9]);
+  const desktopRayX = useTransform(smoothProgress, [0, 1], [-42, 54]);
+  const desktopRayY = useTransform(smoothProgress, [0, 1], [18, -22]);
+  const desktopRayScaleX = useTransform(smoothProgress, [0, 1], [0.96, 1.12]);
+  const desktopRayScaleY = useTransform(smoothProgress, [0, 1], [0.98, 1.06]);
+  const desktopFrameScale = useTransform(smoothProgress, [0, 1], [1.02, 1.08]);
+  const desktopFrameY = useTransform(smoothProgress, [0, 1], [-8, 12]);
+
+  // Título: aparece más temprano para no quedar tapado por el flujo final.
+  const titleOpacity = useTransform(smoothProgress, isMobile ? [0.16, 0.28, 0.6, 0.72] : [0.18, 0.32, 0.68, 0.82], [0, 1, 1, 0]);
+  const titleY       = useTransform(smoothProgress, isMobile ? [0.16, 0.30] : [0.2, 0.32], isMobile ? [28, 0] : [0, 0]);
+
+  // Edición: visible junto con el título para que siempre se lea "5TA EDICIÓN".
+  const editionOpacity = useTransform(smoothProgress, isMobile ? [0.18, 0.30, 0.6, 0.72] : [0.22, 0.34, 0.7, 0.84], [0, 1, 1, 0]);
+
+  // Coordenadas / frase terminal: centrada y separada del módulo de notificación.
+  const coordsOpacity = useTransform(smoothProgress, isMobile ? [0.56, 0.68, 0.86, 0.92] : [0.52, 0.66, 0.78, 0.86], [0, 1, 1, 0]);
+  const coordsY       = useTransform(smoothProgress, isMobile ? [0.56, 0.7, 0.86, 0.92] : [0.52, 0.66, 0.78, 0.86], isMobile ? [36, 0, -8, -54] : [0, 0, 0, 0]);
+  const coordsSkew = useTransform(smoothProgress, isMobile ? [0.56, 0.66, 0.76] : [0.48, 0.58, 0.68], isMobile ? [10, 0, 0] : [8, 0, 0]);
+
+  // Bloque de notificación final: capa técnica separada de la frase terminal.
+  const contactOpacity = useTransform(smoothProgress, isMobile ? [0.92, 0.98] : [0.86, 0.96], [0, 1]);
+  const contactY = useTransform(smoothProgress, isMobile ? [0.92, 0.98] : [0.86, 0.96], isMobile ? [42, 0] : [0, 0]);
+
+  useMotionValueEvent(smoothProgress, "change", (v) => {
+    if (!typingStarted && v >= (isMobile ? 0.64 : 0.56)) {
+      setTypingStarted(true);
+    }
+  });
+
+  useEffect(() => {
+    if (!typingStarted) {
+      setTypedLocation("");
+      return;
+    }
+
+    const fullText = editionData.location;
+    let index = 0;
+    const timer = window.setInterval(() => {
+      index += 1;
+      setTypedLocation(fullText.slice(0, index));
+      if (index >= fullText.length) {
+        window.clearInterval(timer);
+      }
+    }, 46);
+
+    return () => window.clearInterval(timer);
+  }, [typingStarted]);
+
+  const contactPlaceholder = useMemo(() => {
+    if (contactChannel === "mail") return "tu@email.com";
+    if (contactChannel === "ig") return "@usuario_ig";
+    if (contactChannel === "fb") return "perfil de facebook";
+    return "+1 809 555 0000";
+  }, [contactChannel]);
+
+  const handleNotifySubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const value = contactValue.trim();
+    if (!value) return;
+
+    // Persistencia local para que el formulario sí cumpla función de captura.
+    const payload = {
+      value,
+      channel: contactChannel,
+      createdAt: new Date().toISOString(),
+    };
+
+    try {
+      persistNotifyLead(window.localStorage, payload);
+      setNotifyMessage("Recibido. Te notificaremos al abrir el evento.");
+    } catch {
+      setNotifyMessage("Recibido. Te notificaremos al abrir el evento.");
+    }
+
+    setNotifySent(true);
+    setContactValue("");
+  };
+
+  // Rings desde esquinas responsive (evita posiciones rotas en móviles/tablets)
+  const rings = useMemo(() => [
+    {
+      id: 1,
+      src: "/astro/rings/ring-1.png",
+      size: viewport.w < 768 ? "44vmin" : "42vmin",
+      rotZ: 12,
+      speed: 42,
+      originX: -Math.round(viewport.w * 0.32),
+      originY: -Math.round(viewport.h * 0.22),
+      fieldX: Math.round(viewport.w * 0.66),
+      fieldY: Math.round(viewport.h * 0.5),
+      driftX: Math.round(viewport.w * 0.24),
+      driftY: Math.round(viewport.h * 0.16),
+      swayX: Math.round(viewport.w * 0.08),
+      swayY: Math.round(viewport.h * 0.06),
+      phase: Math.PI * 1.08,
+      variant: "ring1",
+    },
+    {
+      id: 2,
+      src: "/astro/rings/ring-2.png",
+      size: viewport.w < 768 ? "42vmin" : "40vmin",
+      rotZ: -18,
+      speed: -36,
+      originX: Math.round(viewport.w * 0.68),
+      originY: -Math.round(viewport.h * 0.2),
+      fieldX: Math.round(viewport.w * 0.68),
+      fieldY: Math.round(viewport.h * 0.5),
+      driftX: -Math.round(viewport.w * 0.26),
+      driftY: Math.round(viewport.h * 0.14),
+      swayX: Math.round(viewport.w * 0.07),
+      swayY: Math.round(viewport.h * 0.06),
+      phase: Math.PI * 0.14,
+      variant: "ring2",
+    },
+    {
+      id: 3,
+      src: "/astro/rings/ring-3.png",
+      size: viewport.w < 768 ? "40vmin" : "38vmin",
+      rotZ: 48,
+      speed: 50,
+      originX: -Math.round(viewport.w * 0.28),
+      originY: Math.round(viewport.h * 0.62),
+      fieldX: Math.round(viewport.w * 0.64),
+      fieldY: Math.round(viewport.h * 0.52),
+      driftX: Math.round(viewport.w * 0.22),
+      driftY: -Math.round(viewport.h * 0.15),
+      swayX: Math.round(viewport.w * 0.08),
+      swayY: Math.round(viewport.h * 0.06),
+      phase: Math.PI * 1.62,
+      variant: "ring3",
+    },
+    {
+      id: 4,
+      src: "/astro/rings/ring-4.png",
+      size: viewport.w < 768 ? "46vmin" : "44vmin",
+      rotZ: -10,
+      speed: -28,
+      originX: Math.round(viewport.w * 0.65),
+      originY: Math.round(viewport.h * 0.64),
+      fieldX: Math.round(viewport.w * 0.66),
+      fieldY: Math.round(viewport.h * 0.48),
+      driftX: -Math.round(viewport.w * 0.2),
+      driftY: -Math.round(viewport.h * 0.12),
+      swayX: Math.round(viewport.w * 0.07),
+      swayY: Math.round(viewport.h * 0.05),
+      phase: Math.PI * 0.58,
+      variant: "ring4",
+    },
+  ], [viewport.h, viewport.w]);
+
+  // Video scrubbing: sincroniza currentTime con scroll (60fps via MotionValue)
+  useMotionValueEvent(scrollYProgress, "change", (v) => {
+    if (!isMobile) return;
+    const video = videoRef.current;
+    if (!video || !videoReady || !isFinite(video.duration) || video.duration === 0 || video.readyState < 1) return;
+    const usableDuration = Math.max(video.duration - VIDEO_SCRUB_START - VIDEO_SCRUB_END_PADDING, 0.01);
+    const targetTime = VIDEO_SCRUB_START + (v * usableDuration);
+    if (Math.abs(targetTime - lastScrubTimeRef.current) < 0.03) return;
+    lastScrubTimeRef.current = targetTime;
+    video.currentTime = targetTime;
+  });
+
+  // Canvas: micro-estrellas parpadeantes
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    type Star = { x: number; y: number; r: number; a: number; da: number };
+    const stars: Star[] = [];
+    let rafId = 0;
+    const starCount = isMobile ? 110 : 180;
+    const resize = () => {
+      canvas.width  = window.innerWidth;
+      canvas.height = window.innerHeight;
+    };
+    resize();
+    window.addEventListener("resize", resize);
+    for (let i = 0; i < starCount; i++) {
+      stars.push({
+        x:  Math.random() * canvas.width,
+        y:  Math.random() * canvas.height,
+        r:  0.3 + Math.random() * 0.7,
+        a:  Math.random(),
+        da: (Math.random() - 0.5) * 0.004,
+      });
+    }
+    function animate() {
+      if (!ctx || !canvas) return;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      for (const s of stars) {
+        s.a += s.da;
+        if (s.a <= 0.04 || s.a >= 0.85) s.da *= -1;
+        s.a = Math.max(0.04, Math.min(0.85, s.a));
+        ctx.globalAlpha = s.a * 0.55;
+        ctx.fillStyle = "#fff5e0";
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+      rafId = requestAnimationFrame(animate);
+    }
+    rafId = requestAnimationFrame(animate);
+    return () => {
+      cancelAnimationFrame(rafId);
+      window.removeEventListener("resize", resize);
+    };
+  }, [isMobile]);
+
+  return (
+    <>
+      <AnimatePresence>
+        {!preloaderDone && (
+          <Preloader
+            key="preloader"
+            onDone={handleIntroDone}
+            ready={introReady}
+          />
+        )}
+      </AnimatePresence>
+
+      <main className={`${styles.page} ${preloaderDone ? styles.pageMounted : ""}`}>
+        <section className={styles.heroShell}>
+          <div className={styles.stage}>
+
+            {isMobile && (
+              <>
+                <div className={`${styles.bgFallback} ${videoReady ? styles.bgFallbackHidden : ""}`} />
+
+                {/* VIDEO como fondo completo — scrubbing por scroll */}
+                <video
+                  ref={videoRef}
+                  muted
+                  playsInline
+                  preload="metadata"
+                  poster="/astro/backgrounds/mobile-color.jpg"
+                  className={styles.bgVideo}
+                  onLoadedMetadata={() => {
+                    setVideoReady(true);
+                    setIntroReady(true);
+                  }}
+                  onLoadedData={() => setVideoReady(true)}
+                  onCanPlay={() => {
+                    setVideoReady(true);
+                    setIntroReady(true);
+                  }}
+                  onError={() => {
+                    setVideoReady(false);
+                    setIntroReady(true);
+                  }}
+                >
+                  {MOBILE_WEBM_SRC && <source src={MOBILE_WEBM_SRC} type="video/webm" />}
+                  <source src="/astro/backgrounds/video.mp4" type="video/mp4" />
+                </video>
+              </>
+            )}
+
+            {!isMobile && (
+              <motion.div
+                className={styles.desktopBwFrame}
+                style={{ scale: desktopFrameScale, y: desktopFrameY }}
+              />
+            )}
+
+            {!isMobile && (
+              <motion.div
+                className={styles.desktopColorFrame}
+                style={{ opacity: desktopColorReveal, scale: desktopFrameScale, y: desktopFrameY }}
+              />
+            )}
+
+            {!isMobile && (
+              <motion.div
+                className={styles.desktopNebulaFx}
+                style={{
+                  opacity: desktopNebulaOpacity,
+                  x: desktopNebulaX,
+                  y: desktopNebulaY,
+                  scale: desktopNebulaScale,
+                  rotate: desktopNebulaRotate,
+                }}
+              />
+            )}
+
+            {!isMobile && (
+              <motion.div
+                className={styles.desktopRayFx}
+                style={{
+                  opacity: desktopRayOpacity,
+                  x: desktopRayX,
+                  y: desktopRayY,
+                  scaleX: desktopRayScaleX,
+                  scaleY: desktopRayScaleY,
+                }}
+              />
+            )}
+
+            {!isMobile && (
+              <motion.div className={styles.desktopSplitMask} style={{ opacity: desktopLowerMaskOpacity }} />
+            )}
+
+            <div className={styles.videoVignette} />
+
+            {/* Estrellas canvas */}
+            <canvas ref={canvasRef} className={styles.spaceCanvas} />
+
+            {/* 4 Rings desde las esquinas */}
+            <div className={styles.ringsLayer}>
+              {rings.map((r) => (
+                <CornerRing
+                  key={r.id}
+                  src={r.src}
+                  size={r.size}
+                  rotZ={r.rotZ}
+                  speed={r.speed}
+                  originX={r.originX}
+                  originY={r.originY}
+                  fieldX={r.fieldX}
+                  fieldY={r.fieldY}
+                  driftX={r.driftX}
+                  driftY={r.driftY}
+                  swayX={r.swayX}
+                  swayY={r.swayY}
+                  phase={r.phase}
+                  variant={r.variant}
+                  progress={ringsProgress}
+                />
+              ))}
+            </div>
+
+            {/* Copy Rail */}
+            <div className={styles.copyRail}>
+              <motion.div className={styles.swipeCue} style={{ opacity: swipeOpacity }}>
+                <span className={styles.swipeArrows}>⌄⌄⌄</span>
+              </motion.div>
+
+              {/* Título + Edición */}
+              <motion.div
+                className={`${styles.titleBlock} ${!isMobile ? styles.desktopGlitchReveal : ""}`}
+                style={{ opacity: titleOpacity, y: titleY }}
+              >
+                <h2 className={styles.mainTitle}>ASTRO SDQ</h2>
+                <motion.p
+                  className={styles.edition}
+                  style={{ opacity: editionOpacity }}
+                >
+                  5TA EDICIÓN
+                </motion.p>
+              </motion.div>
+
+              {/* Coordenadas */}
+              <motion.div
+                className={`${styles.coordBlock} ${styles.terminalFrame} ${!isMobile ? styles.desktopGlitchReveal : ""}`}
+                style={{ opacity: coordsOpacity, y: coordsY, skewY: coordsSkew }}
+              >
+                <div className={styles.terminalGlow} aria-hidden="true" />
+                <div className={styles.signalBar} />
+                <p className={styles.location}>{typedLocation || " "}</p>
+                <p className={styles.coordinates}>{editionData.coordinates}</p>
+              </motion.div>
+
+              <motion.div
+                className={`${styles.contactBlock} ${styles.notifyConsole} ${!isMobile ? styles.desktopGlitchReveal : ""}`}
+                style={{ opacity: contactOpacity, y: contactY }}
+              >
+                <div className={styles.notifyNoise} aria-hidden="true" />
+                <p className={styles.contactTitle}>DEJA TU CONTACTO PARA AVISO DE APERTURA</p>
+                <div className={styles.channelToggle} role="group" aria-label="Canal de contacto">
+                  {(["mail", "ig", "fb", "whatsapp"] as ContactChannel[]).map((channel) => (
+                    <button
+                      key={channel}
+                      type="button"
+                      className={`${styles.channelButton} ${contactChannel === channel ? styles.channelButtonActive : ""}`}
+                      onClick={() => {
+                        setContactChannel(channel);
+                        setNotifySent(false);
+                      }}
+                    >
+                      <ChannelIcon channel={channel} />
+                      <span>{channel.toUpperCase()}</span>
+                    </button>
+                  ))}
+                </div>
+
+                <form className={styles.notifyForm} onSubmit={handleNotifySubmit}>
+                  <input
+                    className={styles.notifyInput}
+                    type={contactChannel === "mail" ? "email" : "text"}
+                    value={contactValue}
+                    placeholder={contactPlaceholder}
+                    onChange={(event) => {
+                      setContactValue(event.target.value);
+                      setNotifySent(false);
+                    }}
+                    required
+                  />
+                  <button className={styles.notifyButton} type="submit">NOTIFICARME</button>
+                </form>
+
+                {notifySent && (
+                  <div className={styles.notifySuccess}>{notifyMessage}</div>
+                )}
+              </motion.div>
+            </div>
+
+            {/* HUD corners */}
+            <div className={styles.hudOverlay} aria-hidden="true">
+              <div className={`${styles.hudCorner} ${styles.topLeft}`} />
+              <div className={`${styles.hudCorner} ${styles.topRight}`} />
+              <div className={`${styles.hudCorner} ${styles.bottomLeft}`} />
+              <div className={`${styles.hudCorner} ${styles.bottomRight}`} />
+            </div>
+
+            <div className={styles.grain} />
+          </div>
+        </section>
+      </main>
+    </>
+  );
+}
