@@ -1,0 +1,43 @@
+version: "3.8"
+
+services:
+  astro-web:
+    build:
+      context: ./site
+      dockerfile: Dockerfile
+    image: astro-web:latest
+    networks:
+      - RenaceNet
+    deploy:
+      mode: replicated
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 512M
+      labels:
+        - "traefik.enable=true"
+        # HTTP Router
+        - "traefik.http.routers.astro-http.rule=Host(`astro.renace.tech`)"
+        - "traefik.http.routers.astro-http.entrypoints=web"
+        - "traefik.http.routers.astro-http.middlewares=astro-redirect-https"
+        # Middleware: Redirect to HTTPS
+        - "traefik.http.middlewares.astro-redirect-https.redirectscheme.scheme=https"
+        # HTTPS Router
+        - "traefik.http.routers.astro-secure.rule=Host(`astro.renace.tech`)"
+        - "traefik.http.routers.astro-secure.entrypoints=websecure"
+        - "traefik.http.routers.astro-secure.tls=true"
+        - "traefik.http.routers.astro-secure.tls.certresolver=letsencryptresolver"
+        # Service Port
+        - "traefik.http.services.astro-web.loadbalancer.server.port=3000"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  RenaceNet:
+    external: true

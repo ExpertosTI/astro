@@ -1,0 +1,11 @@
+# RenaceTech .gitignore
+docs/
+.DS_Store
+*.pem
+node_modules/
+.next/
+out/
+build/
+.env*
+.vercel
+*.tsbuildinfo

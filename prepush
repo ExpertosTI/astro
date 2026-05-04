@@ -1,0 +1,28 @@
+#!/bin/bash
+set -e
+
+echo "🔍 Validating project before push..."
+
+# 1. Run build in site/
+cd site
+echo "🛠 Running build..."
+npm run build
+
+# 2. Add all to git (respecting .gitignore)
+cd ..
+echo "📦 Staging files..."
+git add .
+
+# 3. Commit
+echo "💾 Enter commit message (or press Enter for 'feat: deployment config'):"
+read message
+if [ -z "$message" ]; then
+    message="feat: deployment config"
+fi
+git commit -m "$message"
+
+# 4. Push
+echo "🚀 Pushing to origin main..."
+git push origin main
+
+echo "✅ Done! Ready for VPS deploy."
