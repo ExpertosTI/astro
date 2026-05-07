@@ -4,7 +4,7 @@ docs/
 *.pem
 node_modules/
 .next/
-out/
+# out/
 build/
 .env*
 .vercel

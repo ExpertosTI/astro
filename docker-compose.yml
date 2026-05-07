@@ -25,18 +25,18 @@ services:
       labels:
         - "traefik.enable=true"
         # HTTP Router
-        - "traefik.http.routers.astro-http.rule=Host(`astro.renace.tech`)"
-        - "traefik.http.routers.astro-http.entrypoints=web"
-        - "traefik.http.routers.astro-http.middlewares=astro-redirect-https"
+        - "traefik.http.routers.astro_sdq_http.rule=Host(`astro.renace.tech`)"
+        - "traefik.http.routers.astro_sdq_http.entrypoints=web"
+        - "traefik.http.routers.astro_sdq_http.middlewares=astro_sdq_redirect_https"
         # Middleware: Redirect to HTTPS
-        - "traefik.http.middlewares.astro-redirect-https.redirectscheme.scheme=https"
+        - "traefik.http.middlewares.astro_sdq_redirect_https.redirectscheme.scheme=https"
         # HTTPS Router
-        - "traefik.http.routers.astro-secure.rule=Host(`astro.renace.tech`)"
-        - "traefik.http.routers.astro-secure.entrypoints=websecure"
-        - "traefik.http.routers.astro-secure.tls=true"
-        - "traefik.http.routers.astro-secure.tls.certresolver=letsencryptresolver"
+        - "traefik.http.routers.astro_sdq_secure.rule=Host(`astro.renace.tech`)"
+        - "traefik.http.routers.astro_sdq_secure.entrypoints=websecure"
+        - "traefik.http.routers.astro_sdq_secure.tls=true"
+        - "traefik.http.routers.astro_sdq_secure.tls.certresolver=letsencryptresolver"
         # Service Port
-        - "traefik.http.services.astro-web.loadbalancer.server.port=3000"
+        - "traefik.http.services.astro_sdq_svc.loadbalancer.server.port=80"
     logging:
       driver: "json-file"
       options:

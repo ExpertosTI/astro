@@ -10,7 +10,10 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
-  output: 'standalone',
+  output: 'export',
+  images: {
+    unoptimized: true, // Requerido para exportación estática si usas next/image
+  },
   poweredByHeader: false,
   reactStrictMode: true,
   compress: true,
