@@ -445,8 +445,8 @@ export function AstroHero() {
     const value2 = contactValue2.trim();
     if (!value || !value2) return;
 
-    const payload = { value, channel: contactChannel, createdAt: new Date().toISOString() };
-    const payload2 = { value: value2, channel: contactChannel === "ig" ? "mail" : "ig", createdAt: new Date().toISOString() };
+    const payload: NotifyLead = { value, channel: contactChannel, createdAt: new Date().toISOString() };
+    const payload2: NotifyLead = { value: value2, channel: contactChannel === "ig" ? "mail" : "ig", createdAt: new Date().toISOString() };
 
     try {
       persistNotifyLead(window.localStorage, payload);
