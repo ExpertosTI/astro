@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState, useMemo } from "react";
+import Image from "next/image";
 import {
   motion, AnimatePresence,
-  useScroll, useTransform, useSpring, MotionValue, useMotionValueEvent, useTime,
+  useScroll, useTransform, useSpring, MotionValue, useMotionValueEvent, useTime, useMotionValue, animate,
 } from "framer-motion";
 import { editionData as localEditionData } from "@/content/edition";
 import { insforge, type InsforgeEdition } from "@/lib/insforge";
@@ -112,7 +113,7 @@ function Preloader({ onDone, ready }: { onDone: () => void; ready: boolean }) {
 
   useEffect(() => {
     if (!isExiting) return;
-    const t = setTimeout(onDone, 760);
+    const t = setTimeout(onDone, 950); // Un poco más de tiempo para que la animación de glitch termine
     return () => clearTimeout(t);
   }, [isExiting, onDone]);
 
@@ -122,16 +123,16 @@ function Preloader({ onDone, ready }: { onDone: () => void; ready: boolean }) {
       initial={{ opacity: 1 }}
       animate={isExiting
         ? {
-            opacity: [1, 1, 0.25, 0.9, 0],
-            x: [0, -4, 7, -3, 0],
-            filter: ["brightness(1)", "brightness(1.35)", "contrast(1.3)", "brightness(1.2)", "brightness(0.8)"],
+            opacity: [1, 1, 0.4, 1, 0],
+            x: [0, -6, 8, -4, 0],
+            filter: ["brightness(1) blur(0px)", "brightness(1.5) blur(2px)", "contrast(1.4) blur(0px)", "brightness(1.2) blur(4px)", "brightness(0) blur(10px)"],
           }
-        : { opacity: 1, x: 0, filter: "brightness(1)" }}
-      transition={{ duration: isExiting ? 0.72 : 0.2, ease: "easeInOut" }}
-      exit={{ opacity: 0, transition: { duration: 0.25, ease: "easeInOut" } }}
+        : { opacity: 1, x: 0, filter: "brightness(1) blur(0px)" }}
+      transition={{ duration: isExiting ? 0.9 : 0.2, ease: "easeInOut" }}
+      exit={{ opacity: 0, transition: { duration: 0.3, ease: "easeInOut" } }}
     >
       <div className={`${styles.missionHud} ${isExiting ? styles.missionHudActive : ""}`}>
-        <p className={styles.missionText}>MISSION CONTROL // ASTRO SDQ LINKED</p>
+        <p className={styles.missionText}>SYSTEM: OK // NEBULA: ACTIVE // ASTRO SDQ LINKED</p>
       </div>
       <div className={styles.preloaderInner}>
         {PRELOADER_SEQUENCE.map((src, i) => (
@@ -142,11 +143,13 @@ function Preloader({ onDone, ready }: { onDone: () => void; ready: boolean }) {
             animate={i === step ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.88 }}
             transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
+            <Image
               src={src}
               alt={i === PRELOADER_LOGO_STEP ? "logo astro" : `elemento ${i + 1}`}
+              fill
+              priority={i >= PRELOADER_LOGO_STEP - 1 || i === 0}
               className={i === PRELOADER_LOGO_STEP ? styles.preloaderLogoImg : styles.preloaderImg}
+              style={{ objectFit: "contain" }}
             />
           </motion.div>
         ))}
@@ -159,65 +162,75 @@ function Preloader({ onDone, ready }: { onDone: () => void; ready: boolean }) {
    RING: CSS puro para spin (60fps garantizado, sin conflicto con Framer)
 ──────────────────────────────────────────────────────── */
 function CornerRing({
-  src, size, rotZ, speed, originX, originY, fieldX, fieldY, driftX, driftY, swayX, swayY, phase, variant, progress,
+  src, size, rotZ, speed, originX, originY, fieldX, fieldY, driftX, driftY, swayX, swayY, phase, variant, progress, time,
 }: {
   src: string; size: string; rotZ: number; speed: number;
   originX: number; originY: number; fieldX: number; fieldY: number; driftX: number; driftY: number;
   swayX: number; swayY: number; phase: number; variant: string; progress: MotionValue<number>;
+  time: MotionValue<number>;
 }) {
   const wrap = (value: number, limit: number) => {
     const span = limit * 2;
     return ((((value + limit) % span) + span) % span) - limit;
   };
 
-  // Movimiento tipo Pac-Man: deriva lineal y reentrada por el lado opuesto.
-  const dx = useTransform(progress, (value) => {
-    const travelX = originX + driftX * value + phase * swayX * 0.65;
-    return wrap(travelX, fieldX);
+  // Movimiento cinemático: deriva lineal con reentrada (Pac-Man) + Deriva autónoma
+  const dx = useTransform([progress, time], ([p, t]) => {
+    const driftAutoX = Math.sin((t as number) / 2800 + phase) * 35;
+    const travelX = originX + driftX * (p as number) + phase * swayX * 0.7;
+    return wrap(travelX, fieldX) + driftAutoX;
   });
-  const dy = useTransform(progress, (value) => {
-    const travelY = originY + driftY * value + phase * swayY * 0.55;
-    return wrap(travelY, fieldY);
+
+  const dy = useTransform([progress, time], ([p, t]) => {
+    const driftAutoY = Math.cos((t as number) / 3200 + phase) * 35;
+    const travelY = originY + driftY * (p as number) + phase * swayY * 0.6;
+    return wrap(travelY, fieldY) + driftAutoY;
   });
-  // Rotación por scroll (solo en wrapper externo, NO en el div que gira con CSS)
-  const scrollRot = useTransform(progress, (value) => rotZ + value * speed * 12);
-  const ringOpacity = useTransform(progress, (value) => {
-    const reveal = Math.max(0.24, Math.min(1, value / 0.12));
-    const nearFar = 0.5 + 0.5 * Math.sin(value * 2.2 + phase);
-    return reveal * (0.5 + nearFar * 0.44);
+
+  // Profundidad 3D (Z-axis): Sutil, sin alejar el fondo
+  const dz = useTransform(progress, [0, 1], [0, 450]);
+  const scrollRot = useTransform(progress, (value) => rotZ + value * speed * 15);
+
+  // Normalizamos el progreso para efectos visuales (0-1) basado en el travel
+  const visualProgress = useTransform(progress, (v) => {
+    return Math.min(Math.max(v % 1.2, 0), 1);
   });
-  const ringScale = useTransform(progress, (value) => {
-    const nearFar = 0.5 + 0.5 * Math.sin(value * 2.2 + phase);
-    const micro = 0.5 + 0.5 * Math.sin(value * 4.4 + phase * 1.7);
-    const focus = nearFar * 0.85 + (1 - micro) * 0.15;
-    return 0.56 + focus * 0.6;
-  });
-  const ringBlur = useTransform(progress, (value) => {
-    const nearFar = 0.5 + 0.5 * Math.sin(value * 2.2 + phase);
-    const micro = 0.5 + 0.5 * Math.sin(value * 4.4 + phase * 1.7);
-    const focus = nearFar * 0.85 + (1 - micro) * 0.15;
-    const depth = 1 - focus;
-    // Lejos => mas blur. Cerca => mejor enfoque.
-    return 0.15 + depth * 5.8;
-  });
-  const ringFilter = useTransform(ringBlur, (value) => `blur(${Math.max(0.15, value).toFixed(2)}px)`);
+
+  // Depth of Field (DoF): Basado en el tamaño físico del anillo
+  // Muy pequeños (lejos) = mucho blur, Tamaño foco = nítido, Gigantes (pasando cámara) = blur de proximidad
+  const ringBlur = useTransform(
+    visualProgress,
+    [0, 0.15, 0.45, 0.7, 0.88, 1],
+    [10.0, 4.0, 0, 0, 3.5, 9.0],
+    { clamp: true }
+  );
+  
+  const ringFilter = useTransform(ringBlur, (value) => value > 0.05 ? `blur(${value.toFixed(1)}px)` : "none");
+
+  // Opacity y Scale: El escalado ahora es más dinámico para acompañar el blur
+  const ringOpacity = useTransform(visualProgress, [0, 0.1, 0.88, 1], [0, 0.95, 0.9, 0], { clamp: true });
+  const ringScale = useTransform(visualProgress, [0, 0.5, 0.85, 1], [0.55, 1.2, 2.8, 5.2], { clamp: true });
+  
+  // Z-Index dinámico: detrás del contenido (40) por defecto, delante (100) cuando está muy cerca
+  const ringZIndex = useTransform(visualProgress, (value) => (value > 0.82 ? 110 : 40));
 
   return (
     <motion.div
       className={styles.orbitalRing}
       style={{
         width: size,
-        aspectRatio: "1 / 1",
+        height: size,
         x: dx,
         y: dy,
+        z: dz,
         rotate: scrollRot,
         scale: ringScale,
         opacity: ringOpacity,
         filter: ringFilter,
+        zIndex: ringZIndex,
       }}
     >
       <div className={`${styles.ringAura} ${styles[variant]}`} />
-      {/* CSS spin: independiente de Framer, siempre 60fps */}
       <div className={`${styles.ringSpinner} ${styles[variant]} ${styles[`${variant}Asset`]}`} />
     </motion.div>
   );
@@ -235,26 +248,53 @@ export function AstroHero() {
   const [introReady, setIntroReady]       = useState(false);
   const [viewport, setViewport] = useState({ w: 1920, h: 1080 });
   const [isMobile, setIsMobile] = useState(false);
-  const [contactChannel, setContactChannel] = useState<ContactChannel>("mail");
+  const [contactChannel, setContactChannel] = useState<ContactChannel>("ig");
   const [contactValue, setContactValue] = useState("");
+  const [contactValue2, setContactValue2] = useState("");
   const [notifySent, setNotifySent] = useState(false);
   const [notifyMessage, setNotifyMessage] = useState("");
   const [typingStarted, setTypingStarted] = useState(false);
   const [typedLocation, setTypedLocation] = useState("");
   const [editionData, setEditionData] = useState(localEditionData);
+  const [isGlitching, setIsGlitching] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
+
+  // Sistema de Sonido Optimizado (Instancias persistentes para evitar lag)
+  const soundRefs = useRef<{ [key: string]: HTMLAudioElement }>({});
+
+  const playSound = (type: "glitch" | "type" | "click" | "transition") => {
+    try {
+      if (!soundRefs.current[type]) {
+        const audio = new Audio();
+        if (type === "glitch") audio.src = "https://assets.mixkit.co/sfx/preview/mixkit-glitch-digital-interference-2466.mp3";
+        if (type === "type") audio.src = "https://assets.mixkit.co/sfx/preview/mixkit-single-key-press-in-a-laptop-2541.mp3";
+        if (type === "click") audio.src = "https://assets.mixkit.co/sfx/preview/mixkit-modern-click-box-check-1120.mp3";
+        if (type === "transition") audio.src = "https://assets.mixkit.co/sfx/preview/mixkit-robotic-mechanical-arm-2432.mp3";
+        audio.volume = type === "glitch" ? 0.1 : 0.2;
+        soundRefs.current[type] = audio;
+      }
+      const s = soundRefs.current[type];
+      s.currentTime = 0;
+      s.play().catch(() => {});
+    } catch (e) { /* silent */ }
+  };
 
   // Sincronización con Insforge para datos dinámicos
   useEffect(() => {
     async function syncData() {
-      const remoteData = await insforge.getActiveEdition();
-      if (remoteData) {
-        setEditionData(prev => ({
-          ...prev,
-          ...remoteData,
-          // Mapeo de campos de DB a campos de UI si varían
-          location: remoteData.location || prev.location,
-          coordinates: remoteData.coordinates || prev.coordinates
-        }));
+      try {
+        const remoteData = await insforge.getActiveEdition();
+        if (remoteData) {
+          setEditionData(prev => ({
+            ...prev,
+            ...remoteData,
+            // Mapeo de campos de DB a campos de UI si varían
+            location: remoteData.location || prev.location,
+            coordinates: remoteData.coordinates || prev.coordinates
+          }));
+        }
+      } catch (e) {
+        console.warn("Insforge sync fallback active");
       }
     }
     syncData();
@@ -262,7 +302,7 @@ export function AstroHero() {
 
   // Si el video tarda demasiado, liberar intro sin forzar estado de video cargado.
   useEffect(() => {
-    const t = setTimeout(() => setIntroReady(true), 1800);
+    const t = setTimeout(() => setIntroReady(true), 2800); // Aumentado para dar drama al preloader
     return () => clearTimeout(t);
   }, []);
 
@@ -276,29 +316,44 @@ export function AstroHero() {
     return () => window.removeEventListener("resize", onResize);
   }, []);
 
-  useEffect(() => {
-    if (!isMobile) return;
-    const video = videoRef.current;
-    if (!video) return;
-    // Fuerza inicio de buffering temprano para mejorar la percepción de carga.
-    video.load();
-  }, [isMobile]);
+  const { scrollYProgress } = useScroll();
+  const masterProgress = useMotionValue(0);
+  const smoothProgress = useSpring(masterProgress, { stiffness: 45, damping: 20, restDelta: 0.0001, mass: 0.8 });
+
+  // Se eliminó el scrubbing duplicado para evitar conflictos con el handler especializado
 
   const handleIntroDone = () => {
     setPreloaderDone(true);
+    // Secuencia automática: anima el masterProgress si el usuario no ha scrolleado
+    if (scrollYProgress.get() < 0.01) {
+      animate(masterProgress, 1, { duration: 11, ease: "linear" });
+    }
   };
 
-  const { scrollYProgress } = useScroll();
-  const smoothProgress = useSpring(scrollYProgress, { stiffness: 60, damping: 25, restDelta: 0.0005 });
+  useMotionValueEvent(scrollYProgress, "change", (v) => {
+    if (v > 0.001) masterProgress.set(v);
+  });
+
+  useMotionValueEvent(masterProgress, "change", (v) => {
+    // Detectar cambios de fase para "Camera Glitch" y Sonidos
+    const prev = masterProgress.getPrevious() || 0;
+    const thresholds = [0.4, 0.8];
+    thresholds.forEach(t => {
+      if ((prev < t && v >= t) || (prev > t && v <= t)) {
+        setIsGlitching(true);
+        playSound("transition");
+        setTimeout(() => setIsGlitching(false), 120);
+      }
+    });
+  });
   const time = useTime();
 
-  const ringAutoProgress = useTransform(time, (latest) => (preloaderDone ? latest / 3200 : 0));
-
-  const ringsProgress = useTransform(() => {
-    const auto = ringAutoProgress.get();
-    const v = smoothProgress.get();
-    // Deriva autónoma con empuje notable por scroll.
-    return auto * 0.88 + v * (isMobile ? 3.8 : 2.9);
+  const ringsProgress = useTransform([smoothProgress, time], ([v, t]) => {
+    // Deriva autónoma independiente del scroll para la posición base (más lenta)
+    const auto = (t as number) / 26000; 
+    // Multiplicador de scroll para el "empuje" cinemático
+    const scrollFactor = isMobile ? 2.5 : 2.8;
+    return auto + (v as number) * scrollFactor;
   });
 
   const swipeOpacity = useTransform(smoothProgress, [0, 0.03, 0.2, 0.28], [0, 1, 1, 0]);
@@ -317,24 +372,35 @@ export function AstroHero() {
   const desktopFrameScale = useTransform(smoothProgress, [0, 1], [1.02, 1.08]);
   const desktopFrameY = useTransform(smoothProgress, [0, 1], [-8, 12]);
 
-  // Título: aparece más temprano para no quedar tapado por el flujo final.
-  const titleOpacity = useTransform(smoothProgress, isMobile ? [0.16, 0.28, 0.6, 0.72] : [0.18, 0.32, 0.68, 0.82], [0, 1, 1, 0]);
-  const titleY       = useTransform(smoothProgress, isMobile ? [0.16, 0.30] : [0.2, 0.32], isMobile ? [28, 0] : [0, 0]);
+  // Efecto Cámara 3D (Cockpit tilt): Rotación sutil del escenario basada en el scroll
+  const cameraRotateX = useTransform(smoothProgress, [0, 0.5, 1], [1.2, 0, -1.2]);
+  const cameraRotateY = useTransform(smoothProgress, [0, 0.5, 1], [-0.8, 0, 0.8]);
 
-  // Edición: visible junto con el título para que siempre se lea "5TA EDICIÓN".
-  const editionOpacity = useTransform(smoothProgress, isMobile ? [0.18, 0.30, 0.6, 0.72] : [0.22, 0.34, 0.7, 0.84], [0, 1, 1, 0]);
+  // Título: Fase inicial (0% - 35%)
+  const titleOpacity = useTransform(smoothProgress, [0.02, 0.12, 0.28, 0.38], [0, 1, 1, 0]);
+  const titleY       = useTransform(smoothProgress, [0.02, 0.12], isMobile ? [20, 0] : [0, 0]);
 
-  // Coordenadas / frase terminal: centrada y separada del módulo de notificación.
-  const coordsOpacity = useTransform(smoothProgress, isMobile ? [0.56, 0.68, 0.86, 0.92] : [0.52, 0.66, 0.78, 0.86], [0, 1, 1, 0]);
-  const coordsY       = useTransform(smoothProgress, isMobile ? [0.56, 0.7, 0.86, 0.92] : [0.52, 0.66, 0.78, 0.86], isMobile ? [36, 0, -8, -54] : [0, 0, 0, 0]);
-  const coordsSkew = useTransform(smoothProgress, isMobile ? [0.56, 0.66, 0.76] : [0.48, 0.58, 0.68], isMobile ? [10, 0, 0] : [8, 0, 0]);
+  // Edición: sincronizada con el título
+  const editionOpacity = useTransform(smoothProgress, [0.05, 0.15, 0.30, 0.40], [0, 1, 1, 0]);
 
-  // Bloque de notificación final: capa técnica separada de la frase terminal.
-  const contactOpacity = useTransform(smoothProgress, isMobile ? [0.92, 0.98] : [0.86, 0.96], [0, 1]);
-  const contactY = useTransform(smoothProgress, isMobile ? [0.92, 0.98] : [0.86, 0.96], isMobile ? [42, 0] : [0, 0]);
+  // Coordenadas: Fase media (45% - 75%)
+  const coordsOpacity = useTransform(smoothProgress, [0.45, 0.55, 0.75, 0.85], [0, 1, 1, 0]);
+  const coordsY       = useTransform(smoothProgress, [0.45, 0.55, 0.75, 0.85], isMobile ? [24, 0, 0, -24] : [0, 0, 0, 0]);
+  const coordsSkew    = useTransform(smoothProgress, [0.45, 0.55, 0.65], isMobile ? [6, 0, 0] : [4, 0, 0]);
+
+  // Contacto: Fase final (88% - 100%)
+  const contactOpacity = useTransform(smoothProgress, [0.88, 0.96], [0, 1]);
+  const contactY       = useTransform(smoothProgress, [0.88, 0.96], [32, 0]);
+
+  const [isGlitchingOut, setIsGlitchingOut] = useState(false);
 
   useMotionValueEvent(smoothProgress, "change", (v) => {
-    if (!typingStarted && v >= (isMobile ? 0.64 : 0.56)) {
+    // Glitch Out: Detectar cuando un bloque está por desaparecer
+    const isEndingTitle = v > 0.30 && v < 0.40;
+    const isEndingCoords = v > 0.78 && v < 0.88;
+    setIsGlitchingOut(isEndingTitle || isEndingCoords);
+
+    if (!typingStarted && v >= 0.48) {
       setTypingStarted(true);
     }
   });
@@ -347,58 +413,60 @@ export function AstroHero() {
 
     const fullText = editionData.location;
     let index = 0;
+    setIsTyping(true);
     const timer = window.setInterval(() => {
       index += 1;
       setTypedLocation(fullText.slice(0, index));
+      if (index % 2 === 0) playSound("type");
       if (index >= fullText.length) {
         window.clearInterval(timer);
+        setIsTyping(false);
       }
-    }, 46);
+    }, 55);
 
     return () => window.clearInterval(timer);
   }, [typingStarted]);
 
   const contactPlaceholder = useMemo(() => {
     if (contactChannel === "mail") return "tu@email.com";
-    if (contactChannel === "ig") return "@usuario_ig";
+    if (contactChannel === "ig") return "@tu_usuario";
     if (contactChannel === "fb") return "perfil de facebook";
     return "+1 809 555 0000";
   }, [contactChannel]);
 
+  const contact2Placeholder = useMemo(() => {
+    if (contactChannel === "ig") return "tu@email.com o +1 809...";
+    return "@tu_usuario_ig";
+  }, [contactChannel]);
+
   const handleNotifySubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const value = contactValue.trim();
-    if (!value) return;
+    const value  = contactValue.trim();
+    const value2 = contactValue2.trim();
+    if (!value || !value2) return;
 
-    // 1. Persistencia local para redundancia (offline-first style)
-    const payload = {
-      value,
-      channel: contactChannel,
-      createdAt: new Date().toISOString(),
-    };
+    const payload = { value, channel: contactChannel, createdAt: new Date().toISOString() };
+    const payload2 = { value: value2, channel: contactChannel === "ig" ? "mail" : "ig", createdAt: new Date().toISOString() };
 
     try {
       persistNotifyLead(window.localStorage, payload);
-    } catch (e) {
-      console.warn("LocalStorage persist failed", e);
-    }
+      persistNotifyLead(window.localStorage, payload2);
+    } catch (e) { console.warn("LocalStorage persist failed", e); }
 
-    // 2. Enviar a Insforge
     const success = await insforge.saveLead({
-      contact_value: value,
+      contact_value: `${contactChannel}:${value} | extra:${value2}`,
       channel: contactChannel,
       project_id: "astro-sdq",
-      metadata: { source: "web-landing", viewport: `${viewport.w}x${viewport.h}` }
+      metadata: { source: "web-landing", viewport: `${viewport.w}x${viewport.h}`, contact2: value2 }
     });
 
-    if (success) {
-      setNotifyMessage("RECIBIDO. Tu contacto ha sido registrado en la base de datos.");
-    } else {
-      setNotifyMessage("RECIBIDO. (Sincronización de respaldo activa)");
-    }
-
+    setNotifyMessage(success
+      ? "RECIBIDO. Contactos registrados en la base de datos."
+      : "RECIBIDO. (Sincronización de respaldo activa)"
+    );
     setNotifySent(true);
     setContactValue("");
+    setContactValue2("");
   };
 
   // Rings desde esquinas responsive (evita posiciones rotas en móviles/tablets)
@@ -473,17 +541,31 @@ export function AstroHero() {
     },
   ], [viewport.h, viewport.w]);
 
-  // Video scrubbing: sincroniza currentTime con scroll (60fps via MotionValue)
-  useMotionValueEvent(scrollYProgress, "change", (v) => {
-    if (!isMobile) return;
+  // Momentum: Slow zoom en móvil cuando masterProgress es alto
+  const mobileVideoScale = useTransform(masterProgress, [0.8, 1], [1.18, 1.25]);
+
+  // Video scrubbing: sincroniza currentTime con masterProgress (solo Desktop para evitar freeze en móvil)
+  useMotionValueEvent(masterProgress, "change", (v) => {
+    if (isMobile) return;
     const video = videoRef.current;
     if (!video || !videoReady || !isFinite(video.duration) || video.duration === 0 || video.readyState < 1) return;
     const usableDuration = Math.max(video.duration - VIDEO_SCRUB_START - VIDEO_SCRUB_END_PADDING, 0.01);
     const targetTime = VIDEO_SCRUB_START + (v * usableDuration);
-    if (Math.abs(targetTime - lastScrubTimeRef.current) < 0.03) return;
-    lastScrubTimeRef.current = targetTime;
-    video.currentTime = targetTime;
+    if (Math.abs(video.currentTime - targetTime) > 0.04) {
+      video.currentTime = targetTime;
+    }
   });
+
+  // En móvil, el video simplemente corre
+  useEffect(() => {
+    if (isMobile && videoReady) {
+      const video = videoRef.current;
+      if (video) {
+        video.currentTime = 0;
+        video.play().catch(() => {});
+      }
+    }
+  }, [isMobile, videoReady]);
 
   // Canvas: micro-estrellas parpadeantes
   useEffect(() => {
@@ -548,20 +630,29 @@ export function AstroHero() {
 
       <main className={`${styles.page} ${preloaderDone ? styles.pageMounted : ""}`}>
         <section className={styles.heroShell}>
-          <div className={styles.stage}>
+          <motion.div
+            className={styles.stage}
+            style={{
+              rotateX: cameraRotateX,
+              rotateY: cameraRotateY,
+            }}
+          >
+            {isGlitching && <div className={styles.glitchOverlay} style={{ pointerEvents: "none" }} />}
 
             {isMobile && (
               <>
                 <div className={`${styles.bgFallback} ${videoReady ? styles.bgFallbackHidden : ""}`} />
 
                 {/* VIDEO como fondo completo — scrubbing por scroll */}
-                <video
+                <motion.video
                   ref={videoRef}
                   muted
                   playsInline
-                  preload="metadata"
+                  autoPlay
+                  preload="auto"
                   poster="/astro/backgrounds/mobile-color.jpg"
                   className={styles.bgVideo}
+                  style={{ scale: isMobile ? mobileVideoScale : 1 }}
                   onLoadedMetadata={() => {
                     setVideoReady(true);
                     setIntroReady(true);
@@ -578,7 +669,7 @@ export function AstroHero() {
                 >
                   {MOBILE_WEBM_SRC && <source src={MOBILE_WEBM_SRC} type="video/webm" />}
                   <source src="/astro/backgrounds/video.mp4" type="video/mp4" />
-                </video>
+                </motion.video>
               </>
             )}
 
@@ -631,104 +722,109 @@ export function AstroHero() {
             {/* Estrellas canvas */}
             <canvas ref={canvasRef} className={styles.spaceCanvas} />
 
-            {/* 4 Rings desde las esquinas */}
-            <div className={styles.ringsLayer}>
-              {rings.map((r) => (
-                <CornerRing
-                  key={r.id}
-                  src={r.src}
-                  size={r.size}
-                  rotZ={r.rotZ}
-                  speed={r.speed}
-                  originX={r.originX}
-                  originY={r.originY}
-                  fieldX={r.fieldX}
-                  fieldY={r.fieldY}
-                  driftX={r.driftX}
-                  driftY={r.driftY}
-                  swayX={r.swayX}
-                  swayY={r.swayY}
-                  phase={r.phase}
-                  variant={r.variant}
-                  progress={ringsProgress}
-                />
-              ))}
-            </div>
+            {/* 4 Rings: dispersos en el espacio 3D */}
+            {rings.map((r) => (
+              <CornerRing
+                key={r.id}
+                src={r.src}
+                size={r.size}
+                rotZ={r.rotZ}
+                speed={r.speed}
+                originX={r.originX}
+                originY={r.originY}
+                fieldX={r.fieldX}
+                fieldY={r.fieldY}
+                driftX={r.driftX}
+                driftY={r.driftY}
+                swayX={r.swayX}
+                swayY={r.swayY}
+                phase={r.phase}
+                variant={r.variant}
+                progress={ringsProgress}
+                time={time}
+              />
+            ))}
 
-            {/* Copy Rail */}
-            <div className={styles.copyRail}>
-              <motion.div className={styles.swipeCue} style={{ opacity: swipeOpacity }}>
-                <span className={styles.swipeArrows}>⌄⌄⌄</span>
-              </motion.div>
+            <motion.div className={styles.swipeCue} style={{ opacity: swipeOpacity }}>
+              <span className={styles.swipeArrows}>⌄⌄⌄</span>
+            </motion.div>
 
-              {/* Título + Edición */}
-              <motion.div
-                className={`${styles.titleBlock} ${!isMobile ? styles.desktopGlitchReveal : ""}`}
-                style={{ opacity: titleOpacity, y: titleY }}
+            {/* Título + Edición */}
+            <motion.div
+              className={`${styles.titleBlock} ${(isGlitching || isGlitchingOut) ? styles.dirtyTransmission : ""} ${!isMobile && !isGlitchingOut ? styles.desktopGlitchReveal : ""}`}
+              style={{ opacity: titleOpacity, y: titleY, zIndex: 55 }}
+            >
+              <h2 className={styles.mainTitle}>ASTRO SDQ</h2>
+              <motion.p
+                className={styles.edition}
+                style={{ opacity: editionOpacity }}
               >
-                <h2 className={styles.mainTitle}>ASTRO SDQ</h2>
-                <motion.p
-                  className={styles.edition}
-                  style={{ opacity: editionOpacity }}
-                >
-                  5TA EDICIÓN
-                </motion.p>
-              </motion.div>
+                5TA EDICIÓN
+              </motion.p>
+            </motion.div>
 
-              {/* Coordenadas */}
-              <motion.div
-                className={`${styles.coordBlock} ${styles.terminalFrame} ${!isMobile ? styles.desktopGlitchReveal : ""}`}
-                style={{ opacity: coordsOpacity, y: coordsY, skewY: coordsSkew }}
-              >
-                <div className={styles.terminalGlow} aria-hidden="true" />
-                <div className={styles.signalBar} />
-                <p className={styles.location}>{typedLocation || " "}</p>
-                <p className={styles.coordinates}>{editionData.coordinates}</p>
-              </motion.div>
+            {/* Coordenadas */}
+            <motion.div
+              className={`${styles.coordBlock} ${styles.terminalFrame} ${(isTyping || isGlitching || isGlitchingOut) ? styles.dirtyTransmission : ""} ${!isMobile && !isTyping && !isGlitchingOut ? styles.desktopGlitchReveal : ""}`}
+              style={{ opacity: coordsOpacity, y: coordsY, skewY: coordsSkew, zIndex: 50 }}
+            >
+              <div className={styles.terminalGlow} aria-hidden="true" />
+              <div className={styles.signalBar} />
+              <p className={styles.location}>{typedLocation || " "}</p>
+              <p className={styles.coordinates}>{editionData.coordinates}</p>
+            </motion.div>
 
-              <motion.div
-                className={`${styles.contactBlock} ${styles.notifyConsole} ${!isMobile ? styles.desktopGlitchReveal : ""}`}
-                style={{ opacity: contactOpacity, y: contactY }}
-              >
-                <div className={styles.notifyNoise} aria-hidden="true" />
-                <p className={styles.contactTitle}>DEJA TU CONTACTO PARA AVISO DE APERTURA</p>
-                <div className={styles.channelToggle} role="group" aria-label="Canal de contacto">
-                  {(["mail", "ig", "fb", "whatsapp"] as ContactChannel[]).map((channel) => (
-                    <button
-                      key={channel}
-                      type="button"
-                      className={`${styles.channelButton} ${contactChannel === channel ? styles.channelButtonActive : ""}`}
-                      onClick={() => {
-                        setContactChannel(channel);
-                        setNotifySent(false);
-                      }}
-                    >
-                      <ChannelIcon channel={channel} />
-                      <span>{channel.toUpperCase()}</span>
-                    </button>
-                  ))}
-                </div>
+            {/* Contacto */}
+            <motion.div
+              className={`${styles.contactBlock} ${styles.notifyConsole} ${!isMobile ? styles.desktopGlitchReveal : ""}`}
+              style={{ opacity: contactOpacity, y: contactY, zIndex: 60 }}
+            >
+              <div className={styles.notifyNoise} aria-hidden="true" />
+              <p className={styles.contactTitle}>DEJA TU CONTACTO PARA AVISO DE APERTURA</p>
+              <div className={styles.channelToggle} role="group" aria-label="Canal de contacto">
+                {(["ig", "whatsapp", "mail", "fb"] as ContactChannel[]).map((channel) => (
+                  <button
+                    key={channel}
+                    type="button"
+                    className={`${styles.channelButton} ${contactChannel === channel ? styles.channelButtonActive : ""}`}
+                    onClick={() => {
+                      setContactChannel(channel);
+                      setNotifySent(false);
+                      playSound("click");
+                    }}
+                  >
+                    <ChannelIcon channel={channel} />
+                    <span>{channel === "ig" ? "INSTAGRAM" : channel === "whatsapp" ? "WHATSAPP" : channel.toUpperCase()}</span>
+                  </button>
+                ))}
+              </div>
 
-                <form className={styles.notifyForm} onSubmit={handleNotifySubmit}>
+              <form className={styles.notifyForm} onSubmit={handleNotifySubmit}>
+                <div className={styles.notifyInputGroup}>
                   <input
                     className={styles.notifyInput}
                     type={contactChannel === "mail" ? "email" : "text"}
                     value={contactValue}
                     placeholder={contactPlaceholder}
-                    onChange={(event) => {
-                      setContactValue(event.target.value);
-                      setNotifySent(false);
-                    }}
+                    onChange={(e) => { setContactValue(e.target.value); setNotifySent(false); }}
                     required
                   />
-                  <button className={styles.notifyButton} type="submit">NOTIFICARME</button>
-                </form>
+                  <input
+                    className={`${styles.notifyInput} ${styles.notifyInput2}`}
+                    type="text"
+                    value={contactValue2}
+                    placeholder={contact2Placeholder}
+                    onChange={(e) => { setContactValue2(e.target.value); setNotifySent(false); }}
+                    required
+                  />
+                </div>
+                <button className={styles.notifyButton} type="submit" onClick={() => playSound("click")}>NOTIFICARME</button>
+              </form>
 
-                {notifySent && (
-                  <div className={styles.notifySuccess}>{notifyMessage}</div>
-                )}
-              </motion.div>
-            </div>
+              {notifySent && (
+                <div className={styles.notifySuccess}>{notifyMessage}</div>
+              )}
+            </motion.div>
 
             {/* HUD corners */}
             <div className={styles.hudOverlay} aria-hidden="true">
@@ -739,7 +835,7 @@ export function AstroHero() {
             </div>
 
             <div className={styles.grain} />
-          </div>
+          </motion.div>
         </section>
       </main>
     </>

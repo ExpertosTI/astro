@@ -36,7 +36,7 @@ export const insforge = {
       if (!response.ok) return null;
       return await response.json();
     } catch (error) {
-      console.error('[Insforge] Error fetching edition:', error);
+      // Fail silently to use local fallbacks
       return null;
     }
   },
@@ -62,7 +62,7 @@ export const insforge = {
 
       return response.ok;
     } catch (error) {
-      console.error('[Insforge] Error saving lead:', error);
+      // Fail silently
       return false;
     }
   }
