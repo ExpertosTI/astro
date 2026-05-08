@@ -317,29 +317,35 @@ export function AstroHero() {
   }, []);
 
   const { scrollYProgress } = useScroll();
-  const masterProgress = useMotionValue(0);
-  const smoothProgress = useSpring(masterProgress, { stiffness: 45, damping: 20, restDelta: 0.0001, mass: 0.8 });
-
-  // Se eliminó el scrubbing duplicado para evitar conflictos con el handler especializado
+  const storyProgress = useMotionValue(0);
+  const interactionProgress = useMotionValue(0);
+  
+  const smoothStory = useSpring(storyProgress, { stiffness: 45, damping: 20, restDelta: 0.0001, mass: 0.8 });
+  const smoothInteraction = useSpring(interactionProgress, { stiffness: 35, damping: 25, restDelta: 0.0001, mass: 1 });
 
   const handleIntroDone = () => {
     setPreloaderDone(true);
-    // Secuencia automática: anima el masterProgress si el usuario no ha scrolleado
+    // Secuencia automática: anima el storyProgress si el usuario no ha scrolleado
     if (scrollYProgress.get() < 0.01) {
-      animate(masterProgress, 1, { duration: 11, ease: "linear" });
+      animate(storyProgress, 1, { duration: 11, ease: "linear" });
     }
   };
 
   useMotionValueEvent(scrollYProgress, "change", (v) => {
-    if (v > 0.001) masterProgress.set(v);
+    // La historia solo avanza, nunca retrocede (No-Reverse)
+    if (v > storyProgress.get()) {
+      storyProgress.set(v);
+    }
+    // La interacción siempre sigue el scroll para permitir "jugar"
+    interactionProgress.set(v);
   });
 
-  useMotionValueEvent(masterProgress, "change", (v) => {
-    // Detectar cambios de fase para "Camera Glitch" y Sonidos
-    const prev = masterProgress.getPrevious() || 0;
+  useMotionValueEvent(storyProgress, "change", (v) => {
+    // Detectar cambios de fase para "Camera Glitch" y Sonidos (solo en avance)
+    const prev = storyProgress.getPrevious() || 0;
     const thresholds = [0.4, 0.8];
     thresholds.forEach(t => {
-      if ((prev < t && v >= t) || (prev > t && v <= t)) {
+      if (prev < t && v >= t) {
         setIsGlitching(true);
         playSound("transition");
         setTimeout(() => setIsGlitching(false), 120);
@@ -348,53 +354,59 @@ export function AstroHero() {
   });
   const time = useTime();
 
-  const ringsProgress = useTransform([smoothProgress, time], ([v, t]) => {
+  const ringsProgress = useTransform([smoothInteraction, time], ([v, t]) => {
     // Deriva autónoma independiente del scroll para la posición base (más lenta)
     const auto = (t as number) / 26000; 
     // Multiplicador de scroll para el "empuje" cinemático
     const scrollFactor = isMobile ? 2.5 : 2.8;
-    return auto + (v as number) * scrollFactor;
+    // Si llegamos al final, aumentamos sutilmente la reactividad para que sea más divertido "jugar"
+    const boost = (v as number) > 0.9 ? 1.2 : 1.0;
+    return auto + (v as number) * scrollFactor * boost;
   });
 
-  const swipeOpacity = useTransform(smoothProgress, [0, 0.03, 0.2, 0.28], [0, 1, 1, 0]);
-  const desktopColorReveal = useTransform(smoothProgress, [0.06, 0.56], [0, 1]);
-  const desktopLowerMaskOpacity = useTransform(smoothProgress, [0, 0.28], [0.8, 0.14]);
-  const desktopNebulaOpacity = useTransform(smoothProgress, [0.1, 0.26, 0.48, 0.76, 1], [0, 0.26, 0.7, 0.95, 0.78]);
-  const desktopRayOpacity = useTransform(smoothProgress, [0.16, 0.36, 0.58, 0.84, 1], [0, 0.52, 0.18, 0.82, 0.36]);
-  const desktopNebulaX = useTransform(smoothProgress, [0, 1], [-22, 28]);
-  const desktopNebulaY = useTransform(smoothProgress, [0, 1], [24, -16]);
-  const desktopNebulaScale = useTransform(smoothProgress, [0, 1], [0.92, 1.24]);
-  const desktopNebulaRotate = useTransform(smoothProgress, [0, 1], [-7, 9]);
-  const desktopRayX = useTransform(smoothProgress, [0, 1], [-42, 54]);
-  const desktopRayY = useTransform(smoothProgress, [0, 1], [18, -22]);
-  const desktopRayScaleX = useTransform(smoothProgress, [0, 1], [0.96, 1.12]);
-  const desktopRayScaleY = useTransform(smoothProgress, [0, 1], [0.98, 1.06]);
-  const desktopFrameScale = useTransform(smoothProgress, [0, 1], [1.02, 1.08]);
-  const desktopFrameY = useTransform(smoothProgress, [0, 1], [-8, 12]);
+  const swipeOpacity = useTransform(smoothStory, [0, 0.03, 0.2, 0.28], [0, 1, 1, 0]);
+  const desktopColorReveal = useTransform(smoothStory, [0.06, 0.56], [0, 1]);
+  const desktopLowerMaskOpacity = useTransform(smoothStory, [0, 0.28], [0.8, 0.14]);
+  
+  // Efectos de Nebulosa y Rayos: los dejamos interactivos para que el fondo se sienta vivo al scrollear hacia atrás
+  const desktopNebulaOpacity = useTransform(smoothInteraction, [0.1, 0.26, 0.48, 0.76, 1], [0, 0.26, 0.7, 0.95, 0.78]);
+  const desktopRayOpacity = useTransform(smoothInteraction, [0.16, 0.36, 0.58, 0.84, 1], [0, 0.52, 0.18, 0.82, 0.36]);
+  
+  const desktopNebulaX = useTransform(smoothInteraction, [0, 1], [-22, 28]);
+  const desktopNebulaY = useTransform(smoothInteraction, [0, 1], [24, -16]);
+  const desktopNebulaScale = useTransform(smoothInteraction, [0, 1], [0.92, 1.24]);
+  const desktopNebulaRotate = useTransform(smoothInteraction, [0, 1], [-7, 9]);
+  const desktopRayX = useTransform(smoothInteraction, [0, 1], [-42, 54]);
+  const desktopRayY = useTransform(smoothInteraction, [0, 1], [18, -22]);
+  const desktopRayScaleX = useTransform(smoothInteraction, [0, 1], [0.96, 1.12]);
+  const desktopRayScaleY = useTransform(smoothInteraction, [0, 1], [0.98, 1.06]);
+  
+  const desktopFrameScale = useTransform(smoothStory, [0, 1], [1.02, 1.08]);
+  const desktopFrameY = useTransform(smoothStory, [0, 1], [-8, 12]);
 
-  // Efecto Cámara 3D (Cockpit tilt): Rotación sutil del escenario basada en el scroll
-  const cameraRotateX = useTransform(smoothProgress, [0, 0.5, 1], [1.2, 0, -1.2]);
-  const cameraRotateY = useTransform(smoothProgress, [0, 0.5, 1], [-0.8, 0, 0.8]);
+  // Efecto Cámara 3D (Cockpit tilt): Rotación sutil del escenario basada en el scroll (Interactiva)
+  const cameraRotateX = useTransform(smoothInteraction, [0, 0.5, 1], [1.2, 0, -1.2]);
+  const cameraRotateY = useTransform(smoothInteraction, [0, 0.5, 1], [-0.8, 0, 0.8]);
 
-  // Título: Fase inicial (0% - 35%)
-  const titleOpacity = useTransform(smoothProgress, [0.02, 0.12, 0.28, 0.38], [0, 1, 1, 0]);
-  const titleY       = useTransform(smoothProgress, [0.02, 0.12], isMobile ? [20, 0] : [0, 0]);
+  // Título: Fase inicial (0% - 35%) - Story
+  const titleOpacity = useTransform(smoothStory, [0.02, 0.12, 0.28, 0.38], [0, 1, 1, 0]);
+  const titleY       = useTransform(smoothStory, [0.02, 0.12], isMobile ? [20, 0] : [0, 0]);
 
-  // Edición: sincronizada con el título
-  const editionOpacity = useTransform(smoothProgress, [0.05, 0.15, 0.30, 0.40], [0, 1, 1, 0]);
+  // Edición: sincronizada con el título - Story
+  const editionOpacity = useTransform(smoothStory, [0.05, 0.15, 0.30, 0.40], [0, 1, 1, 0]);
 
-  // Coordenadas: Fase media (45% - 75%)
-  const coordsOpacity = useTransform(smoothProgress, [0.45, 0.55, 0.75, 0.85], [0, 1, 1, 0]);
-  const coordsY       = useTransform(smoothProgress, [0.45, 0.55, 0.75, 0.85], isMobile ? [24, 0, 0, -24] : [0, 0, 0, 0]);
-  const coordsSkew    = useTransform(smoothProgress, [0.45, 0.55, 0.65], isMobile ? [6, 0, 0] : [4, 0, 0]);
+  // Coordenadas: Fase media (45% - 75%) - Story
+  const coordsOpacity = useTransform(smoothStory, [0.45, 0.55, 0.75, 0.85], [0, 1, 1, 0]);
+  const coordsY       = useTransform(smoothStory, [0.45, 0.55, 0.75, 0.85], isMobile ? [24, 0, 0, -24] : [0, 0, 0, 0]);
+  const coordsSkew    = useTransform(smoothStory, [0.45, 0.55, 0.65], isMobile ? [6, 0, 0] : [4, 0, 0]);
 
-  // Contacto: Fase final (88% - 100%)
-  const contactOpacity = useTransform(smoothProgress, [0.88, 0.96], [0, 1]);
-  const contactY       = useTransform(smoothProgress, [0.88, 0.96], [32, 0]);
+  // Contacto: Fase final (88% - 100%) - Story
+  const contactOpacity = useTransform(smoothStory, [0.88, 0.96], [0, 1]);
+  const contactY       = useTransform(smoothStory, [0.88, 0.96], [32, 0]);
 
   const [isGlitchingOut, setIsGlitchingOut] = useState(false);
 
-  useMotionValueEvent(smoothProgress, "change", (v) => {
+  useMotionValueEvent(smoothStory, "change", (v) => {
     // Glitch Out: Detectar cuando un bloque está por desaparecer
     const isEndingTitle = v > 0.30 && v < 0.40;
     const isEndingCoords = v > 0.78 && v < 0.88;
@@ -541,11 +553,11 @@ export function AstroHero() {
     },
   ], [viewport.h, viewport.w]);
 
-  // Momentum: Slow zoom en móvil cuando masterProgress es alto
-  const mobileVideoScale = useTransform(masterProgress, [0.8, 1], [1.18, 1.25]);
+  // Momentum: Slow zoom en móvil cuando storyProgress es alto
+  const mobileVideoScale = useTransform(storyProgress, [0.8, 1], [1.18, 1.25]);
 
-  // Video scrubbing: sincroniza currentTime con masterProgress (solo Desktop para evitar freeze en móvil)
-  useMotionValueEvent(masterProgress, "change", (v) => {
+  // Video scrubbing: sincroniza currentTime con storyProgress (solo Desktop para evitar freeze en móvil)
+  useMotionValueEvent(storyProgress, "change", (v) => {
     if (isMobile) return;
     const video = videoRef.current;
     if (!video || !videoReady || !isFinite(video.duration) || video.duration === 0 || video.readyState < 1) return;
