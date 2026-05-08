@@ -536,10 +536,11 @@ export function AstroHero() {
     });
 
     setNotifyMessage(success
-      ? "RECIBIDO. Contactos registrados en la base de datos."
-      : "RECIBIDO. (Sincronización de respaldo activa)"
+      ? "MISIÓN CONFIRMADA. TE AVISAREMOS AL INSTANTE."
+      : "SISTEMA DE RESPALDO ACTIVO. REGISTRO COMPLETADO."
     );
     setNotifySent(true);
+    playSound("transition"); // Sonido de éxito
     setContactValue("");
     setContactValue2("");
   };
@@ -844,50 +845,69 @@ export function AstroHero() {
               style={{ opacity: contactOpacity, y: contactY, zIndex: 60 }}
             >
               <div className={styles.notifyNoise} aria-hidden="true" />
-              <p className={styles.contactTitle}>DEJA TU CONTACTO PARA AVISO DE APERTURA</p>
-              <div className={styles.channelToggle} role="group" aria-label="Canal de contacto">
-                {(["ig", "whatsapp", "mail", "fb"] as ContactChannel[]).map((channel) => (
-                  <button
-                    key={channel}
-                    type="button"
-                    className={`${styles.channelButton} ${contactChannel === channel ? styles.channelButtonActive : ""}`}
-                    onClick={() => {
-                      setContactChannel(channel);
-                      setNotifySent(false);
-                      playSound("click");
-                    }}
+              
+              <AnimatePresence mode="wait">
+                {!notifySent ? (
+                  <motion.div
+                    key="form"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0, y: -20, filter: "blur(10px)" }}
                   >
-                    <ChannelIcon channel={channel} />
-                    <span>{channel === "ig" ? "INSTAGRAM" : channel === "whatsapp" ? "WHATSAPP" : channel.toUpperCase()}</span>
-                  </button>
-                ))}
-              </div>
+                    <p className={styles.contactTitle}>DEJA TU CONTACTO PARA AVISO DE APERTURA</p>
+                    <div className={styles.channelToggle} role="group" aria-label="Canal de contacto">
+                      {(["ig", "whatsapp", "mail", "fb"] as ContactChannel[]).map((channel) => (
+                        <button
+                          key={channel}
+                          type="button"
+                          className={`${styles.channelButton} ${contactChannel === channel ? styles.channelButtonActive : ""}`}
+                          onClick={() => {
+                            setContactChannel(channel);
+                            playSound("click");
+                          }}
+                        >
+                          <ChannelIcon channel={channel} />
+                          <span>{channel === "ig" ? "INSTAGRAM" : channel === "whatsapp" ? "WHATSAPP" : channel.toUpperCase()}</span>
+                        </button>
+                      ))}
+                    </div>
 
-              <form className={styles.notifyForm} onSubmit={handleNotifySubmit}>
-                <div className={styles.notifyInputGroup}>
-                  <input
-                    className={styles.notifyInput}
-                    type={contactChannel === "mail" ? "email" : "text"}
-                    value={contactValue}
-                    placeholder={contactPlaceholder}
-                    onChange={(e) => { setContactValue(e.target.value); setNotifySent(false); }}
-                    required
-                  />
-                  <input
-                    className={`${styles.notifyInput} ${styles.notifyInput2}`}
-                    type="text"
-                    value={contactValue2}
-                    placeholder={contact2Placeholder}
-                    onChange={(e) => { setContactValue2(e.target.value); setNotifySent(false); }}
-                    required
-                  />
-                </div>
-                <button className={styles.notifyButton} type="submit" onClick={() => playSound("click")}>NOTIFICARME</button>
-              </form>
-
-              {notifySent && (
-                <div className={styles.notifySuccess}>{notifyMessage}</div>
-              )}
+                    <form className={styles.notifyForm} onSubmit={handleNotifySubmit}>
+                      <div className={styles.notifyInputGroup}>
+                        <input
+                          className={styles.notifyInput}
+                          type={contactChannel === "mail" ? "email" : "text"}
+                          value={contactValue}
+                          placeholder={contactPlaceholder}
+                          onChange={(e) => { setContactValue(e.target.value); }}
+                          required
+                        />
+                        <input
+                          className={`${styles.notifyInput} ${styles.notifyInput2}`}
+                          type="text"
+                          value={contactValue2}
+                          placeholder={contact2Placeholder}
+                          onChange={(e) => { setContactValue2(e.target.value); }}
+                          required
+                        />
+                      </div>
+                      <button className={styles.notifyButton} type="submit" onClick={() => playSound("click")}>NOTIFICARME</button>
+                    </form>
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="success"
+                    initial={{ opacity: 0, scale: 0.9, filter: "blur(10px)" }}
+                    animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
+                    className={styles.successContainer}
+                  >
+                    <div className={styles.successIcon}>✓</div>
+                    <h3 className={styles.successTitle}>ACCESO CONCEDIDO</h3>
+                    <p className={styles.successText}>{notifyMessage}</p>
+                    <div className={styles.successGlow} />
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </motion.div>
 
             {/* HUD corners */}
