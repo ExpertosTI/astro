@@ -246,6 +246,7 @@ export function AstroHero() {
   const [preloaderDone, setPreloaderDone] = useState(false);
   const [videoReady, setVideoReady]       = useState(false);
   const [introReady, setIntroReady]       = useState(false);
+  const [assetsLoaded, setAssetsLoaded]   = useState(false);
   const [viewport, setViewport] = useState({ w: 1920, h: 1080 });
   const [isMobile, setIsMobile] = useState(false);
   const [contactChannel, setContactChannel] = useState<ContactChannel>("ig");
@@ -288,7 +289,6 @@ export function AstroHero() {
           setEditionData(prev => ({
             ...prev,
             ...remoteData,
-            // Mapeo de campos de DB a campos de UI si varían
             location: remoteData.location || prev.location,
             coordinates: remoteData.coordinates || prev.coordinates
           }));
@@ -300,11 +300,46 @@ export function AstroHero() {
     syncData();
   }, []);
 
-  // Si el video tarda demasiado, liberar intro sin forzar estado de video cargado.
+  // Lista de assets críticos para la experiencia premium
+  const CRITICAL_ASSETS = useMemo(() => [
+    ...ELEMENTS,
+    localEditionData.logo,
+    "/astro/backgrounds/desktop-bw.jpg",
+    "/astro/backgrounds/desktop-color.jpg",
+    "/astro/rings/ring-1.png",
+    "/astro/rings/ring-2.png",
+    "/astro/rings/ring-3.png",
+    "/astro/rings/ring-4.png",
+  ], []);
+
+  // Preloader de Assets
   useEffect(() => {
-    const t = setTimeout(() => setIntroReady(true), 2800); // Aumentado para dar drama al preloader
-    return () => clearTimeout(t);
-  }, []);
+    let loadedCount = 0;
+    const total = CRITICAL_ASSETS.length;
+
+    CRITICAL_ASSETS.forEach(src => {
+      const img = new window.Image();
+      img.src = src;
+      img.onload = () => {
+        loadedCount++;
+        if (loadedCount >= total) setAssetsLoaded(true);
+      };
+      img.onerror = () => {
+        loadedCount++;
+        if (loadedCount >= total) setAssetsLoaded(true);
+      };
+    });
+  }, [CRITICAL_ASSETS]);
+
+  // Liberar intro cuando los assets y el video estén listos (Premium Sync)
+  useEffect(() => {
+    // En desktop esperamos al video; en móvil los assets son prioridad máxima
+    const isReady = isMobile ? assetsLoaded : (assetsLoaded && videoReady);
+    if (isReady) {
+      const t = setTimeout(() => setIntroReady(true), 800); 
+      return () => clearTimeout(t);
+    }
+  }, [assetsLoaded, videoReady, isMobile]);
 
   useEffect(() => {
     const onResize = () => {
@@ -665,19 +700,10 @@ export function AstroHero() {
                   poster="/astro/backgrounds/mobile-color.jpg"
                   className={styles.bgVideo}
                   style={{ scale: isMobile ? mobileVideoScale : 1 }}
-                  onLoadedMetadata={() => {
-                    setVideoReady(true);
-                    setIntroReady(true);
-                  }}
+                  onLoadedMetadata={() => setVideoReady(true)}
                   onLoadedData={() => setVideoReady(true)}
-                  onCanPlay={() => {
-                    setVideoReady(true);
-                    setIntroReady(true);
-                  }}
-                  onError={() => {
-                    setVideoReady(false);
-                    setIntroReady(true);
-                  }}
+                  onCanPlay={() => setVideoReady(true)}
+                  onError={() => setVideoReady(true)} // Fallback para no bloquear
                 >
                   {MOBILE_WEBM_SRC && <source src={MOBILE_WEBM_SRC} type="video/webm" />}
                   <source src="/astro/backgrounds/video.mp4" type="video/mp4" />
