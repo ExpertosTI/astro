@@ -7,19 +7,19 @@ echo "🔍 Validating project before push..."
 cd site
 echo "🛠 Running build..."
 npm run build
+cd ..
 
 # 2. Add all to git (respecting .gitignore)
-cd ..
 echo "📦 Staging files..."
 git add .
 
 # 3. Commit
-echo "💾 Enter commit message (or press Enter for 'feat: deployment config'):"
+echo "💾 Enter commit message (or press Enter for 'feat: implementation update'):"
 read message
 if [ -z "$message" ]; then
-    message="feat: deployment config"
+    message="feat: implementation update"
 fi
-git commit -m "$message"
+git commit -m "$message" || echo "No changes to commit"
 
 # 4. Push
 echo "🚀 Pushing to origin main..."
