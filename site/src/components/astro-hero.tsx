@@ -162,42 +162,46 @@ function Preloader({ onDone, ready }: { onDone: () => void; ready: boolean }) {
    RING: CSS puro para spin (60fps garantizado, sin conflicto con Framer)
 ──────────────────────────────────────────────────────── */
 function CornerRing({
-  src, size, rotZ, speed, originX, originY, fieldX, fieldY, driftX, driftY, swayX, swayY, phase, variant, progress, time,
+  src, size, rotZ, speed, originX, originY, fieldX, fieldY, driftX, driftY, swayX, swayY, phase, variant, progress, time, mouseX, mouseY,
 }: {
   src: string; size: string; rotZ: number; speed: number;
   originX: number; originY: number; fieldX: number; fieldY: number; driftX: number; driftY: number;
   swayX: number; swayY: number; phase: number; variant: string; progress: MotionValue<number>;
   time: MotionValue<number>;
+  mouseX: MotionValue<number>; mouseY: MotionValue<number>;
 }) {
   const wrap = (value: number, limit: number) => {
     const span = limit * 2;
     return ((((value + limit) % span) + span) % span) - limit;
   };
 
-  // Movimiento cinemático: deriva lineal con reentrada (Pac-Man) + Deriva autónoma
-  const dx = useTransform([progress, time], ([p, t]) => {
-    const driftAutoX = Math.sin((t as number) / 2800 + phase) * 35;
+  // Movimiento cinemático: deriva lineal con reentrada + Deriva orgánica multicapa
+  const dx = useTransform([progress, time, mouseX], ([p, t, mx]) => {
+    const driftAutoX = Math.sin((t as number) / 2800 + phase) * 35 + Math.sin((t as number) / 1400) * 12;
     const travelX = originX + driftX * (p as number) + phase * swayX * 0.7;
-    return wrap(travelX, fieldX) + driftAutoX;
+    const parallaxX = (mx as number) * (phase * 0.05); // Parallax sutil basado en fase (cada anillo reacciona distinto)
+    return wrap(travelX, fieldX) + driftAutoX + parallaxX;
   });
 
-  const dy = useTransform([progress, time], ([p, t]) => {
-    const driftAutoY = Math.cos((t as number) / 3200 + phase) * 35;
+  const dy = useTransform([progress, time, mouseY], ([p, t, my]) => {
+    const driftAutoY = Math.cos((t as number) / 3200 + phase) * 35 + Math.cos((t as number) / 1600) * 12;
     const travelY = originY + driftY * (p as number) + phase * swayY * 0.6;
-    return wrap(travelY, fieldY) + driftAutoY;
+    const parallaxY = (my as number) * (phase * 0.05);
+    return wrap(travelY, fieldY) + driftAutoY + parallaxY;
   });
 
-  // Profundidad 3D (Z-axis): Sutil, sin alejar el fondo
+  // Rotación idle adicional (Breathing Rotation)
+  const idleRot = useTransform(time, (t) => Math.sin(t / 4000 + phase) * 4);
+
+  // Profundidad 3D (Z-axis)
   const dz = useTransform(progress, [0, 1], [0, 450]);
   const scrollRot = useTransform(progress, (value) => rotZ + value * speed * 15);
+  const totalRot = useTransform([scrollRot, idleRot], ([sr, ir]) => (sr as number) + (ir as number));
 
   // Normalizamos el progreso para efectos visuales (0-1) basado en el travel
-  const visualProgress = useTransform(progress, (v) => {
-    return Math.min(Math.max(v % 1.2, 0), 1);
-  });
+  const visualProgress = useTransform(progress, (v) => Math.min(Math.max(v % 1.2, 0), 1));
 
-  // Depth of Field (DoF): Basado en el tamaño físico del anillo
-  // Muy pequeños (lejos) = mucho blur, Tamaño foco = nítido, Gigantes (pasando cámara) = blur de proximidad
+  // Depth of Field (DoF)
   const ringBlur = useTransform(
     visualProgress,
     [0, 0.15, 0.45, 0.7, 0.88, 1],
@@ -207,11 +211,15 @@ function CornerRing({
   
   const ringFilter = useTransform(ringBlur, (value) => value > 0.05 ? `blur(${value.toFixed(1)}px)` : "none");
 
-  // Opacity y Scale: El escalado ahora es más dinámico para acompañar el blur
+  // Breathing Scale: Sutil pulso orgánico que le da vida "parado"
+  const breatheScale = useTransform(time, (t) => 1 + Math.sin(t / 2200 + phase) * 0.04);
+
+  // Opacity y Scale base: El escalado ahora es más dinámico para acompañar el blur
   const ringOpacity = useTransform(visualProgress, [0, 0.1, 0.88, 1], [0, 0.95, 0.9, 0], { clamp: true });
-  const ringScale = useTransform(visualProgress, [0, 0.5, 0.85, 1], [0.55, 1.2, 2.8, 5.2], { clamp: true });
+  const baseScale = useTransform(visualProgress, [0, 0.5, 0.85, 1], [0.55, 1.2, 2.8, 5.2], { clamp: true });
+  const finalScale = useTransform([baseScale, breatheScale], ([bs, brs]) => (bs as number) * (brs as number));
   
-  // Z-Index dinámico: detrás del contenido (40) por defecto, delante (100) cuando está muy cerca
+  // Z-Index dinámico
   const ringZIndex = useTransform(visualProgress, (value) => (value > 0.82 ? 110 : 40));
 
   return (
@@ -223,8 +231,8 @@ function CornerRing({
         x: dx,
         y: dy,
         z: dz,
-        rotate: scrollRot,
-        scale: ringScale,
+        rotate: totalRot,
+        scale: finalScale,
         opacity: ringOpacity,
         filter: ringFilter,
         zIndex: ringZIndex,
@@ -259,6 +267,10 @@ export function AstroHero() {
   const [editionData, setEditionData] = useState(localEditionData);
   const [isGlitching, setIsGlitching] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
+
+  // MotionValues para Parallax de Mouse (Interactive Idle)
+  const mouseX = useMotionValue(0);
+  const mouseY = useMotionValue(0);
 
   // Sistema de Sonido Optimizado (Instancias persistentes para evitar lag)
   const soundRefs = useRef<{ [key: string]: HTMLAudioElement }>({});
@@ -350,8 +362,22 @@ export function AstroHero() {
     };
     onResize();
     window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
-  }, []);
+
+    const onMouseMove = (e: MouseEvent) => {
+      // Normalizamos de -1 a 1 para un parallax balanceado
+      mouseX.set((e.clientX / window.innerWidth) * 2 - 1);
+      mouseY.set((e.clientY / window.innerHeight) * 2 - 1);
+    };
+
+    if (!isMobile) {
+      window.addEventListener("mousemove", onMouseMove);
+    }
+
+    return () => {
+      window.removeEventListener("resize", onResize);
+      window.removeEventListener("mousemove", onMouseMove);
+    };
+  }, [isMobile]);
 
   const { scrollYProgress } = useScroll();
   const storyProgress = useMotionValue(0);
@@ -778,6 +804,8 @@ export function AstroHero() {
                 variant={r.variant}
                 progress={ringsProgress}
                 time={time}
+                mouseX={mouseX}
+                mouseY={mouseY}
               />
             ))}
 
