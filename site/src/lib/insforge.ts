@@ -62,8 +62,39 @@ export const insforge = {
 
       return response.ok;
     } catch (error) {
-      // Fail silently
       return false;
     }
+  },
+
+  /**
+   * Obtiene la lista de leads (Solo para Admin)
+   */
+  async getLeads(): Promise<any[]> {
+    try {
+      if (!API_URL) return [];
+      const response = await fetch(`${API_URL}/leads?order=created_at.desc`, {
+        headers: { 'Accept': 'application/json' }
+      });
+      return response.ok ? await response.json() : [];
+    } catch (error) {
+      return [];
+    }
+  },
+
+  /**
+   * Obtiene estadísticas rápidas de leads
+   */
+  async getStats(): Promise<{ total: number; byChannel: Record<string, number> }> {
+    const leads = await this.getLeads();
+    const stats = {
+      total: leads.length,
+      byChannel: {} as Record<string, number>
+    };
+
+    leads.forEach(l => {
+      stats.byChannel[l.channel] = (stats.byChannel[l.channel] || 0) + 1;
+    });
+
+    return stats;
   }
 };
