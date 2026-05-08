@@ -1,0 +1,15 @@
+node_modules
+.next
+.git
+.vscode
+public
+src
+*.log
+*.md
+Dockerfile
+next.config.ts
+package.json
+package-lock.json
+tsconfig.json
+eslint.config.mjs
+!out
