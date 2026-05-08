@@ -3,7 +3,8 @@
  * Cliente de conexión para la base de datos de Insforge (PostgREST)
  */
 
-const API_URL = process.env.NEXT_PUBLIC_INSFORGE_API_URL;
+// Ruta relativa para pasar por el proxy de Nginx (Seguridad Interna)
+const API_URL = "/api/insforge";
 
 export type InsforgeEdition = {
   id?: string;
