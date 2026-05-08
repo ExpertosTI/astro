@@ -1,0 +1,140 @@
+.adminContainer {
+  min-height: 100vh;
+  background: radial-gradient(circle at 0% 0%, rgba(59, 130, 246, 0.1), transparent 40%), #040912;
+  color: #dce6f4;
+  padding: 40px 20px;
+  font-family: 'Inter', sans-serif;
+}
+
+.wrap {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+  padding-bottom: 20px;
+}
+
+.title {
+  font-family: 'Sora', sans-serif;
+  font-size: 24px;
+  margin: 0;
+  background: linear-gradient(90deg, #fff, #94a3b8);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.kpiGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 15px;
+  margin-bottom: 30px;
+}
+
+.kpiCard {
+  background: rgba(9, 16, 30, 0.6);
+  border: 1px solid rgba(125, 211, 252, 0.1);
+  border-radius: 16px;
+  padding: 20px;
+  backdrop-filter: blur(10px);
+}
+
+.kpiLabel {
+  font-size: 11px;
+  color: #8ea2bf;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 8px;
+}
+
+.kpiValue {
+  font-size: 32px;
+  font-weight: 800;
+  color: #7dd3fc;
+}
+
+.tableCard {
+  background: rgba(9, 16, 30, 0.6);
+  border: 1px solid rgba(125, 211, 252, 0.1);
+  border-radius: 16px;
+  padding: 20px;
+  overflow: hidden;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th {
+  text-align: left;
+  padding: 12px;
+  font-size: 11px;
+  color: #8ea2bf;
+  text-transform: uppercase;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+.table td {
+  padding: 12px;
+  font-size: 14px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.05);
+}
+
+.channelBadge {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  background: rgba(37, 99, 235, 0.1);
+  color: #7dd3fc;
+  border: 1px solid rgba(125, 211, 252, 0.2);
+}
+
+.loginOverlay {
+  position: fixed;
+  inset: 0;
+  background: #040912;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.loginCard {
+  background: rgba(9, 16, 30, 0.8);
+  border: 1px solid rgba(125, 211, 252, 0.2);
+  padding: 40px;
+  border-radius: 20px;
+  width: 100%;
+  max-width: 400px;
+  text-align: center;
+}
+
+.input {
+  width: 100%;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(125, 211, 252, 0.3);
+  border-radius: 8px;
+  padding: 12px;
+  color: white;
+  margin-bottom: 20px;
+  outline: none;
+}
+
+.button {
+  width: 100%;
+  background: linear-gradient(135deg, #2563eb, #0891b2);
+  border: none;
+  border-radius: 8px;
+  padding: 12px;
+  color: white;
+  font-weight: 700;
+  cursor: pointer;
+}
