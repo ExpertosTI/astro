@@ -333,8 +333,10 @@ export function AstroHero() {
 
   // Liberar intro cuando los assets y el video estén listos (Premium Sync)
   useEffect(() => {
-    // En desktop esperamos al video; en móvil los assets son prioridad máxima
-    const isReady = isMobile ? assetsLoaded : (assetsLoaded && videoReady);
+    // Si no hay video en el DOM o estamos en móvil, priorizamos assets.
+    // Pero en escritorio esperamos al video para evitar el pop-in.
+    const isReady = assetsLoaded && (isMobile ? true : videoReady);
+    
     if (isReady) {
       const t = setTimeout(() => setIntroReady(true), 800); 
       return () => clearTimeout(t);
@@ -686,30 +688,26 @@ export function AstroHero() {
           >
             {isGlitching && <div className={styles.glitchOverlay} style={{ pointerEvents: "none" }} />}
 
-            {isMobile && (
-              <>
-                <div className={`${styles.bgFallback} ${videoReady ? styles.bgFallbackHidden : ""}`} />
-
-                {/* VIDEO como fondo completo — scrubbing por scroll */}
-                <motion.video
-                  ref={videoRef}
-                  muted
-                  playsInline
-                  autoPlay
-                  preload="auto"
-                  poster="/astro/backgrounds/mobile-color.jpg"
-                  className={styles.bgVideo}
-                  style={{ scale: isMobile ? mobileVideoScale : 1 }}
-                  onLoadedMetadata={() => setVideoReady(true)}
-                  onLoadedData={() => setVideoReady(true)}
-                  onCanPlay={() => setVideoReady(true)}
-                  onError={() => setVideoReady(true)} // Fallback para no bloquear
-                >
-                  {MOBILE_WEBM_SRC && <source src={MOBILE_WEBM_SRC} type="video/webm" />}
-                  <source src="/astro/backgrounds/video.mp4" type="video/mp4" />
-                </motion.video>
-              </>
-            )}
+            {/* VIDEO como fondo completo — scrubbing por scroll */}
+            <div className={`${styles.bgFallback} ${videoReady ? styles.bgFallbackHidden : ""}`} />
+            <motion.video
+              ref={videoRef}
+              muted
+              playsInline
+              autoPlay
+              preload="auto"
+              poster={isMobile ? "/astro/backgrounds/mobile-color.jpg" : "/astro/backgrounds/desktop-color.jpg"}
+              className={styles.bgVideo}
+              style={{ scale: isMobile ? mobileVideoScale : 1 }}
+              onLoadedMetadata={() => setVideoReady(true)}
+              onLoadedData={() => setVideoReady(true)}
+              onCanPlay={() => setVideoReady(true)}
+              onCanPlayThrough={() => setVideoReady(true)}
+              onError={() => setVideoReady(true)} // Fallback para no bloquear si falla el video
+            >
+              {MOBILE_WEBM_SRC && <source src={MOBILE_WEBM_SRC} type="video/webm" />}
+              <source src="/astro/backgrounds/video.mp4" type="video/mp4" />
+            </motion.video>
 
             {!isMobile && (
               <motion.div
