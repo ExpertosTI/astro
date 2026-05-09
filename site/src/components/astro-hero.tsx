@@ -213,13 +213,13 @@ function CornerRing({
   const ringOpacity = useTransform(visualProgress, [0, 0.1, 0.88, 1], [0, 0.95, 0.9, 0], { clamp: true });
   const baseScale = useTransform(visualProgress, [0, 0.5, 0.85, 1], [0.55, 1.2, 2.8, 5.2], { clamp: true });
   const finalScale = useTransform([baseScale, breatheScale], ([bs, brs]) => (bs as number) * (brs as number));
-  const ringZIndex = useTransform(visualProgress, (value) => (value > 0.82 ? 110 : 40));
+  const ringZIndex = useTransform(visualProgress, (value) => (value > 0.65 ? 120 : 40));
 
   return (
     <motion.div
       className={`${styles.orbitalRing} ${isBursting ? styles.ringBurstActive : ""}`}
       onClick={handleRingClick}
-      whileHover={{ scale: 1.05, filter: "brightness(1.4) contrast(1.1)" }}
+      whileHover={{ scale: 1.1, filter: "brightness(1.5) contrast(1.2)" }}
       style={{
         width: size,
         height: size,
@@ -235,19 +235,23 @@ function CornerRing({
         pointerEvents: "auto",
       }}
     >
-      <div className={`${styles.ringAura} ${styles[variant]}`} />
-      <div className={`${styles.ringSpinner} ${styles[variant]} ${styles[`${variant}Asset`]}`} />
-      <AnimatePresence>
-        {isBursting && (
-          <motion.div
-            className={styles.ringBurstEffect}
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: [0.8, 1.8, 2.2], opacity: [0, 0.8, 0] }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.5, ease: "easeOut" }}
+      <motion.img 
+        src={src} 
+        className={styles.ringImage} 
+        alt="Orbital Ring"
+        animate={isBursting ? { scale: [1, 1.4, 1] } : {}}
+      />
+      {isBursting && (
+        <>
+          <div className={styles.ringBurstEffect} />
+          <motion.div 
+            className={styles.ringGhost} 
+            initial={{ scale: 1, opacity: 0.8 }}
+            animate={{ scale: 2, opacity: 0 }}
+            transition={{ duration: 0.6 }}
           />
-        )}
-      </AnimatePresence>
+        </>
+      )}
     </motion.div>
   );
 }
@@ -445,10 +449,10 @@ export function AstroHero() {
   const desktopColorReveal = useTransform(smoothStory, [0.06, 0.56], [0, 1]);
   const desktopLowerMaskOpacity = useTransform(smoothStory, [0, 0.28], [0.8, 0.14]);
   
-  // Opacidades maestras con fallback para móvil
-  const titleOpacity = useTransform(smoothStory, [0.02, 0.12, 0.28, 0.38], [isMobile ? 1 : 0, 1, 1, 0]);
-  const storyOpacity = useTransform(smoothStory, [0.35, 0.45], [isMobile ? 1 : 0, 1]);
-  const contactOpacity = useTransform(smoothStory, [0.88, 0.96], [isMobile ? 1 : 0, 1]);
+  // Opacidades con tiempos más precisos para dar chance al mensaje
+  const titleOpacity = useTransform(smoothStory, [0.02, 0.10, 0.20, 0.28], [0, 1, 1, 0]);
+  const storyOpacity = useTransform(smoothStory, [0.35, 0.45, 0.75, 0.85], [0, 1, 1, 0]);
+  const contactOpacity = useTransform(smoothStory, [0.90, 0.98], [0, 1]);
   const desktopNebulaOpacity = useTransform(smoothInteraction, [0.1, 0.26, 0.48, 0.76, 1], [0, 0.26, 0.7, 0.95, 0.78]);
   const desktopRayOpacity = useTransform(smoothInteraction, [0.16, 0.36, 0.58, 0.84, 1], [0, 0.52, 0.18, 0.82, 0.36]);
   
