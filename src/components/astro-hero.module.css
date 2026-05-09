@@ -1010,11 +1010,11 @@
   }
 
   .titleBlock {
-    top: 24%;
+    top: 18%;
   }
 
   .coordBlock {
-    top: 41%;
+    top: 36%;
   }
 
   .bgVideo {
@@ -1066,8 +1066,8 @@
   }
 
   .contactBlock {
-    bottom: 7vh;
-    gap: 0.8rem;
+    bottom: 5vh;
+    gap: 1.2rem;
   }
 
   .swipeCue {
@@ -1101,8 +1101,8 @@
     justify-content: center;
   }
   .bgVideo {
-    transform: scale(1.18);
-    object-position: center 36%;
+    transform: scale(1.24);
+    object-position: center 32%;
   }
   .textRow   { gap: 0.8rem; }
   .elemDecor { height: clamp(3rem, 10vw, 5rem); }

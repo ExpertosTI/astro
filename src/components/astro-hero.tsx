@@ -98,7 +98,7 @@ function Preloader({ onDone, ready }: { onDone: () => void; ready: boolean }) {
 
   useEffect(() => {
     if (step < PRELOADER_LOGO_STEP) {
-      const t = setTimeout(() => setStep((s) => s + 1), 520);
+      const t = setTimeout(() => setStep((s) => s + 1), 450);
       return () => clearTimeout(t);
     }
 
@@ -234,6 +234,7 @@ export function AstroHero() {
   const [videoReady, setVideoReady]       = useState(false);
   const [preloaderAssetsLoaded, setPreloaderAssetsLoaded] = useState(false);
   const [introReady, setIntroReady]       = useState(false);
+  const storyAnimationRef = useRef<any>(null);
   const [viewport, setViewport] = useState({ w: 1920, h: 1080 });
   const [isMobile, setIsMobile] = useState(false);
   const [contactChannel, setContactChannel] = useState<ContactChannel>("ig");
@@ -312,7 +313,7 @@ export function AstroHero() {
     const isReady = preloaderAssetsLoaded && (isMobile ? true : videoReady);
     
     if (isReady) {
-      const t = setTimeout(() => setIntroReady(true), 400); 
+      const t = setTimeout(() => setIntroReady(true), 200); 
       return () => clearTimeout(t);
     }
   }, [preloaderAssetsLoaded, videoReady, isMobile]);
@@ -349,12 +350,20 @@ export function AstroHero() {
 
   const handleIntroDone = () => {
     setPreloaderDone(true);
-    if (scrollYProgress.get() < 0.01) {
-      animate(storyProgress, 1, { duration: 11, ease: "linear" });
+    if (scrollYProgress.get() < 0.005) {
+      storyAnimationRef.current = animate(storyProgress, 1, { 
+        duration: 10.5, 
+        ease: "linear",
+        onComplete: () => { storyAnimationRef.current = null; }
+      });
     }
   };
 
   useMotionValueEvent(scrollYProgress, "change", (v) => {
+    if (v > 0.002 && storyAnimationRef.current) {
+      storyAnimationRef.current.stop();
+      storyAnimationRef.current = null;
+    }
     if (v > storyProgress.get()) {
       storyProgress.set(v);
     }
