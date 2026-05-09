@@ -407,13 +407,13 @@ export function AstroHero() {
 
   const handleIntroDone = () => {
     setPreloaderDone(true);
-    if (scrollYProgress.get() < 0.005) {
-      storyAnimationRef.current = animate(storyProgress, 1, { 
+    // Iniciamos la animación con un pequeño delay para asegurar el montaje
+    setTimeout(() => {
+      animate(storyProgress, 1, { 
         duration: 10.5, 
-        ease: "linear",
-        onComplete: () => { storyAnimationRef.current = null; }
+        ease: "linear"
       });
-    }
+    }, 100);
   };
 
   useMotionValueEvent(scrollYProgress, "change", (v) => {
@@ -449,6 +449,11 @@ export function AstroHero() {
   const swipeOpacity = useTransform(smoothStory, [0, 0.03, 0.2, 0.28], [0, 1, 1, 0]);
   const desktopColorReveal = useTransform(smoothStory, [0.06, 0.56], [0, 1]);
   const desktopLowerMaskOpacity = useTransform(smoothStory, [0, 0.28], [0.8, 0.14]);
+  
+  // Opacidades maestras con fallback para móvil
+  const titleOpacity = useTransform(smoothStory, [0.02, 0.12, 0.28, 0.38], [isMobile ? 1 : 0, 1, 1, 0]);
+  const storyOpacity = useTransform(smoothStory, [0.35, 0.45], [isMobile ? 1 : 0, 1]);
+  const contactOpacity = useTransform(smoothStory, [0.88, 0.96], [isMobile ? 1 : 0, 1]);
   const desktopNebulaOpacity = useTransform(smoothInteraction, [0.1, 0.26, 0.48, 0.76, 1], [0, 0.26, 0.7, 0.95, 0.78]);
   const desktopRayOpacity = useTransform(smoothInteraction, [0.16, 0.36, 0.58, 0.84, 1], [0, 0.52, 0.18, 0.82, 0.36]);
   
@@ -466,13 +471,11 @@ export function AstroHero() {
   const cameraRotateX = useTransform(smoothInteraction, [0, 0.5, 1], [1.2, 0, -1.2]);
   const cameraRotateY = useTransform(smoothInteraction, [0, 0.5, 1], [-0.8, 0, 0.8]);
 
-  const titleOpacity = useTransform(smoothStory, [0.02, 0.12, 0.28, 0.38], [0, 1, 1, 0]);
   const titleY       = useTransform(smoothStory, [0.02, 0.12], isMobile ? [20, 0] : [0, 0]);
   const editionOpacity = useTransform(smoothStory, [0.05, 0.15, 0.30, 0.40], [0, 1, 1, 0]);
   const coordsOpacity = useTransform(smoothStory, [0.45, 0.55, 0.75, 0.85], [0, 1, 1, 0]);
   const coordsY       = useTransform(smoothStory, [0.45, 0.55, 0.75, 0.85], isMobile ? [24, 0, 0, -24] : [0, 0, 0, 0]);
   const coordsSkew    = useTransform(smoothStory, [0.45, 0.55, 0.65], isMobile ? [6, 0, 0] : [4, 0, 0]);
-  const contactOpacity = useTransform(smoothStory, [0.88, 0.96], [0, 1]);
   const contactY       = useTransform(smoothStory, [0.88, 0.96], [32, 0]);
 
   const [isGlitchingOut, setIsGlitchingOut] = useState(false);

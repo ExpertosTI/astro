@@ -1,6 +1,18 @@
 #!/bin/bash
 set -e
 
+# 1. Verificar y descargar SFX si faltan
+SFX_DIR="site/public/astro/sfx"
+mkdir -p "$SFX_DIR"
+if [ ! -f "$SFX_DIR/glitch.mp3" ]; then
+    echo "🎵 Descargando efectos de sonido necesarios..."
+    curl -L -s -o "$SFX_DIR/glitch.mp3" "https://cdn.pixabay.com/audio/2022/03/10/audio_5e2c5d5e21.mp3"
+    curl -L -s -o "$SFX_DIR/type.mp3" "https://cdn.pixabay.com/audio/2022/03/15/audio_24e2d31c62.mp3"
+    curl -L -s -o "$SFX_DIR/click.mp3" "https://cdn.pixabay.com/audio/2022/03/10/audio_c8de3165b6.mp3"
+    curl -L -s -o "$SFX_DIR/transition.mp3" "https://cdn.pixabay.com/audio/2022/03/24/audio_3d1981a3d9.mp3"
+    echo "✅ Sonidos preparados."
+fi
+
 echo "🚀 Iniciando Despliegue vía Git..."
 
 # 1. Compilar Assets en Local (Mac)
