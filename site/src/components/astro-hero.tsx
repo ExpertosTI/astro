@@ -24,7 +24,8 @@ const PRELOADER_SEQUENCE = [...ELEMENTS, localEditionData.logo];
 const PRELOADER_LOGO_STEP = PRELOADER_SEQUENCE.length - 1;
 const VIDEO_SCRUB_START = 1.2;
 const VIDEO_SCRUB_END_PADDING = 0.25;
-const MOBILE_WEBM_SRC: string | null = "/astro/backgrounds/video.webm";
+const MOBILE_WEBM_SRC: string = "/astro/backgrounds/video.webm";
+const DESKTOP_VIDEO_SRC: string = "/astro/backgrounds/video-optimized.mp4";
 const NOTIFY_STORAGE_KEY = "astro-notify-leads";
 const MAX_NOTIFY_LEADS = 100;
 
@@ -282,21 +283,8 @@ export function AstroHero() {
     try {
       if (!soundRefs.current[type]) {
         const audio = new Audio();
-        // Prioridad a archivos locales para estabilidad total
-        const localPath = `/astro/sfx/${type}.mp3`;
-        const fallbackUrls = {
-          glitch: "https://cdn.pixabay.com/audio/2022/03/10/audio_5e2c5d5e21.mp3",
-          type: "https://assets.mixkit.co/sfx/preview/mixkit-single-key-press-in-a-laptop-2541.mp3",
-          click: "https://assets.mixkit.co/sfx/preview/mixkit-modern-click-box-check-1120.mp3",
-          transition: "https://assets.mixkit.co/sfx/preview/mixkit-robotic-mechanical-arm-2432.mp3"
-        };
-        
-        audio.src = localPath; // Intentar local primero
-        audio.onerror = () => {
-          // Si falla local, intentar fallback
-          audio.src = fallbackUrls[type];
-        };
-        
+        // Solo usamos rutas locales para evitar errores de consola por Mixkit
+        audio.src = `/astro/sfx/${type}.mp3`;
         audio.volume = type === "glitch" ? 0.15 : 0.25;
         audio.preload = "auto";
         soundRefs.current[type] = audio;
@@ -367,12 +355,19 @@ export function AstroHero() {
   }, [PRELOADER_ASSETS, SECONDARY_ASSETS]);
 
   useEffect(() => {
+    // Si el video tarda más de 3 segundos, cargamos de todos modos
+    const videoFallback = setTimeout(() => {
+      if (!isMobile && !videoReady) setVideoReady(true);
+    }, 3000);
+
     const isReady = preloaderAssetsLoaded && (isMobile ? true : videoReady);
     
     if (isReady) {
+      clearTimeout(videoFallback);
       const t = setTimeout(() => setIntroReady(true), 200); 
       return () => clearTimeout(t);
     }
+    return () => clearTimeout(videoFallback);
   }, [preloaderAssetsLoaded, videoReady, isMobile]);
 
   useEffect(() => {
@@ -721,13 +716,14 @@ export function AstroHero() {
             {isGlitching && <div className={styles.glitchOverlay} style={{ pointerEvents: "none" }} />}
 
             <div className={`${styles.bgFallback} ${videoReady ? styles.bgFallbackHidden : ""}`} />
-            <motion.video
+             <motion.video
               ref={videoRef}
               muted
               playsInline
               autoPlay
+              loop
               preload="auto"
-              poster={isMobile ? "/astro/backgrounds/mobile-color.jpg" : "/astro/backgrounds/desktop-color.jpg"}
+              poster={isMobile ? "/astro/backgrounds/mobile-color.jpg" : "/astro/backgrounds/IMAGEN-FONDO-A-COLOR-WEB-GRANDE.jpg"}
               className={styles.bgVideo}
               style={{ scale: isMobile ? mobileVideoScale : 1 }}
               onLoadedMetadata={() => setVideoReady(true)}
@@ -736,8 +732,11 @@ export function AstroHero() {
               onCanPlayThrough={() => setVideoReady(true)}
               onError={() => setVideoReady(true)}
             >
-              {MOBILE_WEBM_SRC && <source src={MOBILE_WEBM_SRC} type="video/webm" />}
-              <source src="/astro/backgrounds/video-optimized.mp4" type="video/mp4" />
+              {isMobile ? (
+                <source src={MOBILE_WEBM_SRC} type="video/webm" />
+              ) : (
+                <source src={DESKTOP_VIDEO_SRC} type="video/mp4" />
+              )}
             </motion.video>
 
             {!isMobile && (
