@@ -15,8 +15,6 @@ git add .
 git commit -m "deploy: production build and cleanup" || echo "No hay cambios para commitear"
 git push origin main
 
-# 3. Desplegar en el VPS vía SSH
-echo "🛰 3/3 Ejecutando despliegue en VPS..."
-ssh root@45.9.191.18 "cd /opt/astro && git pull && ./deploy.sh"
-
-echo "✅ Proceso completado."
+# 3. Informar éxito local
+echo "✅ Proceso local completado."
+echo "🚀 Los cambios ya están en GitHub. Ahora puedes entrar al VPS y ejecutar ./deploy.sh"
