@@ -157,14 +157,23 @@ function Preloader({ onDone, ready }: { onDone: () => void; ready: boolean }) {
 }
 
 function CornerRing({
-  src, size, rotZ, speed, originX, originY, fieldX, fieldY, driftX, driftY, swayX, swayY, phase, variant, progress, time, mouseX, mouseY,
+  src, size, rotZ, speed, originX, originY, fieldX, fieldY, driftX, driftY, swayX, swayY, phase, variant, progress, time, mouseX, mouseY, playSound,
 }: {
   src: string; size: string; rotZ: number; speed: number;
   originX: number; originY: number; fieldX: number; fieldY: number; driftX: number; driftY: number;
   swayX: number; swayY: number; phase: number; variant: string; progress: MotionValue<number>;
   time: MotionValue<number>;
   mouseX: MotionValue<number>; mouseY: MotionValue<number>;
+  playSound: (type: "glitch" | "type" | "click" | "transition") => void;
 }) {
+  const [isBursting, setIsBursting] = useState(false);
+
+  const handleRingClick = () => {
+    if (isBursting) return;
+    setIsBursting(true);
+    playSound("glitch");
+    setTimeout(() => setIsBursting(false), 600);
+  };
   const wrap = (value: number, limit: number) => {
     const span = limit * 2;
     return ((((value + limit) % span) + span) % span) - limit;
@@ -173,15 +182,15 @@ function CornerRing({
   const dx = useTransform([progress, time, mouseX], ([p, t, mx]) => {
     const driftAutoX = Math.sin((t as number) / 2800 + phase) * 35 + Math.sin((t as number) / 1400) * 12;
     const travelX = originX + driftX * (p as number) + phase * swayX * 0.7;
-    const parallaxX = (mx as number) * (phase * 0.05);
-    return wrap(travelX, fieldX) + driftAutoX + parallaxX;
+    const mouseReaction = (mx as number) * 65 * (Math.sin(phase) + 1.2);
+    return wrap(travelX, fieldX) + driftAutoX + mouseReaction;
   });
 
   const dy = useTransform([progress, time, mouseY], ([p, t, my]) => {
     const driftAutoY = Math.cos((t as number) / 3200 + phase) * 35 + Math.cos((t as number) / 1600) * 12;
     const travelY = originY + driftY * (p as number) + phase * swayY * 0.6;
-    const parallaxY = (my as number) * (phase * 0.05);
-    return wrap(travelY, fieldY) + driftAutoY + parallaxY;
+    const mouseReaction = (my as number) * 65 * (Math.cos(phase) + 1.2);
+    return wrap(travelY, fieldY) + driftAutoY + mouseReaction;
   });
 
   const idleRot = useTransform(time, (t) => Math.sin(t / 4000 + phase) * 4);
@@ -207,7 +216,9 @@ function CornerRing({
 
   return (
     <motion.div
-      className={styles.orbitalRing}
+      className={`${styles.orbitalRing} ${isBursting ? styles.ringBurstActive : ""}`}
+      onClick={handleRingClick}
+      whileHover={{ scale: 1.05, filter: "brightness(1.4) contrast(1.1)" }}
       style={{
         width: size,
         height: size,
@@ -219,10 +230,23 @@ function CornerRing({
         opacity: ringOpacity,
         filter: ringFilter,
         zIndex: ringZIndex,
+        cursor: "pointer",
+        pointerEvents: "auto",
       }}
     >
       <div className={`${styles.ringAura} ${styles[variant]}`} />
       <div className={`${styles.ringSpinner} ${styles[variant]} ${styles[`${variant}Asset`]}`} />
+      <AnimatePresence>
+        {isBursting && (
+          <motion.div
+            className={styles.ringBurstEffect}
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: [0.8, 1.8, 2.2], opacity: [0, 0.8, 0] }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
+          />
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }
@@ -360,13 +384,6 @@ export function AstroHero() {
   };
 
   useMotionValueEvent(scrollYProgress, "change", (v) => {
-    if (v > 0.002 && storyAnimationRef.current) {
-      storyAnimationRef.current.stop();
-      storyAnimationRef.current = null;
-    }
-    if (v > storyProgress.get()) {
-      storyProgress.set(v);
-    }
     interactionProgress.set(v);
   });
 
@@ -383,11 +400,17 @@ export function AstroHero() {
   });
   const time = useTime();
 
-  const ringsProgress = useTransform([smoothInteraction, time], ([v, t]) => {
+  const ringsProgress = useTransform([smoothInteraction, smoothStory, time], ([v, s, t]) => {
     const auto = (t as number) / 26000; 
     const scrollFactor = isMobile ? 2.5 : 2.8;
     const boost = (v as number) > 0.9 ? 1.2 : 1.0;
-    return auto + (v as number) * scrollFactor * boost;
+    
+    // El scroll solo afecta cuando la historia ha terminado (s >= 1)
+    // Usamos un multiplicador suave para evitar saltos si el usuario ya scrolleó
+    const scrollActivation = Math.max(0, Math.min(1, ((s as number) - 0.88) / 0.12));
+    const effectiveScroll = (v as number) * scrollActivation;
+    
+    return auto + effectiveScroll * scrollFactor * boost;
   });
 
   const swipeOpacity = useTransform(smoothStory, [0, 0.03, 0.2, 0.28], [0, 1, 1, 0]);
@@ -730,7 +753,7 @@ export function AstroHero() {
             <canvas ref={canvasRef} className={styles.spaceCanvas} />
 
             {rings.map((r) => (
-              <CornerRing
+                <CornerRing
                 key={r.id}
                 src={r.src}
                 size={r.size}
@@ -750,6 +773,7 @@ export function AstroHero() {
                 time={time}
                 mouseX={mouseX}
                 mouseY={mouseY}
+                playSound={playSound}
               />
             ))}
 
