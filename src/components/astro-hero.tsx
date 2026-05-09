@@ -721,7 +721,6 @@ export function AstroHero() {
               muted
               playsInline
               autoPlay
-              loop
               preload="auto"
               poster={isMobile ? "/astro/backgrounds/mobile-color.jpg" : "/astro/backgrounds/IMAGEN-FONDO-A-COLOR-WEB-GRANDE.jpg"}
               className={styles.bgVideo}

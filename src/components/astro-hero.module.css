@@ -1087,13 +1087,21 @@
     width: min(84vw, 26rem);
   }
 
-  .contactBlock {
-    bottom: 5vh;
-    gap: 1.2rem;
+  .ringContainer {
+    width: 60vmin !important;
+    height: 60vmin !important;
   }
 
-  .swipeCue {
-    top: 84%;
+  .contactBlock {
+    width: 92%;
+    bottom: 5%;
+    padding: 2rem 1.5rem;
+    transform: scale(1.1);
+  }
+
+  .mainTitle {
+    font-size: 14vw;
+    margin-top: 15vh;
   }
 
   .channelToggle {
