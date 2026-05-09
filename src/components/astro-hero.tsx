@@ -278,21 +278,54 @@ export function AstroHero() {
   const soundRefs = useRef<{ [key: string]: HTMLAudioElement }>({});
 
   const playSound = (type: "glitch" | "type" | "click" | "transition") => {
+    if (typeof window === "undefined") return;
     try {
       if (!soundRefs.current[type]) {
         const audio = new Audio();
-        if (type === "glitch") audio.src = "https://assets.mixkit.co/sfx/preview/mixkit-glitch-digital-interference-2466.mp3";
-        if (type === "type") audio.src = "https://assets.mixkit.co/sfx/preview/mixkit-single-key-press-in-a-laptop-2541.mp3";
-        if (type === "click") audio.src = "https://assets.mixkit.co/sfx/preview/mixkit-modern-click-box-check-1120.mp3";
-        if (type === "transition") audio.src = "https://assets.mixkit.co/sfx/preview/mixkit-robotic-mechanical-arm-2432.mp3";
-        audio.volume = type === "glitch" ? 0.1 : 0.2;
+        // Prioridad a archivos locales para estabilidad total
+        const localPath = `/astro/sfx/${type}.mp3`;
+        const fallbackUrls = {
+          glitch: "https://cdn.pixabay.com/audio/2022/03/10/audio_5e2c5d5e21.mp3",
+          type: "https://assets.mixkit.co/sfx/preview/mixkit-single-key-press-in-a-laptop-2541.mp3",
+          click: "https://assets.mixkit.co/sfx/preview/mixkit-modern-click-box-check-1120.mp3",
+          transition: "https://assets.mixkit.co/sfx/preview/mixkit-robotic-mechanical-arm-2432.mp3"
+        };
+        
+        audio.src = localPath; // Intentar local primero
+        audio.onerror = () => {
+          // Si falla local, intentar fallback
+          audio.src = fallbackUrls[type];
+        };
+        
+        audio.volume = type === "glitch" ? 0.15 : 0.25;
+        audio.preload = "auto";
         soundRefs.current[type] = audio;
       }
       const s = soundRefs.current[type];
       s.currentTime = 0;
-      s.play().catch(() => {});
+      const playPromise = s.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(() => {
+          // Fallback silencioso si el navegador aún bloquea
+        });
+      }
     } catch (e) { /* silent */ }
   };
+
+  // Desbloqueo de audio global tras primer interacción
+  useEffect(() => {
+    const unlock = () => {
+      playSound("click"); // Intento silencioso para despertar el AudioContext
+      window.removeEventListener("click", unlock);
+      window.removeEventListener("keydown", unlock);
+    };
+    window.addEventListener("click", unlock);
+    window.addEventListener("keydown", unlock);
+    return () => {
+      window.removeEventListener("click", unlock);
+      window.removeEventListener("keydown", unlock);
+    };
+  }, []);
   const PRELOADER_ASSETS = useMemo(() => [
     ...ELEMENTS,
     localEditionData.logo,
