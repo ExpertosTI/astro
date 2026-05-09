@@ -33,9 +33,22 @@ if [ ! -f ".env" ]; then
     fi
 fi
 
-# 3. Build locally (Swarm has no registry)
-echo "🛠 Building image..."
-docker compose build
+# 3. Build locally (Optimized for low-resource VPS)
+echo "🛠 Building image (Limited Resources)..."
+
+# Detect cores and leave one free for the system/web traffic
+CPU_CORES=$(nproc)
+if [ "$CPU_CORES" -gt 1 ]; then
+    BUILD_CORES="0-$((CPU_CORES-2))"
+    echo "⚙️ Restricting build to cores $BUILD_CORES to keep server responsive..."
+    LIMIT_CMD="taskset -c $BUILD_CORES"
+else
+    LIMIT_CMD=""
+fi
+
+# Use Nice (CPU) and Ionice (I/O) to avoid starving other services (like Odoo or Nginx)
+export DOCKER_BUILDKIT=1
+$LIMIT_CMD nice -n 19 ionice -c 3 docker compose build --pull
 
 # 4. Ensure RenaceNet exists
 echo "🌐 Checking network..."
