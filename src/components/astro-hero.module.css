@@ -292,7 +292,7 @@
   inset: 0;
   z-index: 1;
   pointer-events: none;
-  background: url("/astro/backgrounds/desktop-color.jpg") center/cover no-repeat;
+  background: url("/astro/backgrounds/IMAGEN-FONDO-A-COLOR-WEB-GRANDE.jpg") center/cover no-repeat;
   opacity: 1;
   transition: opacity 320ms ease;
 }
@@ -330,7 +330,7 @@
   inset: 0;
   z-index: 2;
   pointer-events: none;
-  background: url("/astro/backgrounds/desktop-bw.jpg") center 18%/cover no-repeat;
+  background: url("/astro/backgrounds/IMAGEN-FONDO-B-N-WEB-GRANDE.jpg") center 18%/cover no-repeat;
   filter: grayscale(1) brightness(0.82) contrast(1.02);
   will-change: transform;
 }
@@ -340,7 +340,7 @@
   inset: 0;
   z-index: 3;
   pointer-events: none;
-  background: url("/astro/backgrounds/desktop-color.jpg") center 18%/cover no-repeat;
+  background: url("/astro/backgrounds/IMAGEN-FONDO-A-COLOR-WEB-GRANDE.jpg") center 18%/cover no-repeat;
   mix-blend-mode: screen;
   will-change: transform, opacity;
 }

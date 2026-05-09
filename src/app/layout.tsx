@@ -30,10 +30,7 @@ export const metadata: Metadata = {
   title: `ASTRO SDQ — ${editionData.location.replace("\n", " ")}`,
   description: `${editionData.title} · ${editionData.coordinates}`,
   icons: {
-    icon: [
-      { url: "/favicon.ico" },
-      { url: "/favicon.ico", sizes: "32x32", type: "image/x-icon" },
-    ],
+    icon: "/astro/logo-icon.png",
     apple: "/astro/logo-icon.png",
   },
 };
