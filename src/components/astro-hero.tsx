@@ -24,7 +24,7 @@ const PRELOADER_SEQUENCE = [...ELEMENTS, localEditionData.logo];
 const PRELOADER_LOGO_STEP = PRELOADER_SEQUENCE.length - 1;
 const VIDEO_SCRUB_START = 1.2;
 const VIDEO_SCRUB_END_PADDING = 0.25;
-const MOBILE_WEBM_SRC: string | null = null;
+const MOBILE_WEBM_SRC: string | null = "/astro/backgrounds/video.webm";
 const NOTIFY_STORAGE_KEY = "astro-notify-leads";
 const MAX_NOTIFY_LEADS = 100;
 
@@ -232,8 +232,8 @@ export function AstroHero() {
   const videoRef  = useRef<HTMLVideoElement | null>(null);
   const [preloaderDone, setPreloaderDone] = useState(false);
   const [videoReady, setVideoReady]       = useState(false);
+  const [preloaderAssetsLoaded, setPreloaderAssetsLoaded] = useState(false);
   const [introReady, setIntroReady]       = useState(false);
-  const [assetsLoaded, setAssetsLoaded]   = useState(false);
   const [viewport, setViewport] = useState({ w: 1920, h: 1080 });
   const [isMobile, setIsMobile] = useState(false);
   const [contactChannel, setContactChannel] = useState<ContactChannel>("ig");
@@ -268,11 +268,16 @@ export function AstroHero() {
       s.play().catch(() => {});
     } catch (e) { /* silent */ }
   };
-  const CRITICAL_ASSETS = useMemo(() => [
+  const PRELOADER_ASSETS = useMemo(() => [
     ...ELEMENTS,
     localEditionData.logo,
+  ], []);
+
+  const SECONDARY_ASSETS = useMemo(() => [
     "/astro/backgrounds/desktop-bw.jpg",
     "/astro/backgrounds/desktop-color.jpg",
+    "/astro/backgrounds/mobile-bw.jpg",
+    "/astro/backgrounds/mobile-color.jpg",
     "/astro/rings/ring-1.png",
     "/astro/rings/ring-2.png",
     "/astro/rings/ring-3.png",
@@ -281,30 +286,36 @@ export function AstroHero() {
 
   useEffect(() => {
     let loadedCount = 0;
-    const total = CRITICAL_ASSETS.length;
+    const total = PRELOADER_ASSETS.length;
 
-    CRITICAL_ASSETS.forEach(src => {
+    PRELOADER_ASSETS.forEach(src => {
       const img = new window.Image();
       img.src = src;
       img.onload = () => {
         loadedCount++;
-        if (loadedCount >= total) setAssetsLoaded(true);
+        if (loadedCount >= total) setPreloaderAssetsLoaded(true);
       };
       img.onerror = () => {
         loadedCount++;
-        if (loadedCount >= total) setAssetsLoaded(true);
+        if (loadedCount >= total) setPreloaderAssetsLoaded(true);
       };
     });
-  }, [CRITICAL_ASSETS]);
+
+    // Load secondary assets in background without blocking preloader
+    SECONDARY_ASSETS.forEach(src => {
+      const img = new window.Image();
+      img.src = src;
+    });
+  }, [PRELOADER_ASSETS, SECONDARY_ASSETS]);
 
   useEffect(() => {
-    const isReady = assetsLoaded && (isMobile ? true : videoReady);
+    const isReady = preloaderAssetsLoaded && (isMobile ? true : videoReady);
     
     if (isReady) {
-      const t = setTimeout(() => setIntroReady(true), 800); 
+      const t = setTimeout(() => setIntroReady(true), 400); 
       return () => clearTimeout(t);
     }
-  }, [assetsLoaded, videoReady, isMobile]);
+  }, [preloaderAssetsLoaded, videoReady, isMobile]);
 
   useEffect(() => {
     const onResize = () => {
@@ -658,7 +669,7 @@ export function AstroHero() {
               onError={() => setVideoReady(true)}
             >
               {MOBILE_WEBM_SRC && <source src={MOBILE_WEBM_SRC} type="video/webm" />}
-              <source src="/astro/backgrounds/video.mp4" type="video/mp4" />
+              <source src="/astro/backgrounds/video-optimized.mp4" type="video/mp4" />
             </motion.video>
 
             {!isMobile && (
