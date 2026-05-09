@@ -1,11 +1,19 @@
-# RenaceTech .gitignore
+# Diseño y Assets Raw
+300ppi/
+AI/
+ANILLOS/
+ELEMENTOS/
+FONDOS/
+FONT/
 docs/
-.DS_Store
-*.pem
+
+# Desarrollo
 node_modules/
 .next/
-# out/
-build/
-.env*
-.vercel
-*.tsbuildinfo
+site/node_modules/
+site/.next/
+site/.env*
+
+# Sistema
+.DS_Store
+*.log
