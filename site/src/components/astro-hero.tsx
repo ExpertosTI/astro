@@ -23,6 +23,13 @@ export default function AstroHero() {
 
   useEffect(() => {
     setMounted(true);
+    
+    // Forzar scroll al inicio para evitar solapamientos por restauración del navegador
+    if ('scrollRestoration' in window.history) {
+      window.history.scrollRestoration = 'manual';
+    }
+    window.scrollTo(0, 0);
+
     const updateSize = () => {
       setViewport({ w: window.innerWidth, h: window.innerHeight });
       setIsMobile(window.innerWidth < 768);
@@ -55,14 +62,12 @@ export default function AstroHero() {
 
   const playSound = (type: string) => {
     console.log("SFX:", type);
-    // Lógica de sonido aquí si se desea re-integrar
   };
 
   if (!mounted) return null;
 
   return (
     <main className={`${styles.page} ${preloaderDone ? styles.pageMounted : styles.locked}`}>
-      {/* El preloader bloquea el scroll internamente vía document.body.style */}
       {!preloaderDone && (
         <Preloader 
           onDone={() => setPreloaderDone(true)} 
@@ -94,15 +99,18 @@ export default function AstroHero() {
             desktopFrameY={desktopFrameY}
           />
 
-          <OrbitalSystem
-            progress={smoothStory}
-            time={time}
-            mouseX={mouseX}
-            mouseY={mouseY}
-            playSound={playSound as any}
-            isMobile={isMobile}
-            viewport={viewport}
-          />
+          {/* Solo renderizamos si tenemos viewport para evitar anillos en el centro (0,0) */}
+          {viewport.w > 0 && (
+            <OrbitalSystem
+              progress={smoothStory}
+              time={time}
+              mouseX={mouseX}
+              mouseY={mouseY}
+              playSound={playSound as any}
+              isMobile={isMobile}
+              viewport={viewport}
+            />
+          )}
 
           <NarrativeLayers
             titleOpacity={titleOpacity}
@@ -123,7 +131,6 @@ export default function AstroHero() {
             isMobile={isMobile}
           />
 
-          {/* HUD corners */}
           <div className={styles.hudOverlay} aria-hidden="true">
             <div className={`${styles.hudCorner} ${styles.topLeft}`} />
             <div className={`${styles.hudCorner} ${styles.topRight}`} />
