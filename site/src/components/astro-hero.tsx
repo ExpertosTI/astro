@@ -45,7 +45,7 @@ export default function AstroHero() {
   const {
     smoothStory, time,
     titleOpacity, titleY, editionOpacity,
-    storyOpacity, storyY, coordsOpacity, coordsSkew,
+    storyOpacity, storyY, coordsOpacity, coordsY, coordsSkew,
     contactOpacity, contactY,
     desktopColorReveal, desktopLowerMaskOpacity, desktopFrameScale, desktopFrameY, mobileVideoScale,
     desktopNebulaOpacity, desktopNebulaX, desktopNebulaY, desktopNebulaScale, desktopNebulaRotate,
@@ -111,6 +111,7 @@ export default function AstroHero() {
             storyOpacity={storyOpacity}
             storyY={storyY}
             coordsOpacity={coordsOpacity}
+            coordsY={coordsY}
             coordsSkew={coordsSkew}
             isGlitchingOut={isGlitchingOut}
             isMobile={isMobile}
