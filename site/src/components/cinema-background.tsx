@@ -35,17 +35,14 @@ export default function CinemaBackground({
   desktopLowerMaskOpacity, desktopFrameScale, desktopFrameY
 }: CinemaBackgroundProps) {
   const [mounted, setMounted] = useState(false);
-  const [hasError, setHasError] = useState(false);
 
   useEffect(() => {
     setMounted(true);
-  }, []);
-
-  const handleVideoError = () => {
-    console.error("Video load error: Enforcing high-fidelity fallback.");
-    setHasError(true);
-    onVideoReady(); // Permite que el preloader termine
-  };
+    // Si es escritorio, marcamos como "videoReady" inmediatamente ya que no cargamos video
+    if (typeof window !== "undefined" && window.innerWidth >= 768) {
+      onVideoReady();
+    }
+  }, [onVideoReady]);
 
   if (!mounted) return null;
 
@@ -53,29 +50,29 @@ export default function CinemaBackground({
 
   return (
     <>
-      {/* Base sólida: El poster siempre está aquí debajo */}
+      {/* Capa Base */}
       <div 
         className={styles.bgFallback} 
         style={{ 
           backgroundImage: `url(${poster})`,
-          opacity: 1, // Siempre visible como base
+          opacity: 1,
           zIndex: 1
         }}
       />
       
-      {!hasError && (
+      {/* El video SOLO se carga en Móvil */}
+      {isMobile && (
         <motion.video
-          key={isMobile ? "mobile" : "desktop"}
           ref={videoRef}
           muted
           playsInline
           autoPlay
-          loop={isMobile}
+          loop
           preload="auto"
           poster={poster}
           className={styles.bgVideo}
           style={{ 
-            scale: isMobile ? (mobileVideoScale as any) : 1,
+            scale: (mobileVideoScale as any),
             opacity: videoReady ? 1 : 0,
             zIndex: 2
           }}
@@ -83,31 +80,28 @@ export default function CinemaBackground({
           onLoadedData={onVideoReady}
           onCanPlay={onVideoReady}
           onCanPlayThrough={onVideoReady}
-          onError={handleVideoError}
+          onError={onVideoReady}
         >
-          <source 
-            src={isMobile ? ASTRO_CONFIG.videos.mobile : ASTRO_CONFIG.videos.desktop} 
-            type={isMobile ? "video/webm" : "video/mp4"} 
-          />
+          <source src={ASTRO_CONFIG.videos.mobile} type="video/webm" />
         </motion.video>
       )}
 
       {!isMobile && (
         <>
-          {/* Capas de efectos: Solo se ven si el video está listo o si hay error (como fallback) */}
+          {/* En Escritorio usamos solo los frames de alta resolución con scroll FX */}
           <motion.div 
             className={styles.desktopBwFrame} 
             style={{ 
               scale: desktopFrameScale, 
               y: desktopFrameY,
               zIndex: 3,
-              opacity: (videoReady || hasError) ? 1 : 0
+              opacity: 1
             }} 
           />
           <motion.div 
             className={styles.desktopColorFrame} 
             style={{ 
-              opacity: hasError ? 1 : desktopColorReveal, 
+              opacity: desktopColorReveal, 
               scale: desktopFrameScale, 
               y: desktopFrameY,
               zIndex: 4
@@ -116,7 +110,7 @@ export default function CinemaBackground({
           <motion.div
             className={styles.desktopNebulaFx}
             style={{
-              opacity: hasError ? 0.6 : desktopNebulaOpacity,
+              opacity: desktopNebulaOpacity,
               x: desktopNebulaX,
               y: desktopNebulaY,
               scale: desktopNebulaScale,
@@ -127,7 +121,7 @@ export default function CinemaBackground({
           <motion.div
             className={styles.desktopRayFx}
             style={{
-              opacity: hasError ? 0.4 : desktopRayOpacity,
+              opacity: desktopRayOpacity,
               x: desktopRayX,
               y: desktopRayY,
               scaleX: desktopRayScaleX,
