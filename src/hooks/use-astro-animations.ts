@@ -50,12 +50,20 @@ export function useAstroAnimations(isMobile: boolean, videoReady: boolean, video
   const cameraRotateX = useTransform(smoothInteraction, [0, 0.5, 1], [1.2, 0, -1.2]);
   const cameraRotateY = useTransform(smoothInteraction, [0, 0.5, 1], [-0.8, 0, 0.8]);
 
-  // States
+  // States for persistence
+  const [hasRevealedTitle, setHasRevealedTitle] = useState(false);
+  const [hasRevealedCoords, setHasRevealedCoords] = useState(false);
   const [isGlitchingOut, setIsGlitchingOut] = useState(false);
 
   useMotionValueEvent(smoothStory, "change", (v) => {
-    // Restauración de glitches cinemáticos
-    setIsGlitchingOut((v > 0.08 && v < 0.12) || (v > 0.40 && v < 0.50));
+    // Marcamos como revelado una vez se pasa el umbral
+    if (v > 0.15) setHasRevealedTitle(true);
+    if (v > 0.55) setHasRevealedCoords(true);
+
+    // Los glitches solo ocurren durante la transición activa si NO se han revelado permanentemente
+    const titleGlitch = !hasRevealedTitle && v > 0.08 && v < 0.12;
+    const coordsGlitch = !hasRevealedCoords && v > 0.40 && v < 0.50;
+    setIsGlitchingOut(titleGlitch || coordsGlitch);
 
     // Scrubbing de video
     if (!isMobile && videoRef.current && videoReady) {
