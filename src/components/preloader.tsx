@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
 import { editionData } from "@/content/edition";
 import { ASTRO_CONFIG } from "@/config/astro-config";
@@ -13,10 +13,17 @@ export default function Preloader({ onDone, ready }: { onDone: () => void; ready
   const [step, setStep] = useState(0);
   const [isExiting, setIsExiting] = useState(false);
 
-  // Bloqueo de scroll estricto
+  // Bloqueo de scroll agresivo
   useEffect(() => {
-    document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = "unset"; };
+    const html = document.documentElement;
+    const body = document.body;
+    html.style.overflow = "hidden";
+    body.style.overflow = "hidden";
+    
+    return () => {
+      html.style.overflow = "";
+      body.style.overflow = "";
+    };
   }, []);
 
   useEffect(() => {
@@ -28,11 +35,11 @@ export default function Preloader({ onDone, ready }: { onDone: () => void; ready
             setTimeout(onDone, 950);
             return s;
           }
-          return 0;
+          return s; // Se queda en el logo hasta que 'ready' sea true
         }
         return s + 1;
       });
-    }, 850); // Ritmo original pausado
+    }, 850); 
     return () => clearInterval(interval);
   }, [ready, isExiting, onDone]);
 
@@ -60,28 +67,28 @@ export default function Preloader({ onDone, ready }: { onDone: () => void; ready
       </div>
       
       <div className={styles.preloaderInner}>
-        <AnimatePresence mode="wait">
+        {SEQUENCE.map((src, i) => (
           <motion.div
-            key={step}
+            key={src}
             className={styles.preloaderElement}
             initial={{ opacity: 0, scale: 0.88 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 1.12 }}
+            animate={i === step ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.88 }}
             transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
           >
             <div style={{ position: "relative", width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <img
-                src={SEQUENCE[step]}
-                alt={`loading-${step}`}
-                style={{ 
-                    objectFit: "contain", 
-                    width: step === LOGO_STEP ? "74%" : "100%",
-                    height: step === LOGO_STEP ? "74%" : "100%"
-                }}
+                    src={src}
+                    alt={`loading-${i}`}
+                    style={{ 
+                        objectFit: "contain", 
+                        width: i === LOGO_STEP ? "74%" : "100%",
+                        height: i === LOGO_STEP ? "74%" : "100%",
+                        position: "absolute"
+                    }}
                 />
             </div>
           </motion.div>
-        </AnimatePresence>
+        ))}
       </div>
       
       <div className={styles.scanline} style={{ opacity: 0.15 }} />
