@@ -23,7 +23,7 @@ export default function Preloader({ onDone, ready }: { onDone: () => void; ready
         }
         return s + 1;
       });
-    }, 450);
+    }, 600);
     return () => clearInterval(interval);
   }, [ready, onDone]);
 
