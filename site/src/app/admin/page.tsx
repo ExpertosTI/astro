@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { insforge } from "@/lib/insforge";
+import { ASTRO_CONFIG } from "@/config/astro-config";
 import styles from "./admin.module.css";
 
 export default function AdminPage() {
@@ -13,8 +14,7 @@ export default function AdminPage() {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    // Password simple para esta versión
-    if (password === "astro2026") {
+    if (password === ASTRO_CONFIG.project.adminPass) {
       setIsAuthenticated(true);
       fetchData();
     } else {

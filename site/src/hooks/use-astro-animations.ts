@@ -12,18 +12,20 @@ export function useAstroAnimations(isMobile: boolean, videoReady: boolean, video
   const mouseY = useMotionValue(0);
   const smoothInteraction = useSpring(useTransform(time, [0, 100], [0, 100]), { stiffness: 40, damping: 25 });
 
-  // Narrative Transforms
+  // Narrative Transforms (Responsive)
   const titleOpacity = useTransform(smoothStory, [0.02, 0.10], [0, 1]);
-  const titleY = useTransform(smoothStory, [0.85, 0.95], ["22vh", "8vh"]); 
+  const titleY = useTransform(smoothStory, [0, 0.1, 0.85, 0.95], isMobile ? ["15vh", "10vh", "10vh", "5vh"] : ["25vh", "22vh", "22vh", "8vh"]); 
+  
   const editionOpacity = useTransform(smoothStory, [0.05, 0.15, 0.30, 0.40], [0, 1, 1, 0]);
   
   const storyOpacity = useTransform(smoothStory, [0.35, 0.45], [0, 1]);
-  const storyY = useTransform(smoothStory, [0.85, 0.95], ["48vh", "32vh"]); 
+  const storyY = useTransform(smoothStory, [0.3, 0.45, 0.85, 0.95], isMobile ? ["45vh", "40vh", "40vh", "35vh"] : ["52vh", "48vh", "48vh", "32vh"]); 
+  
   const coordsOpacity = useTransform(smoothStory, [0.45, 0.55, 0.75, 0.85], [0, 1, 1, 0]);
   const coordsSkew = useTransform(smoothStory, [0.45, 0.55, 0.65], isMobile ? [6, 0, 0] : [4, 0, 0]);
   
   const contactOpacity = useTransform(smoothStory, [0.90, 0.98], [0, 1]);
-  const contactY = useTransform(smoothStory, [0.90, 1], ["75vh", "65vh"]);
+  const contactY = useTransform(smoothStory, [0.85, 1], isMobile ? ["70vh", "60vh"] : ["75vh", "65vh"]);
 
   // Cinema FX
   const desktopColorReveal = useTransform(smoothStory, [0.06, 0.56], [0, 1]);
