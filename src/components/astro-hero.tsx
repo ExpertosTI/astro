@@ -1,128 +1,138 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import styles from "./astro-hero.module.css";
-
-// Modular Components
-import Preloader from "./preloader";
+import { useEffect, useState, useRef } from "react";
+import { motion, useMotionValue } from "framer-motion";
+import { useAstroAnimations } from "@/hooks/use-astro-animations";
 import CinemaBackground from "./cinema-background";
 import OrbitalSystem from "./orbital-system";
 import NarrativeLayers from "./narrative-layers";
 import ContactSystem from "./contact-system";
-import AdminAccessModal from "./admin-access-modal";
-
-// Hooks & Services
-import { useViewport } from "@/hooks/use-viewport";
-import { useAstroAnimations } from "@/hooks/use-astro-animations";
-import { AudioService } from "@/services/audio-service";
-import { initStarAnimation } from "@/utils/star-animation";
+import Preloader from "./preloader";
+import styles from "./astro-hero.module.css";
 
 export default function AstroHero() {
-  const { isMobile, viewport } = useViewport();
+  const [mounted, setMounted] = useState(false);
   const [preloaderDone, setPreloaderDone] = useState(false);
   const [videoReady, setVideoReady] = useState(false);
-  const [showAdminModal, setShowAdminModal] = useState(false);
-
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-
-  // Animation Orchestrator
-  const anim = useAstroAnimations(isMobile, videoReady, videoRef);
+  const [viewport, setViewport] = useState({ w: 0, h: 0 });
+  const [isMobile, setIsMobile] = useState(false);
+  
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const mouseX = useMotionValue(0.5);
+  const mouseY = useMotionValue(0.5);
 
   useEffect(() => {
-    if (canvasRef.current) {
-      return initStarAnimation(canvasRef.current, isMobile);
-    }
-  }, [isMobile]);
+    setMounted(true);
+    const updateSize = () => {
+      setViewport({ w: window.innerWidth, h: window.innerHeight });
+      setIsMobile(window.innerWidth < 768);
+    };
+    updateSize();
+    window.addEventListener("resize", updateSize);
+    
+    const handleMouseMove = (e: MouseEvent) => {
+      mouseX.set(e.clientX / window.innerWidth - 0.5);
+      mouseY.set(e.clientY / window.innerHeight - 0.5);
+    };
+    window.addEventListener("mousemove", handleMouseMove);
+    
+    return () => {
+      window.removeEventListener("resize", updateSize);
+      window.removeEventListener("mousemove", handleMouseMove);
+    };
+  }, [mouseX, mouseY]);
+
+  const {
+    smoothStory, time,
+    titleOpacity, titleY, editionOpacity,
+    storyOpacity, storyY, coordsOpacity, coordsSkew,
+    contactOpacity, contactY,
+    desktopColorReveal, desktopLowerMaskOpacity, desktopFrameScale, desktopFrameY, mobileVideoScale,
+    desktopNebulaOpacity, desktopNebulaX, desktopNebulaY, desktopNebulaScale, desktopNebulaRotate,
+    desktopRayOpacity, desktopRayX, desktopRayY, desktopRayScaleX, desktopRayScaleY,
+    isGlitchingOut
+  } = useAstroAnimations(isMobile, videoReady, videoRef);
+
+  const playSound = (type: string) => {
+    console.log("SFX:", type);
+    // Lógica de sonido aquí si se desea re-integrar
+  };
+
+  if (!mounted) return null;
 
   return (
-    <>
-      <AnimatePresence>
-        {!preloaderDone && <Preloader onDone={() => setPreloaderDone(true)} ready={videoReady} />}
-      </AnimatePresence>
+    <main className={`${styles.page} ${preloaderDone ? styles.pageMounted : ""}`}>
+      {/* El preloader bloquea el scroll internamente vía document.body.style */}
+      {!preloaderDone && (
+        <Preloader 
+          onDone={() => setPreloaderDone(true)} 
+          ready={videoReady} 
+        />
+      )}
 
-      <main className={`${styles.page} ${preloaderDone ? styles.pageMounted : ""}`}>
-        <section className={styles.heroShell}>
-          <motion.div 
-            className={styles.stage} 
-            style={{ rotateX: anim.cameraRotateX, rotateY: anim.cameraRotateY, zIndex: 1 }}
-          >
-            <CinemaBackground 
-              videoRef={videoRef}
-              isMobile={isMobile}
-              videoReady={videoReady}
-              onVideoReady={() => setVideoReady(true)}
-              mobileVideoScale={anim.mobileVideoScale}
-              desktopColorReveal={anim.desktopColorReveal}
-              desktopNebulaOpacity={anim.desktopNebulaOpacity}
-              desktopNebulaX={anim.desktopNebulaX}
-              desktopNebulaY={anim.desktopNebulaY}
-              desktopNebulaScale={anim.desktopNebulaScale}
-              desktopNebulaRotate={anim.desktopNebulaRotate}
-              desktopRayOpacity={anim.desktopRayOpacity}
-              desktopRayX={anim.desktopRayX}
-              desktopRayY={anim.desktopRayY}
-              desktopRayScaleX={anim.desktopRayScaleX}
-              desktopRayScaleY={anim.desktopRayScaleY}
-              desktopLowerMaskOpacity={anim.desktopLowerMaskOpacity}
-              desktopFrameScale={anim.desktopFrameScale}
-              desktopFrameY={anim.desktopFrameY}
-            />
+      <section className={styles.heroShell}>
+        <div className={styles.stage}>
+          <CinemaBackground
+            videoRef={videoRef}
+            isMobile={isMobile}
+            videoReady={videoReady}
+            onVideoReady={() => setVideoReady(true)}
+            mobileVideoScale={mobileVideoScale}
+            desktopColorReveal={desktopColorReveal}
+            desktopNebulaOpacity={desktopNebulaOpacity}
+            desktopNebulaX={desktopNebulaX}
+            desktopNebulaY={desktopNebulaY}
+            desktopNebulaScale={desktopNebulaScale}
+            desktopNebulaRotate={desktopNebulaRotate}
+            desktopRayOpacity={desktopRayOpacity}
+            desktopRayX={desktopRayX}
+            desktopRayY={desktopRayY}
+            desktopRayScaleX={desktopRayScaleX}
+            desktopRayScaleY={desktopRayScaleY}
+            desktopLowerMaskOpacity={desktopLowerMaskOpacity}
+            desktopFrameScale={desktopFrameScale}
+            desktopFrameY={desktopFrameY}
+          />
 
-            <canvas ref={canvasRef} className={styles.spaceCanvas} />
+          <OrbitalSystem
+            progress={smoothStory}
+            time={time}
+            mouseX={mouseX}
+            mouseY={mouseY}
+            playSound={playSound as any}
+            isMobile={isMobile}
+            viewport={viewport}
+          />
 
-            <div 
-              className={styles.secretTrigger} 
-              onDoubleClick={() => { setShowAdminModal(true); AudioService.play("glitch"); }} 
-            />
+          <NarrativeLayers
+            titleOpacity={titleOpacity}
+            titleY={titleY}
+            editionOpacity={editionOpacity}
+            storyOpacity={storyOpacity}
+            storyY={storyY}
+            coordsOpacity={coordsOpacity}
+            coordsSkew={coordsSkew}
+            isGlitchingOut={isGlitchingOut}
+            isMobile={isMobile}
+          />
 
-            <OrbitalSystem 
-              isMobile={isMobile}
-              viewport={viewport}
-              progress={anim.smoothStory}
-              time={anim.time}
-              mouseX={anim.mouseX}
-              mouseY={anim.mouseY}
-              playSound={AudioService.play}
-            />
+          <ContactSystem
+            opacity={contactOpacity}
+            y={contactY}
+            isMobile={isMobile}
+          />
 
-            <NarrativeLayers 
-              isMobile={isMobile}
-              isGlitchingOut={anim.isGlitchingOut}
-              titleOpacity={anim.titleOpacity}
-              titleY={anim.titleY}
-              editionOpacity={anim.editionOpacity}
-              storyOpacity={anim.storyOpacity}
-              storyY={anim.storyY}
-              coordsOpacity={anim.coordsOpacity}
-              coordsSkew={anim.coordsSkew}
-            />
+          {/* HUD corners */}
+          <div className={styles.hudOverlay} aria-hidden="true">
+            <div className={`${styles.hudCorner} ${styles.topLeft}`} />
+            <div className={`${styles.hudCorner} ${styles.topRight}`} />
+            <div className={`${styles.hudCorner} ${styles.bottomLeft}`} />
+            <div className={`${styles.hudCorner} ${styles.bottomRight}`} />
+          </div>
 
-            <ContactSystem 
-              isMobile={isMobile}
-              opacity={anim.contactOpacity}
-              y={anim.contactY}
-            />
-
-            <div className={styles.grain} aria-hidden="true" />
-            
-            {/* HUD Overlay */}
-            <div className={styles.hudOverlay} aria-hidden="true">
-              <div className={`${styles.hudCorner} ${styles.topLeft}`} />
-              <div className={`${styles.hudCorner} ${styles.topRight}`} />
-              <div className={`${styles.hudCorner} ${styles.bottomLeft}`} />
-              <div className={`${styles.hudCorner} ${styles.bottomRight}`} />
-            </div>
-          </motion.div>
-        </section>
-      </main>
-
-      <AdminAccessModal 
-        isOpen={showAdminModal} 
-        onClose={() => setShowAdminModal(false)}
-        onSuccess={() => setShowAdminModal(false)}
-      />
-    </>
+          <div className={styles.grain} />
+        </div>
+      </section>
+    </main>
   );
 }
