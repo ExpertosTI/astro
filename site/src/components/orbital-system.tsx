@@ -13,6 +13,7 @@ interface RingData {
   originX: number | string;
   originY: number | string;
   variant: string;
+  depth: number;
 }
 
 interface CornerRingProps extends RingData {
@@ -25,7 +26,7 @@ interface CornerRingProps extends RingData {
 }
 
 function CornerRing({
-  src, size, rotZ, speed, originX, originY, variant,
+  src, size, rotZ, speed, originX, originY, variant, depth,
   progress, time, mouseX, mouseY, playSound, onBurst
 }: CornerRingProps) {
   const [isBursting, setIsBursting] = useState(false);
@@ -54,6 +55,7 @@ function CornerRing({
         x: floatX,
         y: floatY,
         rotateZ: floatRotate,
+        zIndex: (depth as any),
       }}
     >
       <motion.div
@@ -98,6 +100,7 @@ export default function OrbitalSystem({
       originX: `${10 + Math.random() * 80}%`,
       originY: `${10 + Math.random() * 80}%`,
       variant: ["ring1", "ring2", "ring3", "ring4"][newId % 4],
+      depth: Math.floor(Math.random() * 10) + 100, // Z-Index dinámico
     };
     setDynamicRings(prev => [...prev, newRing]);
     playSound("transition");
@@ -106,10 +109,10 @@ export default function OrbitalSystem({
   useEffect(() => {
     if (!hasInitialized.current && viewport.w > 0) {
       setDynamicRings([
-        { id: 1, src: "/astro/rings/ring-1.png", size: isMobile ? "32vmin" : "38vmin", rotZ: 12, speed: 1.2, originX: "15%", originY: "15%", variant: "ring1" },
-        { id: 2, src: "/astro/rings/ring-2.png", size: isMobile ? "32vmin" : "38vmin", rotZ: -18, speed: -1.4, originX: "85%", originY: "18%", variant: "ring2" },
-        { id: 3, src: "/astro/rings/ring-3.png", size: isMobile ? "32vmin" : "38vmin", rotZ: 48, speed: 1.6, originX: "18%", originY: "82%", variant: "ring3" },
-        { id: 4, src: "/astro/rings/ring-4.png", size: isMobile ? "32vmin" : "38vmin", rotZ: -10, speed: -1.1, originX: "82%", originY: "85%", variant: "ring4" },
+        { id: 1, src: "/astro/rings/ring-1.png", size: isMobile ? "32vmin" : "38vmin", rotZ: 12, speed: 1.2, originX: "15%", originY: "15%", variant: "ring1", depth: 105 },
+        { id: 2, src: "/astro/rings/ring-2.png", size: isMobile ? "32vmin" : "38vmin", rotZ: -18, speed: -1.4, originX: "85%", originY: "18%", variant: "ring2", depth: 95 },
+        { id: 3, src: "/astro/rings/ring-3.png", size: isMobile ? "32vmin" : "38vmin", rotZ: 48, speed: 1.6, originX: "18%", originY: "82%", variant: "ring3", depth: 110 },
+        { id: 4, src: "/astro/rings/ring-4.png", size: isMobile ? "32vmin" : "38vmin", rotZ: -10, speed: -1.1, originX: "82%", originY: "85%", variant: "ring4", depth: 90 },
       ]);
       hasInitialized.current = true;
     }
