@@ -10,6 +10,11 @@ import { editionData as localEditionData } from "@/content/edition";
 import { insforge } from "@/lib/insforge";
 import styles from "./astro-hero.module.css";
 
+// Modular components
+import OrbitalSystem from "./orbital-system";
+import AdminAccessModal from "./admin-access-modal";
+import CinemaBackground from "./cinema-background";
+
 /* ────────────────────────────────────────────────────────
    PRELOADER: loop hasta que ready (video cargado) + 1 ciclo completo
 ──────────────────────────────────────────────────────── */
@@ -476,6 +481,7 @@ export function AstroHero() {
   const desktopFrameY = useTransform(smoothStory, [0, 1], [-8, 12]);
   const cameraRotateX = useTransform(smoothInteraction, [0, 0.5, 1], [1.2, 0, -1.2]);
   const cameraRotateY = useTransform(smoothInteraction, [0, 0.5, 1], [-0.8, 0, 0.8]);
+  const mobileVideoScale = useTransform(smoothStory, [0.8, 1], [1.18, 1.25]);
 
   const editionOpacity = useTransform(smoothStory, [0.05, 0.15, 0.30, 0.40], [0, 1, 1, 0]);
   const coordsOpacity = useTransform(smoothStory, [0.45, 0.55, 0.75, 0.85], [0, 1, 1, 0]);
@@ -585,182 +591,56 @@ export function AstroHero() {
     setDynamicRings(prev => [...prev, newRing]);
     playSound("transition");
   };
-
-  useEffect(() => {
-    setDynamicRings([
-      { id: 1, src: "/astro/rings/ring-1.png", size: isMobile ? "35vmin" : "38vmin", rotZ: 12, speed: 42, originX: -Math.round(viewport.w * 0.32), originY: -Math.round(viewport.h * 0.22), fieldX: Math.round(viewport.w * 0.66), fieldY: Math.round(viewport.h * 0.5), driftX: Math.round(viewport.w * 0.24), driftY: Math.round(viewport.h * 0.16), swayX: Math.round(viewport.w * 0.08), swayY: Math.round(viewport.h * 0.06), phase: Math.PI * 1.08, variant: "ring1" },
-      { id: 2, src: "/astro/rings/ring-2.png", size: isMobile ? "35vmin" : "38vmin", rotZ: -18, speed: -36, originX: Math.round(viewport.w * 0.68), originY: -Math.round(viewport.h * 0.2), fieldX: Math.round(viewport.w * 0.68), fieldY: Math.round(viewport.h * 0.5), driftX: -Math.round(viewport.w * 0.26), driftY: Math.round(viewport.h * 0.14), swayX: Math.round(viewport.w * 0.07), swayY: Math.round(viewport.h * 0.06), phase: Math.PI * 0.14, variant: "ring2" },
-      { id: 3, src: "/astro/rings/ring-3.png", size: isMobile ? "35vmin" : "38vmin", rotZ: 48, speed: 50, originX: -Math.round(viewport.w * 0.28), originY: Math.round(viewport.h * 0.62), fieldX: Math.round(viewport.w * 0.64), fieldY: Math.round(viewport.h * 0.52), driftX: Math.round(viewport.w * 0.22), driftY: -Math.round(viewport.h * 0.15), swayX: Math.round(viewport.w * 0.08), swayY: Math.round(viewport.h * 0.06), phase: Math.PI * 1.62, variant: "ring3" },
-      { id: 4, src: "/astro/rings/ring-4.png", size: isMobile ? "35vmin" : "38vmin", rotZ: -10, speed: -28, originX: Math.round(viewport.w * 0.65), originY: Math.round(viewport.h * 0.64), fieldX: Math.round(viewport.w * 0.66), fieldY: Math.round(viewport.h * 0.48), driftX: -Math.round(viewport.w * 0.2), driftY: -Math.round(viewport.h * 0.12), swayX: Math.round(viewport.w * 0.07), swayY: Math.round(viewport.h * 0.05), phase: Math.PI * 0.58, variant: "ring4" },
-    ]);
-  }, [isMobile, viewport.h, viewport.w]);
-
-  const mobileVideoScale = useTransform(storyProgress, [0.8, 1], [1.18, 1.25]);
-
-  useMotionValueEvent(storyProgress, "change", (v) => {
-    if (isMobile) return;
-    const video = videoRef.current;
-    if (!video || !videoReady || !isFinite(video.duration) || video.duration === 0 || video.readyState < 1) return;
-    const usableDuration = Math.max(video.duration - VIDEO_SCRUB_START - VIDEO_SCRUB_END_PADDING, 0.01);
-    const targetTime = VIDEO_SCRUB_START + (v * usableDuration);
-    if (Math.abs(video.currentTime - targetTime) > 0.04) {
-      video.currentTime = targetTime;
+  useMotionValueEvent(smoothStory, "change", (v) => {
+    if (!isMobile) {
+      const video = videoRef.current;
+      if (video && videoReady) {
+        const usableDuration = Math.max(video.duration - VIDEO_SCRUB_START - VIDEO_SCRUB_END_PADDING, 0.01);
+        video.currentTime = VIDEO_SCRUB_START + (v * usableDuration);
+      }
     }
   });
 
   useEffect(() => {
-    if (isMobile && videoReady) {
-      const video = videoRef.current;
-      if (video) {
-        video.currentTime = 0;
-        video.play().catch(() => {});
-      }
-    }
-  }, [isMobile, videoReady]);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    type Star = { x: number; y: number; r: number; a: number; da: number };
-    const stars: Star[] = [];
-    let rafId = 0;
-    const starCount = isMobile ? 110 : 180;
-    const resize = () => {
-      canvas.width  = window.innerWidth;
-      canvas.height = window.innerHeight;
-    };
-    resize();
-    window.addEventListener("resize", resize);
-    for (let i = 0; i < starCount; i++) {
-      stars.push({
-        x:  Math.random() * canvas.width,
-        y:  Math.random() * canvas.height,
-        r:  0.3 + Math.random() * 0.7,
-        a:  Math.random(),
-        da: (Math.random() - 0.5) * 0.004,
-      });
-    }
-    function animate() {
-      if (!ctx || !canvas) return;
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      for (const s of stars) {
-        s.a += s.da;
-        if (s.a <= 0.04 || s.a >= 0.85) s.da *= -1;
-        s.a = Math.max(0.04, Math.min(0.85, s.a));
-        ctx.globalAlpha = s.a * 0.55;
-        ctx.fillStyle = "#fff5e0";
-        ctx.beginPath();
-        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
-        ctx.fill();
-      }
-      ctx.globalAlpha = 1;
-      rafId = requestAnimationFrame(animate);
-    }
-    rafId = requestAnimationFrame(animate);
-    return () => {
-      cancelAnimationFrame(rafId);
-      window.removeEventListener("resize", resize);
-    };
-  }, [isMobile]);
+    if (preloaderDone) setIntroReady(true);
+  }, [preloaderDone]);
 
   return (
     <>
       <AnimatePresence>
         {!preloaderDone && (
-            <Preloader
-            key="preloader"
-            onDone={handleIntroDone}
-            ready={introReady && videoReady}
-          />
+          <Preloader onDone={handleIntroDone} ready={videoReady} />
         )}
       </AnimatePresence>
 
       <main className={`${styles.page} ${preloaderDone ? styles.pageMounted : ""}`}>
         <section className={styles.heroShell}>
-          <motion.div
-            className={styles.stage}
-            style={{
-              rotateX: cameraRotateX,
-              rotateY: cameraRotateY,
-            }}
-          >
-            {isGlitching && <div className={styles.glitchOverlay} style={{ pointerEvents: "none" }} />}
-
-            <div className={`${styles.bgFallback} ${videoReady ? styles.bgFallbackHidden : ""}`} />
-             <motion.video
-              ref={videoRef}
-              muted
-              playsInline
-              autoPlay
-              preload="auto"
-              poster={isMobile ? "/astro/backgrounds/mobile-color.jpg" : "/astro/backgrounds/IMAGEN-FONDO-A-COLOR-WEB-GRANDE.jpg"}
-              className={styles.bgVideo}
-              style={{ scale: isMobile ? mobileVideoScale : 1 }}
-              onLoadedMetadata={() => setVideoReady(true)}
-              onLoadedData={() => setVideoReady(true)}
-              onCanPlay={() => setVideoReady(true)}
-              onCanPlayThrough={() => setVideoReady(true)}
-              onError={() => setVideoReady(true)}
-            >
-              {isMobile ? (
-                <source src={MOBILE_WEBM_SRC} type="video/webm" />
-              ) : (
-                <source src={DESKTOP_VIDEO_SRC} type="video/mp4" />
-              )}
-            </motion.video>
-
-            {!isMobile && (
-              <motion.div
-                className={styles.desktopBwFrame}
-                style={{ scale: desktopFrameScale, y: desktopFrameY }}
-              />
-            )}
-
-            {!isMobile && (
-              <motion.div
-                className={styles.desktopColorFrame}
-                style={{ opacity: desktopColorReveal, scale: desktopFrameScale, y: desktopFrameY }}
-              />
-            )}
-
-            {!isMobile && (
-              <motion.div
-                className={styles.desktopNebulaFx}
-                style={{
-                  opacity: desktopNebulaOpacity,
-                  x: desktopNebulaX,
-                  y: desktopNebulaY,
-                  scale: desktopNebulaScale,
-                  rotate: desktopNebulaRotate,
-                }}
-              />
-            )}
-
-            {!isMobile && (
-              <motion.div
-                className={styles.desktopRayFx}
-                style={{
-                  opacity: desktopRayOpacity,
-                  x: desktopRayX,
-                  y: desktopRayY,
-                  scaleX: desktopRayScaleX,
-                  scaleY: desktopRayScaleY,
-                }}
-              />
-            )}
-
-            {!isMobile && (
-              <motion.div className={styles.desktopSplitMask} style={{ opacity: desktopLowerMaskOpacity }} />
-            )}
-
-            <div className={styles.videoVignette} />
+          <motion.div className={styles.stage}>
+            
+            <CinemaBackground 
+              videoRef={videoRef}
+              isMobile={isMobile}
+              videoReady={videoReady}
+              onVideoReady={() => setVideoReady(true)}
+              mobileVideoScale={mobileVideoScale}
+              desktopColorReveal={desktopColorReveal}
+              desktopNebulaOpacity={desktopNebulaOpacity}
+              desktopNebulaX={desktopNebulaX}
+              desktopNebulaY={desktopNebulaY}
+              desktopNebulaScale={desktopNebulaScale}
+              desktopNebulaRotate={desktopNebulaRotate}
+              desktopRayOpacity={desktopRayOpacity}
+              desktopRayX={desktopRayX}
+              desktopRayY={desktopRayY}
+              desktopRayScaleX={desktopRayScaleX}
+              desktopRayScaleY={desktopRayScaleY}
+              desktopLowerMaskOpacity={desktopLowerMaskOpacity}
+              desktopFrameScale={desktopFrameScale}
+              desktopFrameY={desktopFrameY}
+            />
 
             <canvas ref={canvasRef} className={styles.spaceCanvas} />
 
-            {/* Zona secreta: Casco del Astronauta */}
             <div 
               className={styles.secretTrigger} 
               onDoubleClick={() => {
@@ -769,181 +649,60 @@ export function AstroHero() {
               }}
             />
 
-            {dynamicRings.map((r) => (
-                <CornerRing
-                key={r.id}
-                src={r.src}
-                size={r.size}
-                rotZ={r.rotZ}
-                speed={r.speed}
-                originX={r.originX}
-                originY={r.originY}
-                fieldX={r.fieldX}
-                fieldY={r.fieldY}
-                driftX={r.driftX}
-                driftY={r.driftY}
-                swayX={r.swayX}
-                swayY={r.swayY}
-                phase={r.phase}
-                variant={r.variant}
-                progress={ringsProgress}
-                time={time}
-                mouseX={mouseX}
-                mouseY={mouseY}
-                playSound={playSound}
-                onBurst={handleAddRing}
-              />
-            ))}
+            <OrbitalSystem 
+              isMobile={isMobile}
+              viewport={viewport}
+              progress={smoothStory}
+              time={time}
+              mouseX={mouseX}
+              mouseY={mouseY}
+              playSound={playSound}
+            />
 
-      <AnimatePresence>
-        {showAdminModal && (
-          <div className={styles.adminModalOverlay}>
-             <motion.div 
-               className={styles.adminModal}
-               initial={{ opacity: 0, scale: 0.9, y: 20 }}
-               animate={{ opacity: 1, scale: 1, y: 0 }}
-               exit={{ opacity: 0, scale: 0.9, y: 20 }}
-             >
-                <h3 className={styles.modalTitle}>COMANDO CENTRAL</h3>
-                <p className={styles.modalDesc}>Identifíquese para ver métricas de misión</p>
-                <input 
-                  type="password" 
-                  autoFocus 
-                  className={styles.adminInput}
-                  placeholder="CLAVE DE ACCESO"
-                  value={adminPass} 
-                  onChange={(e) => setAdminPass(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      if (adminPass === "astro2026") {
-                        window.location.href = "/admin";
-                      } else {
-                        alert("ERROR: ACCESO DENEGADO");
-                        setAdminPass("");
-                      }
-                    }
-                  }}
-                />
-                <div className={styles.modalButtons}>
-                  <button className={styles.modalBtnCancel} onClick={() => setShowAdminModal(false)}>ABORTAR</button>
-                </div>
-             </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-            <motion.div className={styles.swipeCue} style={{ opacity: swipeOpacity }}>
-              <span className={styles.swipeArrows}>⌄⌄⌄</span>
-            </motion.div>
-
-            <motion.div
-              className={`${styles.titleBlock} ${(isGlitching || isGlitchingOut) ? styles.dirtyTransmission : ""} ${!isMobile && !isGlitchingOut ? styles.desktopGlitchReveal : ""}`}
-              style={{ opacity: titleOpacity, y: titleY, zIndex: 55 }}
-            >
+            <motion.div className={styles.titleBlock} style={{ opacity: titleOpacity, y: titleY, zIndex: 55 }}>
               <h2 className={styles.mainTitle}>ASTRO SDQ</h2>
-              <motion.p
-                className={styles.edition}
-                style={{ opacity: editionOpacity }}
-              >
-                5TA EDICIÓN
-              </motion.p>
+              <motion.p className={styles.edition} style={{ opacity: titleOpacity }}>5TA EDICIÓN</motion.p>
             </motion.div>
 
-            <motion.div
-              className={`${styles.coordBlock} ${styles.terminalFrame} ${(isTyping || isGlitching || isGlitchingOut) ? styles.dirtyTransmission : ""} ${!isMobile && !isTyping && !isGlitchingOut ? styles.desktopGlitchReveal : ""}`}
-              style={{ opacity: coordsOpacity, y: storyY, skewY: coordsSkew, zIndex: 50 }}
-            >
-              <div className={styles.terminalGlow} aria-hidden="true" />
-              <div className={styles.signalBar} />
-              <p className={styles.location}>{typedLocation || " "}</p>
+            <motion.div className={`${styles.coordBlock} ${styles.terminalFrame}`} style={{ opacity: storyOpacity, y: storyY, zIndex: 50 }}>
+              <div className={styles.terminalGlow} />
+              <p className={styles.location}>{editionData.location}</p>
               <p className={styles.coordinates}>{editionData.coordinates}</p>
             </motion.div>
 
-            <motion.div
-              className={`${styles.contactBlock} ${styles.notifyConsole} ${!isMobile ? styles.desktopGlitchReveal : ""}`}
-              style={{ opacity: contactOpacity, y: contactY, zIndex: 60 }}
-            >
-              <div className={styles.notifyNoise} aria-hidden="true" />
-              
+            <motion.div className={`${styles.contactBlock} ${styles.notifyConsole}`} style={{ opacity: contactOpacity, y: contactY, zIndex: 60 }}>
               <AnimatePresence mode="wait">
                 {!notifySent ? (
-                  <motion.div
-                    key="form"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0, y: -20, filter: "blur(10px)" }}
-                  >
+                  <motion.div key="form" exit={{ opacity: 0 }}>
                     <p className={styles.contactTitle}>DEJA TU CONTACTO PARA AVISO DE APERTURA</p>
-                    <div className={styles.channelToggle} role="group" aria-label="Canal de contacto">
-                      {(["ig", "whatsapp", "mail", "fb"] as ContactChannel[]).map((channel) => (
-                        <button
-                          key={channel}
-                          type="button"
-                          className={`${styles.channelButton} ${contactChannel === channel ? styles.channelButtonActive : ""}`}
-                          onClick={() => {
-                            setContactChannel(channel);
-                            playSound("click");
-                          }}
+                    <div className={styles.channelToggle}>
+                      {(["ig", "whatsapp", "mail", "fb"] as ContactChannel[]).map((ch) => (
+                        <button 
+                          key={ch} 
+                          className={`${styles.channelButton} ${contactChannel === ch ? styles.channelButtonActive : ""}`}
+                          onClick={() => { setContactChannel(ch); playSound("click"); }}
                         >
-                          <ChannelIcon channel={channel} />
-                          <span>{channel === "ig" ? "INSTAGRAM" : channel === "whatsapp" ? "WHATSAPP" : channel.toUpperCase()}</span>
+                          <ChannelIcon channel={ch} />
+                          <span>{ch.toUpperCase()}</span>
                         </button>
                       ))}
                     </div>
-
                     <form className={styles.notifyForm} onSubmit={handleNotifySubmit}>
                       <div className={styles.notifyInputGroup}>
-                        <input
-                          className={styles.notifyInput}
-                          type={contactChannel === "mail" ? "email" : "text"}
-                          value={contactValue}
-                          placeholder={contactPlaceholder}
-                          onChange={(e) => { setContactValue(e.target.value); }}
-                          required
-                        />
-                        <input
-                          className={`${styles.notifyInput} ${styles.notifyInput2}`}
-                          type="text"
-                          value={contactValue2}
-                          placeholder={contact2Placeholder}
-                          onChange={(e) => { setContactValue2(e.target.value); }}
-                          required
-                        />
+                        <input className={styles.notifyInput} value={contactValue} onChange={e => setContactValue(e.target.value)} placeholder="NOMBRE / IG / USER" required />
+                        <input className={styles.notifyInput} value={contactValue2} onChange={e => setContactValue2(e.target.value)} placeholder="WHATSAPP / EMAIL" required />
                       </div>
-                      <button className={styles.notifyButton} type="submit" onClick={() => playSound("click")}>NOTIFICARME</button>
+                      <button className={styles.notifyButton} type="submit">NOTIFICARME</button>
                     </form>
                   </motion.div>
                 ) : (
-                  <motion.div
-                    key="success"
-                    initial={{ opacity: 0, scale: 0.9, filter: "blur(10px)" }}
-                    animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
-                    className={styles.successContainer}
-                  >
-                    <div className={styles.successIcon}>✓</div>
+                  <motion.div key="success" className={styles.successContainer}>
                     <h3 className={styles.successTitle}>ACCESO CONCEDIDO</h3>
-                    <motion.p 
-                      className={styles.successText}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ duration: 0.8 }}
-                      style={{ margin: "0 auto" }}
-                    >
-                      {notifyMessage}
-                    </motion.p>
-                    <div className={styles.successGlow} />
+                    <p className={styles.successText}>{notifyMessage}</p>
                   </motion.div>
                 )}
               </AnimatePresence>
             </motion.div>
-
-            {/* HUD corners */}
-            <div className={styles.hudOverlay} aria-hidden="true">
-              <div className={`${styles.hudCorner} ${styles.topLeft}`} />
-              <div className={`${styles.hudCorner} ${styles.topRight}`} />
-              <div className={`${styles.hudCorner} ${styles.bottomLeft}`} />
-              <div className={`${styles.hudCorner} ${styles.bottomRight}`} />
-            </div>
 
             <div className={styles.grain} />
           </motion.div>
