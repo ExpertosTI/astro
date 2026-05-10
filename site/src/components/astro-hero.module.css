@@ -92,6 +92,12 @@
   visibility: visible;
 }
 
+.locked {
+  overflow: hidden !important;
+  height: 100vh !important;
+  pointer-events: none;
+}
+
 .heroShell {
   position: fixed;
   top: 0;

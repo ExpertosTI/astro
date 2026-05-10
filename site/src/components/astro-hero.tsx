@@ -61,7 +61,7 @@ export default function AstroHero() {
   if (!mounted) return null;
 
   return (
-    <main className={`${styles.page} ${preloaderDone ? styles.pageMounted : ""}`}>
+    <main className={`${styles.page} ${preloaderDone ? styles.pageMounted : styles.locked}`}>
       {/* El preloader bloquea el scroll internamente vía document.body.style */}
       {!preloaderDone && (
         <Preloader 
