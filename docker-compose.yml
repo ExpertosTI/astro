@@ -2,10 +2,15 @@ version: "3.8"
 
 services:
   astro-web:
-    image: nginx:alpine
-    volumes:
-      - ./site/out:/usr/share/nginx/html:ro
-      - ./site/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    build:
+      context: ./site
+      dockerfile: Dockerfile
+      args:
+        - NEXT_PUBLIC_INSFORGE_API_URL=${NEXT_PUBLIC_INSFORGE_API_URL:-https://insforge.renace.tech/api}
+    image: astro-web:latest
+    environment:
+      - NEXT_PUBLIC_INSFORGE_API_URL=${NEXT_PUBLIC_INSFORGE_API_URL:-https://insforge.renace.tech/api}
+      - INSFORGE_JWT_SECRET=${INSFORGE_JWT_SECRET}
     networks:
       - RenaceNet
     deploy:
@@ -16,7 +21,7 @@ services:
       resources:
         limits:
           cpus: '0.50'
-          memory: 256M
+          memory: 512M
       labels:
         - "traefik.enable=true"
         # HTTP Router
