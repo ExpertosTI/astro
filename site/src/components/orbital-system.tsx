@@ -4,8 +4,7 @@ import { motion, MotionValue, useTransform } from "framer-motion";
 import { useState, useMemo } from "react";
 import styles from "./astro-hero.module.css";
 
-interface RingData {
-  id: number;
+interface CornerRingProps {
   src: string;
   size: string;
   rotZ: number;
@@ -20,21 +19,16 @@ interface RingData {
   swayY: number;
   phase: number;
   variant: string;
-}
-
-interface OrbitalSystemProps {
   progress: MotionValue<number>;
   time: MotionValue<number>;
   mouseX: MotionValue<number>;
   mouseY: MotionValue<number>;
-  playSound: (type: "glitch" | "transition") => void;
-  isMobile: boolean;
-  viewport: { w: number; h: number };
+  playSound: (type: string) => void;
 }
 
 function CornerRing({
-  src, size, rotZ, speed, originX, originY, fieldX, fieldY, driftX, driftY, swayX, swayY, phase, variant, progress, time, mouseX, mouseY, playSound,
-}: any) {
+  src, size, rotZ, speed, originX, originY, fieldX, fieldY, driftX, driftY, swayX, swayY, phase, progress, time, mouseX, mouseY, playSound,
+}: CornerRingProps) {
   const [isBursting, setIsBursting] = useState(false);
 
   const handleRingClick = () => {
@@ -70,7 +64,7 @@ function CornerRing({
   const visualProgress = useTransform(progress, (v: any) => Math.min(Math.max((v as number) % 1.2, 0), 1));
   const ringOpacity = useTransform(visualProgress, [0, 0.15, 0.7, 1], [0, 0.95, 0.9, 0]);
   const baseScale = useTransform(visualProgress, [0, 0.3, 0.9, 1], [1.2, 0.8, 0.3, 0]);
-  const ringZIndex = useTransform(visualProgress, (value) => (value > 0.65 ? 120 : 40));
+  const ringZIndex = useTransform(visualProgress, (value: any) => ((value as number) > 0.65 ? 120 : 40));
 
   return (
     <motion.div
@@ -84,7 +78,7 @@ function CornerRing({
         rotate: totalRot,
         scale: baseScale,
         opacity: ringOpacity,
-        zIndex: ringZIndex,
+        zIndex: ringZIndex as any,
         cursor: "pointer",
         pointerEvents: "auto",
         position: "absolute"
@@ -96,7 +90,15 @@ function CornerRing({
   );
 }
 
-export default function OrbitalSystem({ progress, time, mouseX, mouseY, playSound, isMobile, viewport }: OrbitalSystemProps) {
+export default function OrbitalSystem({ progress, time, mouseX, mouseY, playSound, isMobile, viewport }: {
+  progress: MotionValue<number>;
+  time: MotionValue<number>;
+  mouseX: MotionValue<number>;
+  mouseY: MotionValue<number>;
+  playSound: (type: string) => void;
+  isMobile: boolean;
+  viewport: { w: number; h: number };
+}) {
   const rings = useMemo(() => [
     {
       id: 1,
