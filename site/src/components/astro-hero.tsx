@@ -203,15 +203,16 @@ function CornerRing({
 
   const ringBlur = useTransform(
     visualProgress,
-    [0, 0.15, 0.45, 0.7, 0.88, 1],
-    [10.0, 4.0, 0, 0, 3.5, 9.0],
+    [0, 0.2, 0.5, 0.8, 1],
+    [8.0, 0, 0, 10.0, 25.0],
     { clamp: true }
   );
   
-  const ringFilter = useTransform(ringBlur, (value) => value > 0.05 ? `blur(${value.toFixed(1)}px)` : "none");
+  const ringFilter = useTransform(ringBlur, (value) => value > 0.05 ? `blur(${value.toFixed(1)}px) brightness(${1 - value/20})` : "none");
   const breatheScale = useTransform(time, (t) => 1 + Math.sin(t / 2200 + phase) * 0.04);
-  const ringOpacity = useTransform(visualProgress, [0, 0.1, 0.88, 1], [0, 0.95, 0.9, 0], { clamp: true });
-  const baseScale = useTransform(visualProgress, [0, 0.5, 0.85, 1], [0.55, 1.2, 2.8, 5.2], { clamp: true });
+  const ringOpacity = useTransform(visualProgress, [0, 0.15, 0.7, 1], [0, 0.95, 0.9, 0], { clamp: true });
+  // Los anillos ahora se alejan (se hacen pequeños) y desaparecen con blur
+  const baseScale = useTransform(visualProgress, [0, 0.3, 0.9, 1], [1.2, 0.8, 0.3, 0], { clamp: true });
   const finalScale = useTransform([baseScale, breatheScale], ([bs, brs]) => (bs as number) * (brs as number));
   const ringZIndex = useTransform(visualProgress, (value) => (value > 0.65 ? 120 : 40));
 
@@ -235,11 +236,10 @@ function CornerRing({
         pointerEvents: "auto",
       }}
     >
-      <motion.img 
+      <img 
         src={src} 
         className={styles.ringImage} 
         alt="Orbital Ring"
-        animate={isBursting ? { scale: [1, 1.4, 1] } : {}}
       />
       {isBursting && (
         <>
@@ -265,7 +265,7 @@ export function AstroHero() {
   const [introReady, setIntroReady]       = useState(false);
   const storyAnimationRef = useRef<any>(null);
   const [viewport, setViewport] = useState({ w: 1920, h: 1080 });
-  const [isMobile, setIsMobile] = useState(false);
+  const [isMobile, setIsMobile] = useState(true); // Mobile first para evitar carga pesada
   const [contactChannel, setContactChannel] = useState<ContactChannel>("ig");
   const [contactValue, setContactValue] = useState("");
   const [contactValue2, setContactValue2] = useState("");
@@ -304,18 +304,19 @@ export function AstroHero() {
     } catch (e) { /* silent */ }
   };
 
-  // Desbloqueo de audio global tras primer interacción
+  // Desbloqueo de video y audio global tras primer interacción
   useEffect(() => {
     const unlock = () => {
-      playSound("click"); // Intento silencioso para despertar el AudioContext
+      if (videoRef.current) videoRef.current.play().catch(() => {});
+      playSound("click");
       window.removeEventListener("click", unlock);
-      window.removeEventListener("keydown", unlock);
+      window.removeEventListener("touchstart", unlock);
     };
     window.addEventListener("click", unlock);
-    window.addEventListener("keydown", unlock);
+    window.addEventListener("touchstart", unlock);
     return () => {
       window.removeEventListener("click", unlock);
-      window.removeEventListener("keydown", unlock);
+      window.removeEventListener("touchstart", unlock);
     };
   }, []);
   const PRELOADER_ASSETS = useMemo(() => [
@@ -449,9 +450,9 @@ export function AstroHero() {
   const desktopColorReveal = useTransform(smoothStory, [0.06, 0.56], [0, 1]);
   const desktopLowerMaskOpacity = useTransform(smoothStory, [0, 0.28], [0.8, 0.14]);
   
-  // Opacidades con tiempos más precisos para dar chance al mensaje
-  const titleOpacity = useTransform(smoothStory, [0.02, 0.10, 0.20, 0.28], [0, 1, 1, 0]);
-  const storyOpacity = useTransform(smoothStory, [0.35, 0.45, 0.75, 0.85], [0, 1, 1, 0]);
+  // Opacidades fijas una vez alcanzadas (sticky once revealed)
+  const titleOpacity = useTransform(smoothStory, [0.02, 0.10], [0, 1]);
+  const storyOpacity = useTransform(smoothStory, [0.35, 0.45], [0, 1]);
   const contactOpacity = useTransform(smoothStory, [0.90, 0.98], [0, 1]);
   const desktopNebulaOpacity = useTransform(smoothInteraction, [0.1, 0.26, 0.48, 0.76, 1], [0, 0.26, 0.7, 0.95, 0.78]);
   const desktopRayOpacity = useTransform(smoothInteraction, [0.16, 0.36, 0.58, 0.84, 1], [0, 0.52, 0.18, 0.82, 0.36]);
@@ -480,11 +481,12 @@ export function AstroHero() {
   const [isGlitchingOut, setIsGlitchingOut] = useState(false);
 
   useMotionValueEvent(smoothStory, "change", (v) => {
-    const isEndingTitle = v > 0.30 && v < 0.40;
-    const isEndingCoords = v > 0.78 && v < 0.88;
+    // Los glitches solo ocurren durante la transición inicial, no al scrollear después
+    const isEndingTitle = v > 0.08 && v < 0.12;
+    const isEndingCoords = v > 0.40 && v < 0.50;
     setIsGlitchingOut(isEndingTitle || isEndingCoords);
 
-    if (!typingStarted && v >= 0.48) {
+    if (!typingStarted && v >= 0.42) {
       setTypingStarted(true);
     }
   });
@@ -789,6 +791,19 @@ export function AstroHero() {
             <div className={styles.videoVignette} />
 
             <canvas ref={canvasRef} className={styles.spaceCanvas} />
+
+            {/* Zona secreta: Casco del Astronauta */}
+            <div 
+              className={styles.secretTrigger} 
+              onDoubleClick={() => {
+                const pass = prompt("ACCESO RESTRINGIDO. INGRESE CLAVE DE COMANDO:");
+                if (pass === "astro2026") {
+                  window.location.href = "/admin";
+                } else if (pass !== null) {
+                  alert("ACCESO DENEGADO.");
+                }
+              }}
+            />
 
             {rings.map((r) => (
                 <CornerRing
