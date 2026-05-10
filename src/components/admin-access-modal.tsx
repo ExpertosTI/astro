@@ -2,6 +2,7 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
+import { ASTRO_CONFIG } from "@/config/astro-config";
 import styles from "./astro-hero.module.css";
 
 interface AdminAccessModalProps {
@@ -14,7 +15,7 @@ export default function AdminAccessModal({ isOpen, onClose, onSuccess }: AdminAc
   const [adminPass, setAdminPass] = useState("");
 
   const handleAccess = () => {
-    if (adminPass === "astro2026") {
+    if (adminPass === ASTRO_CONFIG.project.adminPass) {
       onSuccess();
       window.location.href = "/admin";
     } else {

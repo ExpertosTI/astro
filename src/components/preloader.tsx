@@ -3,15 +3,10 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
 import { editionData } from "@/content/edition";
+import { ASTRO_CONFIG } from "@/config/astro-config";
 import styles from "./astro-hero.module.css";
 
-const ELEMENTS = [
-  "/astro/elements/ELMENTO-1.png",
-  "/astro/elements/ELEMENTO-2.png",
-  "/astro/elements/ELEMENTO-3.png",
-  "/astro/elements/ELEMENTO-4.png",
-];
-const SEQUENCE = [...ELEMENTS, editionData.logo];
+const SEQUENCE = [...ASTRO_CONFIG.assets.preloader, editionData.logo];
 
 export default function Preloader({ onDone, ready }: { onDone: () => void; ready: boolean }) {
   const [step, setStep] = useState(0);

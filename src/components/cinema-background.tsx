@@ -2,6 +2,7 @@
 
 import { motion, MotionValue } from "framer-motion";
 import { RefObject } from "react";
+import { ASTRO_CONFIG } from "@/config/astro-config";
 import styles from "./astro-hero.module.css";
 
 interface CinemaBackgroundProps {
@@ -26,9 +27,6 @@ interface CinemaBackgroundProps {
   desktopFrameY: MotionValue<number>;
 }
 
-const DESKTOP_VIDEO_SRC = "https://insforge-assets.s3.us-east-1.amazonaws.com/astro/backgrounds/VIDEO-FONDO-A-COLOR-WEB-GRANDE.mp4";
-const MOBILE_WEBM_SRC = "/astro/backgrounds/mobile-bg.webm";
-
 export default function CinemaBackground({
   videoRef, isMobile, videoReady, onVideoReady,
   mobileVideoScale, desktopColorReveal,
@@ -46,7 +44,7 @@ export default function CinemaBackground({
         playsInline
         autoPlay
         preload="auto"
-        poster={isMobile ? "/astro/backgrounds/mobile-color.jpg" : "/astro/backgrounds/IMAGEN-FONDO-A-COLOR-WEB-GRANDE.jpg"}
+        poster={isMobile ? ASTRO_CONFIG.assets.mobilePoster : ASTRO_CONFIG.assets.fallbackPoster}
         className={styles.bgVideo}
         style={{ scale: isMobile ? (mobileVideoScale as any) : 1 }}
         onLoadedMetadata={onVideoReady}
@@ -56,9 +54,9 @@ export default function CinemaBackground({
         onError={onVideoReady}
       >
         {isMobile ? (
-          <source src={MOBILE_WEBM_SRC} type="video/webm" />
+          <source src={ASTRO_CONFIG.videos.mobile} type="video/webm" />
         ) : (
-          <source src={DESKTOP_VIDEO_SRC} type="video/mp4" />
+          <source src={ASTRO_CONFIG.videos.desktop} type="video/mp4" />
         )}
       </motion.video>
 
