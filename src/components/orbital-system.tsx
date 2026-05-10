@@ -1,7 +1,7 @@
 "use client";
 
-import { motion, MotionValue } from "framer-motion";
-import { useState, useEffect } from "react";
+import { motion, MotionValue, useTransform } from "framer-motion";
+import { useState, useEffect, useRef } from "react";
 import styles from "./astro-hero.module.css";
 
 interface RingData {
@@ -10,15 +10,8 @@ interface RingData {
   size: string;
   rotZ: number;
   speed: number;
-  originX: number;
-  originY: number;
-  fieldX: number;
-  fieldY: number;
-  driftX: number;
-  driftY: number;
-  swayX: number;
-  swayY: number;
-  phase: number;
+  originX: number | string;
+  originY: number | string;
   variant: string;
 }
 
@@ -32,18 +25,22 @@ interface CornerRingProps extends RingData {
 }
 
 function CornerRing({
-  src, size, rotZ, speed, originX, originY, fieldX, fieldY,
-  driftX, driftY, swayX, swayY, phase, variant,
+  src, size, rotZ, speed, originX, originY, variant,
   progress, time, mouseX, mouseY, playSound, onBurst
 }: CornerRingProps) {
   const [isBursting, setIsBursting] = useState(false);
+  
+  // Efecto de flotación "tipo juego" usando el tiempo global
+  const floatX = useTransform(time, (t) => Math.sin(t * 0.001 * speed) * 15);
+  const floatY = useTransform(time, (t) => Math.cos(t * 0.001 * (speed * 0.8)) * 12);
+  const floatRotate = useTransform(time, (t) => rotZ + (t * 0.02 * speed));
 
   const handleRingClick = () => {
     if (isBursting) return;
     setIsBursting(true);
     playSound("glitch");
     if (onBurst) onBurst();
-    setTimeout(() => setIsBursting(false), 600);
+    setTimeout(() => setIsBursting(false), 800);
   };
 
   return (
@@ -52,23 +49,25 @@ function CornerRing({
       style={{
         width: size,
         height: size,
-        x: originX,
-        y: originY,
-        rotateZ: rotZ,
+        left: originX,
+        top: originY,
+        x: floatX,
+        y: floatY,
+        rotateZ: floatRotate,
       }}
     >
       <motion.div
         className={styles.ringWrapper}
         onClick={handleRingClick}
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
+        whileHover={{ scale: 1.1, filter: "brightness(1.4) saturate(1.2)" }}
+        whileTap={{ scale: 0.9 }}
       >
-        <div className={styles.ringAura} />
+        <div className={styles.ringAura} aria-hidden="true" />
         <div 
           className={`${styles.ringInner} ${styles[variant]}`}
           style={{ backgroundImage: `url(${src})` }}
         />
-        {isBursting && <div className={styles.ringBurstEffect} />}
+        {isBursting && <div className={styles.ringBurstEffect} aria-hidden="true" />}
       </motion.div>
     </motion.div>
   );
@@ -86,24 +85,18 @@ export default function OrbitalSystem({
   playSound: (type: any) => void;
 }) {
   const [dynamicRings, setDynamicRings] = useState<RingData[]>([]);
+  const hasInitialized = useRef(false);
 
   const handleAddRing = () => {
     const newId = Date.now();
     const newRing = {
       id: newId,
       src: `/astro/rings/ring-${(newId % 4) + 1}.png`,
-      size: isMobile ? "32vmin" : "30vmin",
+      size: isMobile ? "28vmin" : "25vmin",
       rotZ: Math.random() * 360,
-      speed: 0.8 + Math.random() * 1.5,
-      originX: -100 + Math.random() * 200,
-      originY: -100 + Math.random() * 200,
-      fieldX: 180,
-      fieldY: 180,
-      driftX: -25 + Math.random() * 50,
-      driftY: -25 + Math.random() * 50,
-      swayX: 15 + Math.random() * 35,
-      swayY: 15 + Math.random() * 35,
-      phase: Math.random() * Math.PI * 2,
+      speed: (0.5 + Math.random() * 1.2) * (Math.random() > 0.5 ? 1 : -1),
+      originX: `${10 + Math.random() * 80}%`,
+      originY: `${10 + Math.random() * 80}%`,
       variant: ["ring1", "ring2", "ring3", "ring4"][newId % 4],
     };
     setDynamicRings(prev => [...prev, newRing]);
@@ -111,13 +104,16 @@ export default function OrbitalSystem({
   };
 
   useEffect(() => {
-    setDynamicRings([
-      { id: 1, src: "/astro/rings/ring-1.png", size: isMobile ? "35vmin" : "38vmin", rotZ: 12, speed: 42, originX: -Math.round(viewport.w * 0.32), originY: -Math.round(viewport.h * 0.22), fieldX: Math.round(viewport.w * 0.66), fieldY: Math.round(viewport.h * 0.5), driftX: Math.round(viewport.w * 0.24), driftY: Math.round(viewport.h * 0.16), swayX: Math.round(viewport.w * 0.08), swayY: Math.round(viewport.h * 0.06), phase: Math.PI * 1.08, variant: "ring1" },
-      { id: 2, src: "/astro/rings/ring-2.png", size: isMobile ? "35vmin" : "38vmin", rotZ: -18, speed: -36, originX: Math.round(viewport.w * 0.68), originY: -Math.round(viewport.h * 0.2), fieldX: Math.round(viewport.w * 0.68), fieldY: Math.round(viewport.h * 0.5), driftX: -Math.round(viewport.w * 0.26), driftY: Math.round(viewport.h * 0.14), swayX: Math.round(viewport.w * 0.07), swayY: Math.round(viewport.h * 0.06), phase: Math.PI * 0.14, variant: "ring2" },
-      { id: 3, src: "/astro/rings/ring-3.png", size: isMobile ? "35vmin" : "38vmin", rotZ: 48, speed: 50, originX: -Math.round(viewport.w * 0.28), originY: Math.round(viewport.h * 0.62), fieldX: Math.round(viewport.w * 0.64), fieldY: Math.round(viewport.h * 0.52), driftX: Math.round(viewport.w * 0.22), driftY: -Math.round(viewport.h * 0.15), swayX: Math.round(viewport.w * 0.08), swayY: Math.round(viewport.h * 0.06), phase: Math.PI * 1.62, variant: "ring3" },
-      { id: 4, src: "/astro/rings/ring-4.png", size: isMobile ? "35vmin" : "38vmin", rotZ: -10, speed: -28, originX: Math.round(viewport.w * 0.65), originY: Math.round(viewport.h * 0.64), fieldX: Math.round(viewport.w * 0.66), fieldY: Math.round(viewport.h * 0.48), driftX: -Math.round(viewport.w * 0.2), driftY: -Math.round(viewport.h * 0.12), swayX: Math.round(viewport.w * 0.07), swayY: Math.round(viewport.h * 0.05), phase: Math.PI * 0.58, variant: "ring4" },
-    ]);
-  }, [isMobile, viewport.h, viewport.w]);
+    if (!hasInitialized.current && viewport.w > 0) {
+      setDynamicRings([
+        { id: 1, src: "/astro/rings/ring-1.png", size: isMobile ? "32vmin" : "38vmin", rotZ: 12, speed: 1.2, originX: "15%", originY: "15%", variant: "ring1" },
+        { id: 2, src: "/astro/rings/ring-2.png", size: isMobile ? "32vmin" : "38vmin", rotZ: -18, speed: -1.4, originX: "85%", originY: "18%", variant: "ring2" },
+        { id: 3, src: "/astro/rings/ring-3.png", size: isMobile ? "32vmin" : "38vmin", rotZ: 48, speed: 1.6, originX: "18%", originY: "82%", variant: "ring3" },
+        { id: 4, src: "/astro/rings/ring-4.png", size: isMobile ? "32vmin" : "38vmin", rotZ: -10, speed: -1.1, originX: "82%", originY: "85%", variant: "ring4" },
+      ]);
+      hasInitialized.current = true;
+    }
+  }, [isMobile, viewport.w]);
 
   return (
     <div className={styles.ringsLayer}>
