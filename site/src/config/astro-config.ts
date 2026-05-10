@@ -1,7 +1,7 @@
 export const ASTRO_CONFIG = {
   videos: {
     desktop: "https://insforge-assets.s3.us-east-1.amazonaws.com/astro/backgrounds/VIDEO-FONDO-A-COLOR-WEB-GRANDE.mp4",
-    mobile: "/astro/backgrounds/mobile-bg.webm",
+    mobile: "https://insforge-assets.s3.us-east-1.amazonaws.com/astro/backgrounds/mobile-bg.webm", // URL Garantizada
     scrubStart: 1.2,
     scrubEndPadding: 0.25,
   },
