@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, MotionValue, useTransform } from "framer-motion";
-import { useState, useEffect, useRef } from "react";
+import { useState, useMemo } from "react";
 import styles from "./astro-hero.module.css";
 
 interface RingData {
@@ -10,117 +10,167 @@ interface RingData {
   size: string;
   rotZ: number;
   speed: number;
-  originX: number | string;
-  originY: number | string;
+  originX: number;
+  originY: number;
+  fieldX: number;
+  fieldY: number;
+  driftX: number;
+  driftY: number;
+  swayX: number;
+  swayY: number;
+  phase: number;
   variant: string;
-  depth: number;
 }
 
-interface CornerRingProps extends RingData {
+interface OrbitalSystemProps {
   progress: MotionValue<number>;
   time: MotionValue<number>;
   mouseX: MotionValue<number>;
   mouseY: MotionValue<number>;
-  playSound: (type: any) => void;
-  onBurst?: () => void;
+  playSound: (type: "glitch" | "transition") => void;
+  isMobile: boolean;
+  viewport: { w: number; h: number };
 }
 
 function CornerRing({
-  src, size, rotZ, speed, originX, originY, variant, depth,
-  progress, time, mouseX, mouseY, playSound, onBurst
-}: CornerRingProps) {
+  src, size, rotZ, speed, originX, originY, fieldX, fieldY, driftX, driftY, swayX, swayY, phase, variant, progress, time, mouseX, mouseY, playSound,
+}: any) {
   const [isBursting, setIsBursting] = useState(false);
-  
-  // Efecto de flotación "tipo juego" usando el tiempo global
-  const floatX = useTransform(time, (t) => Math.sin(t * 0.001 * speed) * 15);
-  const floatY = useTransform(time, (t) => Math.cos(t * 0.001 * (speed * 0.8)) * 12);
-  const floatRotate = useTransform(time, (t) => rotZ + (t * 0.02 * speed));
 
   const handleRingClick = () => {
     if (isBursting) return;
     setIsBursting(true);
     playSound("glitch");
-    if (onBurst) onBurst();
-    setTimeout(() => setIsBursting(false), 800);
+    setTimeout(() => setIsBursting(false), 600);
   };
+
+  const wrap = (value: number, limit: number) => {
+    const span = limit * 2;
+    return ((((value + limit) % span) + span) % span) - limit;
+  };
+
+  const dx = useTransform([progress, time, mouseX], ([p, t, mx]) => {
+    const driftAutoX = Math.sin((t as number) / 2800 + phase) * 35 + Math.sin((t as number) / 1400) * 12;
+    const travelX = originX + driftX * (p as number) + phase * swayX * 0.7;
+    const mouseReaction = (mx as number) * 65 * (Math.sin(phase) + 1.2);
+    return wrap(travelX, fieldX) + driftAutoX + mouseReaction;
+  });
+
+  const dy = useTransform([progress, time, mouseY], ([p, t, my]) => {
+    const driftAutoY = Math.cos((t as number) / 3200 + phase) * 35 + Math.cos((t as number) / 1600) * 12;
+    const travelY = originY + driftY * (p as number) + phase * swayY * 0.6;
+    const mouseReaction = (my as number) * 65 * (Math.cos(phase) + 1.2);
+    return wrap(travelY, fieldY) + driftAutoY + mouseReaction;
+  });
+
+  const idleRot = useTransform(time, (t: any) => Math.sin((t as number) / 4000 + phase) * 4);
+  const scrollRot = useTransform(progress, (value: any) => rotZ + (value as number) * speed * 15);
+  const totalRot = useTransform([scrollRot, idleRot], ([sr, ir]) => (sr as number) + (ir as number));
+
+  const visualProgress = useTransform(progress, (v: any) => Math.min(Math.max((v as number) % 1.2, 0), 1));
+  const ringOpacity = useTransform(visualProgress, [0, 0.15, 0.7, 1], [0, 0.95, 0.9, 0]);
+  const baseScale = useTransform(visualProgress, [0, 0.3, 0.9, 1], [1.2, 0.8, 0.3, 0]);
+  const ringZIndex = useTransform(visualProgress, (value) => (value > 0.65 ? 120 : 40));
 
   return (
     <motion.div
-      className={`${styles.ringContainer} ${isBursting ? styles.ringBurstActive : ""}`}
+      className={`${styles.orbitalRing} ${isBursting ? styles.ringBurstActive : ""}`}
+      onClick={handleRingClick}
       style={{
         width: size,
         height: size,
-        left: originX,
-        top: originY,
-        x: floatX,
-        y: floatY,
-        rotateZ: floatRotate,
-        zIndex: (depth as any),
+        x: dx,
+        y: dy,
+        rotate: totalRot,
+        scale: baseScale,
+        opacity: ringOpacity,
+        zIndex: ringZIndex,
+        cursor: "pointer",
+        pointerEvents: "auto",
+        position: "absolute"
       }}
     >
-      <motion.div
-        className={styles.ringWrapper}
-        onClick={handleRingClick}
-        whileHover={{ scale: 1.1, filter: "brightness(1.4) saturate(1.2)" }}
-        whileTap={{ scale: 0.9 }}
-      >
-        <div className={styles.ringAura} aria-hidden="true" />
-        <div 
-          className={`${styles.ringInner} ${styles[variant]}`}
-          style={{ backgroundImage: `url(${src})` }}
-        />
-        {isBursting && <div className={styles.ringBurstEffect} aria-hidden="true" />}
-      </motion.div>
+      <img src={src} className={styles.ringInner} alt="Orbital Ring" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+      {isBursting && <div className={styles.ringBurstEffect} />}
     </motion.div>
   );
 }
 
-export default function OrbitalSystem({ 
-  isMobile, viewport, progress, time, mouseX, mouseY, playSound 
-}: { 
-  isMobile: boolean; 
-  viewport: { w: number; h: number };
-  progress: MotionValue<number>;
-  time: MotionValue<number>;
-  mouseX: MotionValue<number>;
-  mouseY: MotionValue<number>;
-  playSound: (type: any) => void;
-}) {
-  const [dynamicRings, setDynamicRings] = useState<RingData[]>([]);
-  const hasInitialized = useRef(false);
-
-  const handleAddRing = () => {
-    const newId = Date.now();
-    const newRing = {
-      id: newId,
-      src: `/astro/rings/ring-${(newId % 4) + 1}.png`,
-      size: isMobile ? "28vmin" : "25vmin",
-      rotZ: Math.random() * 360,
-      speed: (0.5 + Math.random() * 1.2) * (Math.random() > 0.5 ? 1 : -1),
-      originX: `${10 + Math.random() * 80}%`,
-      originY: `${10 + Math.random() * 80}%`,
-      variant: ["ring1", "ring2", "ring3", "ring4"][newId % 4],
-      depth: Math.floor(Math.random() * 10) + 100, // Z-Index dinámico
-    };
-    setDynamicRings(prev => [...prev, newRing]);
-    playSound("transition");
-  };
-
-  useEffect(() => {
-    if (!hasInitialized.current && viewport.w > 0) {
-      setDynamicRings([
-        { id: 1, src: "/astro/rings/ring-1.png", size: isMobile ? "32vmin" : "38vmin", rotZ: 12, speed: 1.2, originX: "15%", originY: "15%", variant: "ring1", depth: 105 },
-        { id: 2, src: "/astro/rings/ring-2.png", size: isMobile ? "32vmin" : "38vmin", rotZ: -18, speed: -1.4, originX: "85%", originY: "18%", variant: "ring2", depth: 95 },
-        { id: 3, src: "/astro/rings/ring-3.png", size: isMobile ? "32vmin" : "38vmin", rotZ: 48, speed: 1.6, originX: "18%", originY: "82%", variant: "ring3", depth: 110 },
-        { id: 4, src: "/astro/rings/ring-4.png", size: isMobile ? "32vmin" : "38vmin", rotZ: -10, speed: -1.1, originX: "82%", originY: "85%", variant: "ring4", depth: 90 },
-      ]);
-      hasInitialized.current = true;
-    }
-  }, [isMobile, viewport.w]);
+export default function OrbitalSystem({ progress, time, mouseX, mouseY, playSound, isMobile, viewport }: OrbitalSystemProps) {
+  const rings = useMemo(() => [
+    {
+      id: 1,
+      src: "/astro/rings/ring-1.png",
+      size: isMobile ? "44vmin" : "42vmin",
+      rotZ: 12,
+      speed: 42,
+      originX: -Math.round(viewport.w * 0.32),
+      originY: -Math.round(viewport.h * 0.22),
+      fieldX: Math.round(viewport.w * 0.66),
+      fieldY: Math.round(viewport.h * 0.5),
+      driftX: Math.round(viewport.w * 0.24),
+      driftY: Math.round(viewport.h * 0.16),
+      swayX: Math.round(viewport.w * 0.08),
+      swayY: Math.round(viewport.h * 0.06),
+      phase: Math.PI * 1.08,
+      variant: "ring1",
+    },
+    {
+      id: 2,
+      src: "/astro/rings/ring-2.png",
+      size: isMobile ? "42vmin" : "40vmin",
+      rotZ: -18,
+      speed: -36,
+      originX: Math.round(viewport.w * 0.68),
+      originY: -Math.round(viewport.h * 0.2),
+      fieldX: Math.round(viewport.w * 0.68),
+      fieldY: Math.round(viewport.h * 0.5),
+      driftX: -Math.round(viewport.w * 0.26),
+      driftY: Math.round(viewport.h * 0.14),
+      swayX: Math.round(viewport.w * 0.07),
+      swayY: Math.round(viewport.h * 0.06),
+      phase: Math.PI * 0.14,
+      variant: "ring2",
+    },
+    {
+      id: 3,
+      src: "/astro/rings/ring-3.png",
+      size: isMobile ? "40vmin" : "38vmin",
+      rotZ: 48,
+      speed: 50,
+      originX: -Math.round(viewport.w * 0.28),
+      originY: Math.round(viewport.h * 0.62),
+      fieldX: Math.round(viewport.w * 0.64),
+      fieldY: Math.round(viewport.h * 0.52),
+      driftX: Math.round(viewport.w * 0.22),
+      driftY: -Math.round(viewport.h * 0.15),
+      swayX: Math.round(viewport.w * 0.08),
+      swayY: Math.round(viewport.h * 0.06),
+      phase: Math.PI * 1.62,
+      variant: "ring3",
+    },
+    {
+      id: 4,
+      src: "/astro/rings/ring-4.png",
+      size: isMobile ? "46vmin" : "44vmin",
+      rotZ: -10,
+      speed: -28,
+      originX: Math.round(viewport.w * 0.65),
+      originY: Math.round(viewport.h * 0.64),
+      fieldX: Math.round(viewport.w * 0.66),
+      fieldY: Math.round(viewport.h * 0.48),
+      driftX: -Math.round(viewport.w * 0.2),
+      driftY: -Math.round(viewport.h * 0.12),
+      swayX: Math.round(viewport.w * 0.07),
+      swayY: Math.round(viewport.h * 0.05),
+      phase: Math.PI * 0.58,
+      variant: "ring4",
+    },
+  ], [viewport.h, viewport.w, isMobile]);
 
   return (
     <div className={styles.ringsLayer}>
-      {dynamicRings.map((r) => (
+      {rings.map((r) => (
         <CornerRing
           key={r.id}
           {...r}
@@ -129,7 +179,6 @@ export default function OrbitalSystem({
           mouseX={mouseX}
           mouseY={mouseY}
           playSound={playSound}
-          onBurst={handleAddRing}
         />
       ))}
     </div>
