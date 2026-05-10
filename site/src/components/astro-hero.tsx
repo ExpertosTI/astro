@@ -166,6 +166,7 @@ function CornerRing({
   time: MotionValue<number>;
   mouseX: MotionValue<number>; mouseY: MotionValue<number>;
   playSound: (type: "glitch" | "type" | "click" | "transition") => void;
+  onBurst?: () => void;
 }) {
   const [isBursting, setIsBursting] = useState(false);
 
@@ -173,6 +174,8 @@ function CornerRing({
     if (isBursting) return;
     setIsBursting(true);
     playSound("glitch");
+    // Al hacer click, notificamos al padre para que duplique el anillo
+    if ((window as any).onRingClick) (window as any).onRingClick();
     setTimeout(() => setIsBursting(false), 600);
   };
   const wrap = (value: number, limit: number) => {
@@ -450,10 +453,13 @@ export function AstroHero() {
   const desktopColorReveal = useTransform(smoothStory, [0.06, 0.56], [0, 1]);
   const desktopLowerMaskOpacity = useTransform(smoothStory, [0, 0.28], [0.8, 0.14]);
   
-  // Opacidades fijas una vez alcanzadas (sticky once revealed)
+  // Opacidades fijas con desplazamiento para evitar choque en escritorio (Uso de vh para control absoluto)
   const titleOpacity = useTransform(smoothStory, [0.02, 0.10], [0, 1]);
+  const titleY = useTransform(smoothStory, [0.85, 0.95], ["22vh", "8vh"]); 
   const storyOpacity = useTransform(smoothStory, [0.35, 0.45], [0, 1]);
+  const storyY = useTransform(smoothStory, [0.85, 0.95], ["48vh", "32vh"]); 
   const contactOpacity = useTransform(smoothStory, [0.90, 0.98], [0, 1]);
+  const contactY = useTransform(smoothStory, [0.90, 1], ["75vh", "65vh"]);
   const desktopNebulaOpacity = useTransform(smoothInteraction, [0.1, 0.26, 0.48, 0.76, 1], [0, 0.26, 0.7, 0.95, 0.78]);
   const desktopRayOpacity = useTransform(smoothInteraction, [0.16, 0.36, 0.58, 0.84, 1], [0, 0.52, 0.18, 0.82, 0.36]);
   
@@ -471,12 +477,9 @@ export function AstroHero() {
   const cameraRotateX = useTransform(smoothInteraction, [0, 0.5, 1], [1.2, 0, -1.2]);
   const cameraRotateY = useTransform(smoothInteraction, [0, 0.5, 1], [-0.8, 0, 0.8]);
 
-  const titleY       = useTransform(smoothStory, [0.02, 0.12], isMobile ? [20, 0] : [0, 0]);
   const editionOpacity = useTransform(smoothStory, [0.05, 0.15, 0.30, 0.40], [0, 1, 1, 0]);
   const coordsOpacity = useTransform(smoothStory, [0.45, 0.55, 0.75, 0.85], [0, 1, 1, 0]);
-  const coordsY       = useTransform(smoothStory, [0.45, 0.55, 0.75, 0.85], isMobile ? [24, 0, 0, -24] : [0, 0, 0, 0]);
   const coordsSkew    = useTransform(smoothStory, [0.45, 0.55, 0.65], isMobile ? [6, 0, 0] : [4, 0, 0]);
-  const contactY       = useTransform(smoothStory, [0.88, 0.96], [32, 0]);
 
   const [isGlitchingOut, setIsGlitchingOut] = useState(false);
 
@@ -556,76 +559,41 @@ export function AstroHero() {
     setContactValue2("");
   };
 
-  const rings = useMemo(() => [
-    {
-      id: 1,
-      src: "/astro/rings/ring-1.png",
-      size: viewport.w < 768 ? "44vmin" : "42vmin",
-      rotZ: 12,
-      speed: 42,
-      originX: -Math.round(viewport.w * 0.32),
-      originY: -Math.round(viewport.h * 0.22),
-      fieldX: Math.round(viewport.w * 0.66),
-      fieldY: Math.round(viewport.h * 0.5),
-      driftX: Math.round(viewport.w * 0.24),
-      driftY: Math.round(viewport.h * 0.16),
-      swayX: Math.round(viewport.w * 0.08),
-      swayY: Math.round(viewport.h * 0.06),
-      phase: Math.PI * 1.08,
-      variant: "ring1",
-    },
-    {
-      id: 2,
-      src: "/astro/rings/ring-2.png",
-      size: viewport.w < 768 ? "42vmin" : "40vmin",
-      rotZ: -18,
-      speed: -36,
-      originX: Math.round(viewport.w * 0.68),
-      originY: -Math.round(viewport.h * 0.2),
-      fieldX: Math.round(viewport.w * 0.68),
-      fieldY: Math.round(viewport.h * 0.5),
-      driftX: -Math.round(viewport.w * 0.26),
-      driftY: Math.round(viewport.h * 0.14),
-      swayX: Math.round(viewport.w * 0.07),
-      swayY: Math.round(viewport.h * 0.06),
-      phase: Math.PI * 0.14,
-      variant: "ring2",
-    },
-    {
-      id: 3,
-      src: "/astro/rings/ring-3.png",
-      size: viewport.w < 768 ? "40vmin" : "38vmin",
-      rotZ: 48,
-      speed: 50,
-      originX: -Math.round(viewport.w * 0.28),
-      originY: Math.round(viewport.h * 0.62),
-      fieldX: Math.round(viewport.w * 0.64),
-      fieldY: Math.round(viewport.h * 0.52),
-      driftX: Math.round(viewport.w * 0.22),
-      driftY: -Math.round(viewport.h * 0.15),
-      swayX: Math.round(viewport.w * 0.08),
-      swayY: Math.round(viewport.h * 0.06),
-      phase: Math.PI * 1.62,
-      variant: "ring3",
-    },
-    {
-      id: 4,
-      src: "/astro/rings/ring-4.png",
-      size: viewport.w < 768 ? "46vmin" : "44vmin",
-      rotZ: -10,
-      speed: -28,
-      originX: Math.round(viewport.w * 0.65),
-      originY: Math.round(viewport.h * 0.64),
-      fieldX: Math.round(viewport.w * 0.66),
-      fieldY: Math.round(viewport.h * 0.48),
-      driftX: -Math.round(viewport.w * 0.2),
-      driftY: -Math.round(viewport.h * 0.12),
-      swayX: Math.round(viewport.w * 0.07),
-      swayY: Math.round(viewport.h * 0.05),
-      phase: Math.PI * 0.58,
-      variant: "ring4",
-    },
-  ], [viewport.h, viewport.w]);
+  const [dynamicRings, setDynamicRings] = useState<any[]>([]);
+  const [showAdminModal, setShowAdminModal] = useState(false);
+  const [adminPass, setAdminPass] = useState("");
+
+  const handleAddRing = () => {
+    const newId = Date.now();
+    const newRing = {
+      id: newId,
+      src: `/astro/rings/ring-${(newId % 4) + 1}.png`,
+      size: isMobile ? "32vmin" : "30vmin",
+      rotZ: Math.random() * 360,
+      speed: 0.8 + Math.random() * 1.5,
+      originX: -100 + Math.random() * 200,
+      originY: -100 + Math.random() * 200,
+      fieldX: 180,
+      fieldY: 180,
+      driftX: -25 + Math.random() * 50,
+      driftY: -25 + Math.random() * 50,
+      swayX: 15 + Math.random() * 35,
+      swayY: 15 + Math.random() * 35,
+      phase: Math.random() * Math.PI * 2,
+      variant: ["ring1", "ring2", "ring3", "ring4"][newId % 4],
+    };
+    setDynamicRings(prev => [...prev, newRing]);
+    playSound("transition");
+  };
+
+  useEffect(() => {
+    setDynamicRings([
+      { id: 1, src: "/astro/rings/ring-1.png", size: isMobile ? "35vmin" : "38vmin", rotZ: 12, speed: 42, originX: -Math.round(viewport.w * 0.32), originY: -Math.round(viewport.h * 0.22), fieldX: Math.round(viewport.w * 0.66), fieldY: Math.round(viewport.h * 0.5), driftX: Math.round(viewport.w * 0.24), driftY: Math.round(viewport.h * 0.16), swayX: Math.round(viewport.w * 0.08), swayY: Math.round(viewport.h * 0.06), phase: Math.PI * 1.08, variant: "ring1" },
+      { id: 2, src: "/astro/rings/ring-2.png", size: isMobile ? "35vmin" : "38vmin", rotZ: -18, speed: -36, originX: Math.round(viewport.w * 0.68), originY: -Math.round(viewport.h * 0.2), fieldX: Math.round(viewport.w * 0.68), fieldY: Math.round(viewport.h * 0.5), driftX: -Math.round(viewport.w * 0.26), driftY: Math.round(viewport.h * 0.14), swayX: Math.round(viewport.w * 0.07), swayY: Math.round(viewport.h * 0.06), phase: Math.PI * 0.14, variant: "ring2" },
+      { id: 3, src: "/astro/rings/ring-3.png", size: isMobile ? "35vmin" : "38vmin", rotZ: 48, speed: 50, originX: -Math.round(viewport.w * 0.28), originY: Math.round(viewport.h * 0.62), fieldX: Math.round(viewport.w * 0.64), fieldY: Math.round(viewport.h * 0.52), driftX: Math.round(viewport.w * 0.22), driftY: -Math.round(viewport.h * 0.15), swayX: Math.round(viewport.w * 0.08), swayY: Math.round(viewport.h * 0.06), phase: Math.PI * 1.62, variant: "ring3" },
+      { id: 4, src: "/astro/rings/ring-4.png", size: isMobile ? "35vmin" : "38vmin", rotZ: -10, speed: -28, originX: Math.round(viewport.w * 0.65), originY: Math.round(viewport.h * 0.64), fieldX: Math.round(viewport.w * 0.66), fieldY: Math.round(viewport.h * 0.48), driftX: -Math.round(viewport.w * 0.2), driftY: -Math.round(viewport.h * 0.12), swayX: Math.round(viewport.w * 0.07), swayY: Math.round(viewport.h * 0.05), phase: Math.PI * 0.58, variant: "ring4" },
+    ]);
+  }, [isMobile, viewport.h, viewport.w]);
 
   const mobileVideoScale = useTransform(storyProgress, [0.8, 1], [1.18, 1.25]);
 
@@ -702,10 +670,10 @@ export function AstroHero() {
     <>
       <AnimatePresence>
         {!preloaderDone && (
-          <Preloader
+            <Preloader
             key="preloader"
             onDone={handleIntroDone}
-            ready={introReady}
+            ready={introReady && videoReady}
           />
         )}
       </AnimatePresence>
@@ -796,16 +764,12 @@ export function AstroHero() {
             <div 
               className={styles.secretTrigger} 
               onDoubleClick={() => {
-                const pass = prompt("ACCESO RESTRINGIDO. INGRESE CLAVE DE COMANDO:");
-                if (pass === "astro2026") {
-                  window.location.href = "/admin";
-                } else if (pass !== null) {
-                  alert("ACCESO DENEGADO.");
-                }
+                setShowAdminModal(true);
+                playSound("glitch");
               }}
             />
 
-            {rings.map((r) => (
+            {dynamicRings.map((r) => (
                 <CornerRing
                 key={r.id}
                 src={r.src}
@@ -827,8 +791,46 @@ export function AstroHero() {
                 mouseX={mouseX}
                 mouseY={mouseY}
                 playSound={playSound}
+                onBurst={handleAddRing}
               />
             ))}
+
+      <AnimatePresence>
+        {showAdminModal && (
+          <div className={styles.adminModalOverlay}>
+             <motion.div 
+               className={styles.adminModal}
+               initial={{ opacity: 0, scale: 0.9, y: 20 }}
+               animate={{ opacity: 1, scale: 1, y: 0 }}
+               exit={{ opacity: 0, scale: 0.9, y: 20 }}
+             >
+                <h3 className={styles.modalTitle}>COMANDO CENTRAL</h3>
+                <p className={styles.modalDesc}>Identifíquese para ver métricas de misión</p>
+                <input 
+                  type="password" 
+                  autoFocus 
+                  className={styles.adminInput}
+                  placeholder="CLAVE DE ACCESO"
+                  value={adminPass} 
+                  onChange={(e) => setAdminPass(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      if (adminPass === "astro2026") {
+                        window.location.href = "/admin";
+                      } else {
+                        alert("ERROR: ACCESO DENEGADO");
+                        setAdminPass("");
+                      }
+                    }
+                  }}
+                />
+                <div className={styles.modalButtons}>
+                  <button className={styles.modalBtnCancel} onClick={() => setShowAdminModal(false)}>ABORTAR</button>
+                </div>
+             </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
             <motion.div className={styles.swipeCue} style={{ opacity: swipeOpacity }}>
               <span className={styles.swipeArrows}>⌄⌄⌄</span>
@@ -849,7 +851,7 @@ export function AstroHero() {
 
             <motion.div
               className={`${styles.coordBlock} ${styles.terminalFrame} ${(isTyping || isGlitching || isGlitchingOut) ? styles.dirtyTransmission : ""} ${!isMobile && !isTyping && !isGlitchingOut ? styles.desktopGlitchReveal : ""}`}
-              style={{ opacity: coordsOpacity, y: coordsY, skewY: coordsSkew, zIndex: 50 }}
+              style={{ opacity: coordsOpacity, y: storyY, skewY: coordsSkew, zIndex: 50 }}
             >
               <div className={styles.terminalGlow} aria-hidden="true" />
               <div className={styles.signalBar} />

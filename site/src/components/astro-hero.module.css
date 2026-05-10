@@ -400,7 +400,26 @@ video::-webkit-media-controls-start-playback-button { display: none !important; 
   position: absolute;
   inset: 0;
   pointer-events: none;
-  z-index: 5;
+  z-index: 100; /* Prioridad para interacción */
+  transform-style: preserve-3d;
+}
+
+.ringContainer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.ringWrapper {
+  position: relative;
+  pointer-events: auto !important;
+  cursor: pointer;
   transform-style: preserve-3d;
 }
 
@@ -618,7 +637,7 @@ video::-webkit-media-controls-start-playback-button { display: none !important; 
   position: absolute;
   left: 0;
   right: 0;
-  top: 36%;
+  top: 0;
   margin-inline: auto;
   display: flex;
   flex-direction: column;
@@ -649,7 +668,7 @@ video::-webkit-media-controls-start-playback-button { display: none !important; 
   position: absolute;
   left: 0;
   right: 0;
-  top: 36%;
+  top: 0;
   margin-inline: auto;
   display: flex;
   flex-direction: column;
@@ -685,7 +704,7 @@ video::-webkit-media-controls-start-playback-button { display: none !important; 
   position: absolute;
   left: 0;
   right: 0;
-  top: 36%;
+  top: 0;
   margin-inline: auto;
   pointer-events: auto;
   display: flex;
@@ -1100,9 +1119,13 @@ video::-webkit-media-controls-start-playback-button { display: none !important; 
   }
 
   .notifyConsole {
-    bottom: 2vh;
-    width: min(94vw, 34rem);
-    padding: 0.85rem 0.8rem 1rem;
+    position: relative;
+    top: auto;
+    margin-top: 2rem;
+    width: min(92vw, 32rem);
+    padding: 1rem 0.9rem 1.2rem;
+    transform: scale(0.95);
+    z-index: 60;
   }
 
   .coordinates {
@@ -1124,10 +1147,10 @@ video::-webkit-media-controls-start-playback-button { display: none !important; 
   }
 
   .contactBlock {
-    width: 85%;
-    bottom: 6%;
-    padding: 1.2rem;
-    transform: scale(0.8);
+    width: 90%;
+    top: 52%; 
+    padding: 0;
+    transform: none;
     z-index: 60;
   }
 
@@ -1279,4 +1302,82 @@ video::-webkit-media-controls-start-playback-button { display: none !important; 
 @keyframes pulseGlow {
   0%, 100% { opacity: 0.4; }
   50% { opacity: 0.8; }
+}
+
+.adminModalOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(12px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.adminModal {
+  background: rgba(20, 20, 25, 0.95);
+  border: 1px solid rgba(255, 77, 0, 0.3);
+  box-shadow: 0 0 30px rgba(255, 77, 0, 0.15);
+  border-radius: 12px;
+  padding: 30px;
+  width: 100%;
+  max-width: 400px;
+  text-align: center;
+}
+
+.modalTitle {
+  color: #ff4d00;
+  font-size: 1.5rem;
+  letter-spacing: 0.1em;
+  margin-bottom: 8px;
+}
+
+.modalDesc {
+  color: #8ea2bf;
+  font-size: 0.9rem;
+  margin-bottom: 24px;
+}
+
+.adminInput {
+  width: 100%;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(142, 162, 191, 0.3);
+  border-radius: 6px;
+  padding: 12px;
+  color: #fff;
+  font-family: inherit;
+  font-size: 1.1rem;
+  text-align: center;
+  margin-bottom: 20px;
+  transition: border-color 0.3s;
+}
+
+.adminInput:focus {
+  outline: none;
+  border-color: #ff4d00;
+}
+
+.modalButtons {
+  display: flex;
+  gap: 1.2rem;
+  justify-content: center;
+}
+
+.modalBtnCancel {
+  background: transparent;
+  border: 1px solid rgba(142, 162, 191, 0.4);
+  color: #8ea2bf;
+  padding: 10px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  letter-spacing: 0.1em;
+  transition: all 0.3s;
+}
+
+.modalBtnCancel:hover {
+  background: rgba(142, 162, 191, 0.1);
+  color: #fff;
 }
