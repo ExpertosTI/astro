@@ -131,7 +131,7 @@ function Preloader({ onDone, ready }: { onDone: () => void; ready: boolean }) {
       exit={{ opacity: 0, transition: { duration: 0.3, ease: "easeInOut" } }}
     >
       <div className={`${styles.missionHud} ${isExiting ? styles.missionHudActive : ""}`}>
-        <p className={styles.missionText}>SYSTEM: OK // NEBULA: ACTIVE // ASTRO SDQ LINKED</p>
+        <p className={styles.missionText}>MISSION CONTROL // ASTRO SDQ LINKED</p>
       </div>
       <div className={styles.preloaderInner}>
         {PRELOADER_SEQUENCE.map((src, i) => (
@@ -168,12 +168,17 @@ function CornerRing({
   playSound: (type: "glitch" | "type" | "click" | "transition") => void;
 }) {
   const [isBursting, setIsBursting] = useState(false);
+  const [isCollected, setIsCollected] = useState(false);
 
   const handleRingClick = () => {
-    if (isBursting) return;
+    if (isBursting || isCollected) return;
     setIsBursting(true);
     playSound("glitch");
-    setTimeout(() => setIsBursting(false), 600);
+    // Al "tomar" el anillo, primero explota y luego desaparece permanentemente
+    setTimeout(() => {
+      setIsBursting(false);
+      setIsCollected(true);
+    }, 600);
   };
   const wrap = (value: number, limit: number) => {
     const span = limit * 2;
@@ -210,11 +215,13 @@ function CornerRing({
   
   const ringFilter = useTransform(ringBlur, (value) => value > 0.05 ? `blur(${value.toFixed(1)}px) brightness(${1 - value/20})` : "none");
   const breatheScale = useTransform(time, (t) => 1 + Math.sin(t / 2200 + phase) * 0.04);
-  const ringOpacity = useTransform(visualProgress, [0, 0.15, 0.7, 1], [0, 0.95, 0.9, 0], { clamp: true });
-  // Los anillos ahora se alejan (se hacen pequeños) y desaparecen con blur
-  const baseScale = useTransform(visualProgress, [0, 0.3, 0.9, 1], [1.2, 0.8, 0.3, 0], { clamp: true });
+  const ringOpacity = useTransform(visualProgress, [0, 0.1, 0.8, 1], [0, 0.95, 0.9, 0], { clamp: true });
+  // Los anillos ahora vienen de pequeño (lejos) a grande (cerca/pasando)
+  const baseScale = useTransform(visualProgress, [0, 0.1, 0.8, 1], [0, 0.4, 1.2, 2.5], { clamp: true });
   const finalScale = useTransform([baseScale, breatheScale], ([bs, brs]) => (bs as number) * (brs as number));
   const ringZIndex = useTransform(visualProgress, (value) => (value > 0.65 ? 120 : 40));
+  
+  const displayOpacity = useTransform(ringOpacity, (v) => isCollected ? 0 : v);
 
   return (
     <motion.div
@@ -229,7 +236,7 @@ function CornerRing({
         z: dz,
         rotate: totalRot,
         scale: finalScale,
-        opacity: ringOpacity,
+        opacity: displayOpacity,
         filter: ringFilter,
         zIndex: ringZIndex,
         cursor: "pointer",
@@ -276,6 +283,7 @@ export default function AstroHero() {
   const [editionData, setEditionData] = useState(localEditionData);
   const [isGlitching, setIsGlitching] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
+  const [introFinished, setIntroFinished] = useState(false);
 
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
@@ -438,9 +446,8 @@ export default function AstroHero() {
     const scrollFactor = isMobile ? 2.5 : 2.8;
     const boost = (v as number) > 0.9 ? 1.2 : 1.0;
     
-    // El scroll solo afecta cuando la historia ha terminado (s >= 1)
-    // Usamos un multiplicador suave para evitar saltos si el usuario ya scrolleó
-    const scrollActivation = Math.max(0, Math.min(1, ((s as number) - 0.88) / 0.12));
+    // El scroll solo afecta cuando la historia ha terminado (introFinished === true)
+    const scrollActivation = introFinished ? 1 : 0;
     const effectiveScroll = (v as number) * scrollActivation;
     
     return auto + effectiveScroll * scrollFactor * boost;
@@ -450,10 +457,6 @@ export default function AstroHero() {
   const desktopColorReveal = useTransform(smoothStory, [0.06, 0.56], [0, 1]);
   const desktopLowerMaskOpacity = useTransform(smoothStory, [0, 0.28], [0.8, 0.14]);
   
-  // Opacidades fijas una vez alcanzadas (sticky once revealed)
-  const titleOpacity = useTransform(smoothStory, [0.02, 0.10], [0, 1]);
-  const storyOpacity = useTransform(smoothStory, [0.35, 0.45], [0, 1]);
-  const contactOpacity = useTransform(smoothStory, [0.90, 0.98], [0, 1]);
   const desktopNebulaOpacity = useTransform(smoothInteraction, [0.1, 0.26, 0.48, 0.76, 1], [0, 0.26, 0.7, 0.95, 0.78]);
   const desktopRayOpacity = useTransform(smoothInteraction, [0.16, 0.36, 0.58, 0.84, 1], [0, 0.52, 0.18, 0.82, 0.36]);
   
@@ -471,22 +474,42 @@ export default function AstroHero() {
   const cameraRotateX = useTransform(smoothInteraction, [0, 0.5, 1], [1.2, 0, -1.2]);
   const cameraRotateY = useTransform(smoothInteraction, [0, 0.5, 1], [-0.8, 0, 0.8]);
 
-  const titleY       = useTransform(smoothStory, [0.02, 0.12], isMobile ? [20, 0] : [0, 0]);
-  const editionOpacity = useTransform(smoothStory, [0.05, 0.15, 0.30, 0.40], [0, 1, 1, 0]);
-  const coordsOpacity = useTransform(smoothStory, [0.45, 0.55, 0.75, 0.85], [0, 1, 1, 0]);
-  const coordsY       = useTransform(smoothStory, [0.45, 0.55, 0.75, 0.85], isMobile ? [24, 0, 0, -24] : [0, 0, 0, 0]);
-  const coordsSkew    = useTransform(smoothStory, [0.45, 0.55, 0.65], isMobile ? [6, 0, 0] : [4, 0, 0]);
-  const contactY       = useTransform(smoothStory, [0.88, 0.96], [32, 0]);
+  const titleOpacity = useTransform(smoothStory, [0.02, 0.12, 0.88, 0.94], [0, 1, 1, 0]);
+  const titleY       = useTransform(smoothStory, [0.02, 0.12, 0.25, 0.35], isMobile ? [20, 0, 0, -40] : [0, 0, 0, -80]);
+  const editionOpacity = useTransform(smoothStory, [0.05, 0.15, 0.88, 0.94], [0, 1, 1, 0]);
+  
+  // Párrafos de Historia (Narrativa Independiente - Flotando como elementos)
+  const p1Opacity = useTransform(smoothStory, [0.25, 0.35, 0.85, 0.95], [0, 1, 1, 0]);
+  const p1Y       = useTransform(smoothStory, [0.25, 0.35, 0.45, 0.55], [40, 0, 0, -60]);
+  
+  const p2Opacity = useTransform(smoothStory, [0.45, 0.55, 0.85, 0.95], [0, 1, 1, 0]);
+  const p2Y       = useTransform(smoothStory, [0.45, 0.55, 0.65, 0.75], [40, 0, 0, 40]);
+
+  const coordsOpacity = useTransform(smoothStory, [0.65, 0.75, 0.88, 0.98], [0, 1, 1, 0]);
+  const coordsY       = useTransform(smoothStory, [0.65, 0.75, 0.88, 0.94], isMobile ? [32, 0, 0, -20] : [60, 0, 0, -30]);
+  const coordsSkew    = useTransform(smoothStory, [0.65, 0.75], isMobile ? [8, 0] : [5, 0]);
+  
+  const contactOpacity = useTransform(smoothStory, [0.92, 0.98], [0, 1]);
+  const contactY       = useTransform(smoothStory, [0.92, 1.0], [32, 0]);
 
   const [isGlitchingOut, setIsGlitchingOut] = useState(false);
 
   useMotionValueEvent(smoothStory, "change", (v) => {
-    // Los glitches solo ocurren durante la transición inicial, no al scrollear después
-    const isEndingTitle = v > 0.08 && v < 0.12;
-    const isEndingCoords = v > 0.40 && v < 0.50;
-    setIsGlitchingOut(isEndingTitle || isEndingCoords);
+    // Los glitches se activan en las transiciones de entrada/salida de cada bloque
+    const isGlitchingBlock = 
+      (v > 0.08 && v < 0.12) || // Title exit
+      (v > 0.18 && v < 0.24) || // P1 entry
+      (v > 0.38 && v < 0.44) || // P2 entry
+      (v > 0.58 && v < 0.64) || // Coords entry
+      (v > 0.88 && v < 0.94);   // Contact entry
 
-    if (!typingStarted && v >= 0.42) {
+    setIsGlitchingOut(isGlitchingBlock);
+
+    if (v >= 0.98 && !introFinished) {
+      setIntroFinished(true);
+    }
+
+    if (!typingStarted && v >= 0.65) {
       setTypingStarted(true);
     }
   });
@@ -710,7 +733,7 @@ export default function AstroHero() {
         )}
       </AnimatePresence>
 
-      <main className={`${styles.page} ${preloaderDone ? styles.pageMounted : ""}`}>
+      <main className={`${styles.page} ${preloaderDone ? styles.pageMounted : ""} ${!introFinished ? styles.locked : ""}`}>
         <section className={styles.heroShell}>
           <motion.div
             className={styles.stage}
@@ -720,6 +743,9 @@ export default function AstroHero() {
             }}
           >
             {isGlitching && <div className={styles.glitchOverlay} style={{ pointerEvents: "none" }} />}
+            
+            {/* Outline Interface - "Elementos" trace */}
+            <div className={styles.interfaceField} aria-hidden="true" />
 
             <div className={`${styles.bgFallback} ${videoReady ? styles.bgFallbackHidden : ""}`} />
              <motion.video
@@ -830,14 +856,31 @@ export default function AstroHero() {
               />
             ))}
 
-            <motion.div className={styles.swipeCue} style={{ opacity: swipeOpacity }}>
-              <span className={styles.swipeArrows}>⌄⌄⌄</span>
-            </motion.div>
+            {introFinished && (
+              <motion.div className={styles.swipeCue} style={{ opacity: swipeOpacity }}>
+                <span className={styles.swipeArrows}>⌄⌄⌄</span>
+              </motion.div>
+            )}
 
             <motion.div
               className={`${styles.titleBlock} ${(isGlitching || isGlitchingOut) ? styles.dirtyTransmission : ""} ${!isMobile && !isGlitchingOut ? styles.desktopGlitchReveal : ""}`}
               style={{ opacity: titleOpacity, y: titleY, zIndex: 55 }}
             >
+              <motion.div 
+                className={styles.logoContainer}
+                initial={{ scale: 0.8, filter: "blur(10px)" }}
+                animate={{ scale: 1, filter: "blur(0px)" }}
+                transition={{ duration: 0.8, ease: "easeOut" }}
+              >
+                <Image 
+                  src={editionData.logo} 
+                  alt="Astro Logo" 
+                  width={140} 
+                  height={140} 
+                  className={styles.logoImage} 
+                  priority
+                />
+              </motion.div>
               <h2 className={styles.mainTitle}>ASTRO SDQ</h2>
               <motion.p
                 className={styles.edition}
@@ -845,6 +888,26 @@ export default function AstroHero() {
               >
                 5TA EDICIÓN
               </motion.p>
+            </motion.div>
+
+            {/* Historia - Párrafo 1 */}
+            <motion.div
+              className={`${styles.coordBlock} ${(isGlitching || isGlitchingOut) ? styles.dirtyTransmission : ""} ${!isMobile && !isGlitchingOut ? styles.desktopGlitchReveal : ""}`}
+              style={{ opacity: p1Opacity, y: p1Y, zIndex: 45 }}
+            >
+              <p className={styles.paragraph1}>
+                {editionData.paragraph1}
+              </p>
+            </motion.div>
+
+            {/* Historia - Párrafo 2 */}
+            <motion.div
+              className={`${styles.coordBlock} ${(isGlitching || isGlitchingOut) ? styles.dirtyTransmission : ""} ${!isMobile && !isGlitchingOut ? styles.desktopGlitchReveal : ""}`}
+              style={{ opacity: p2Opacity, y: p2Y, zIndex: 45 }}
+            >
+              <p className={styles.paragraph2}>
+                {editionData.paragraph2}
+              </p>
             </motion.div>
 
             <motion.div
