@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, MotionValue } from "framer-motion";
-import { RefObject } from "react";
+import { RefObject, useEffect, useState } from "react";
 import { ASTRO_CONFIG } from "@/config/astro-config";
 import styles from "./astro-hero.module.css";
 
@@ -34,15 +34,31 @@ export default function CinemaBackground({
   desktopRayOpacity, desktopRayX, desktopRayY, desktopRayScaleX, desktopRayScaleY,
   desktopLowerMaskOpacity, desktopFrameScale, desktopFrameY
 }: CinemaBackgroundProps) {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Si el video falla, disparamos onVideoReady para no bloquear el preloader
+  const handleVideoError = () => {
+    console.warn("Video failed to load, switching to fallback poster.");
+    onVideoReady();
+  };
+
+  if (!mounted) return null;
+
   return (
     <>
       <div className={`${styles.bgFallback} ${videoReady ? styles.bgFallbackHidden : ""}`} />
       
       <motion.video
+        key={isMobile ? "mobile" : "desktop"} // Forzamos re-render si cambia el dispositivo
         ref={videoRef}
         muted
         playsInline
         autoPlay
+        loop={isMobile}
         preload="auto"
         poster={isMobile ? ASTRO_CONFIG.assets.mobilePoster : ASTRO_CONFIG.assets.fallbackPoster}
         className={styles.bgVideo}
@@ -51,25 +67,18 @@ export default function CinemaBackground({
         onLoadedData={onVideoReady}
         onCanPlay={onVideoReady}
         onCanPlayThrough={onVideoReady}
-        onError={onVideoReady}
+        onError={handleVideoError}
       >
-        {isMobile ? (
-          <source src={ASTRO_CONFIG.videos.mobile} type="video/webm" />
-        ) : (
-          <source src={ASTRO_CONFIG.videos.desktop} type="video/mp4" />
-        )}
+        <source 
+          src={isMobile ? ASTRO_CONFIG.videos.mobile : ASTRO_CONFIG.videos.desktop} 
+          type={isMobile ? "video/webm" : "video/mp4"} 
+        />
       </motion.video>
 
       {!isMobile && (
         <>
-          <motion.div
-            className={styles.desktopBwFrame}
-            style={{ scale: desktopFrameScale, y: desktopFrameY }}
-          />
-          <motion.div
-            className={styles.desktopColorFrame}
-            style={{ opacity: desktopColorReveal, scale: desktopFrameScale, y: desktopFrameY }}
-          />
+          <motion.div className={styles.desktopBwFrame} style={{ scale: desktopFrameScale, y: desktopFrameY }} />
+          <motion.div className={styles.desktopColorFrame} style={{ opacity: desktopColorReveal, scale: desktopFrameScale, y: desktopFrameY }} />
           <motion.div
             className={styles.desktopNebulaFx}
             style={{
