@@ -325,6 +325,10 @@
   pointer-events: none;
 }
 
+/* Ocultar botones de play y controles de navegadores */
+video::-webkit-media-controls { display:none !important; }
+video::-webkit-media-controls-start-playback-button { display: none !important; -webkit-appearance: none; }
+
 .desktopBwFrame {
   position: absolute;
   inset: 0;
@@ -1034,6 +1038,24 @@
   .copyRail { width: 92%; }
 }
 
+.secretTrigger {
+  position: absolute;
+  top: 15%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 250px;
+  height: 250px;
+  border-radius: 50%;
+  z-index: 150; 
+  cursor: crosshair;
+  background: transparent;
+}
+
+/* Evitar que los mensajes se oculten al scrollear una vez revelados */
+.mainTitle, .edition, .storyBlock {
+  will-change: transform, opacity;
+}
+
 @media (max-width: 768px) {
   .bgFallback {
     background-image: url("/astro/backgrounds/mobile-color.jpg");
@@ -1097,21 +1119,21 @@
   }
 
   .ringContainer {
-    width: 50vmin !important;
-    height: 50vmin !important;
+    width: 35vmin !important;
+    height: 35vmin !important;
   }
 
   .contactBlock {
-    width: 88%;
-    bottom: 8%;
-    padding: 1.5rem;
-    transform: scale(0.85); /* Reducimos para que se vea el fondo */
+    width: 85%;
+    bottom: 6%;
+    padding: 1.2rem;
+    transform: scale(0.8);
     z-index: 60;
   }
 
   .mainTitle {
-    font-size: 12vw;
-    margin-top: 10vh;
+    font-size: 11vw;
+    margin-top: 8vh;
     z-index: 60;
   }
 
