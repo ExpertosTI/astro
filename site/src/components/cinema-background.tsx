@@ -35,75 +35,114 @@ export default function CinemaBackground({
   desktopLowerMaskOpacity, desktopFrameScale, desktopFrameY
 }: CinemaBackgroundProps) {
   const [mounted, setMounted] = useState(false);
+  const [hasError, setHasError] = useState(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // Si el video falla, disparamos onVideoReady para no bloquear el preloader
   const handleVideoError = () => {
-    console.warn("Video failed to load, switching to fallback poster.");
-    onVideoReady();
+    console.error("Video load error: Enforcing high-fidelity fallback.");
+    setHasError(true);
+    onVideoReady(); // Permite que el preloader termine
   };
 
   if (!mounted) return null;
 
+  const poster = isMobile ? ASTRO_CONFIG.assets.mobilePoster : ASTRO_CONFIG.assets.fallbackPoster;
+
   return (
     <>
-      <div className={`${styles.bgFallback} ${videoReady ? styles.bgFallbackHidden : ""}`} />
+      {/* Base sólida: El poster siempre está aquí debajo */}
+      <div 
+        className={styles.bgFallback} 
+        style={{ 
+          backgroundImage: `url(${poster})`,
+          opacity: 1, // Siempre visible como base
+          zIndex: 1
+        }}
+      />
       
-      <motion.video
-        key={isMobile ? "mobile" : "desktop"} // Forzamos re-render si cambia el dispositivo
-        ref={videoRef}
-        muted
-        playsInline
-        autoPlay
-        loop={isMobile}
-        preload="auto"
-        poster={isMobile ? ASTRO_CONFIG.assets.mobilePoster : ASTRO_CONFIG.assets.fallbackPoster}
-        className={styles.bgVideo}
-        style={{ scale: isMobile ? (mobileVideoScale as any) : 1 }}
-        onLoadedMetadata={onVideoReady}
-        onLoadedData={onVideoReady}
-        onCanPlay={onVideoReady}
-        onCanPlayThrough={onVideoReady}
-        onError={handleVideoError}
-      >
-        <source 
-          src={isMobile ? ASTRO_CONFIG.videos.mobile : ASTRO_CONFIG.videos.desktop} 
-          type={isMobile ? "video/webm" : "video/mp4"} 
-        />
-      </motion.video>
+      {!hasError && (
+        <motion.video
+          key={isMobile ? "mobile" : "desktop"}
+          ref={videoRef}
+          muted
+          playsInline
+          autoPlay
+          loop={isMobile}
+          preload="auto"
+          poster={poster}
+          className={styles.bgVideo}
+          style={{ 
+            scale: isMobile ? (mobileVideoScale as any) : 1,
+            opacity: videoReady ? 1 : 0,
+            zIndex: 2
+          }}
+          onLoadedMetadata={onVideoReady}
+          onLoadedData={onVideoReady}
+          onCanPlay={onVideoReady}
+          onCanPlayThrough={onVideoReady}
+          onError={handleVideoError}
+        >
+          <source 
+            src={isMobile ? ASTRO_CONFIG.videos.mobile : ASTRO_CONFIG.videos.desktop} 
+            type={isMobile ? "video/webm" : "video/mp4"} 
+          />
+        </motion.video>
+      )}
 
       {!isMobile && (
         <>
-          <motion.div className={styles.desktopBwFrame} style={{ scale: desktopFrameScale, y: desktopFrameY }} />
-          <motion.div className={styles.desktopColorFrame} style={{ opacity: desktopColorReveal, scale: desktopFrameScale, y: desktopFrameY }} />
+          {/* Capas de efectos: Solo se ven si el video está listo o si hay error (como fallback) */}
+          <motion.div 
+            className={styles.desktopBwFrame} 
+            style={{ 
+              scale: desktopFrameScale, 
+              y: desktopFrameY,
+              zIndex: 3,
+              opacity: (videoReady || hasError) ? 1 : 0
+            }} 
+          />
+          <motion.div 
+            className={styles.desktopColorFrame} 
+            style={{ 
+              opacity: hasError ? 1 : desktopColorReveal, 
+              scale: desktopFrameScale, 
+              y: desktopFrameY,
+              zIndex: 4
+            }} 
+          />
           <motion.div
             className={styles.desktopNebulaFx}
             style={{
-              opacity: desktopNebulaOpacity,
+              opacity: hasError ? 0.6 : desktopNebulaOpacity,
               x: desktopNebulaX,
               y: desktopNebulaY,
               scale: desktopNebulaScale,
               rotate: desktopNebulaRotate,
+              zIndex: 7
             }}
           />
           <motion.div
             className={styles.desktopRayFx}
             style={{
-              opacity: desktopRayOpacity,
+              opacity: hasError ? 0.4 : desktopRayOpacity,
               x: desktopRayX,
               y: desktopRayY,
               scaleX: desktopRayScaleX,
               scaleY: desktopRayScaleY,
+              zIndex: 8
             }}
           />
-          <motion.div className={styles.desktopSplitMask} style={{ opacity: desktopLowerMaskOpacity }} />
+          <motion.div 
+            className={styles.desktopSplitMask} 
+            style={{ opacity: desktopLowerMaskOpacity, zIndex: 6 }} 
+          />
         </>
       )}
       
-      <div className={styles.videoVignette} />
+      <div className={styles.videoVignette} style={{ zIndex: 5 }} />
     </>
   );
 }
