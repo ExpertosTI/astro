@@ -481,33 +481,26 @@ export default function AstroHero() {
   const cameraRotateY = useTransform(smoothInteraction, [0, 0.5, 1], [-0.8, 0, 0.8]);
 
   // Capas Mutuamente Exclusivas (Timeline de Narrativa)
-  const titleOpacity = useTransform(smoothStory, [0.01, 0.08, 0.18, 0.24], [0, 1, 1, 0]);
+  const titleOpacity = useTransform(smoothStory, [0.01, 0.1, 0.45, 0.55], [0, 1, 1, 0]);
   const titleDisplay = useTransform(titleOpacity, (v) => v > 0.01 ? "flex" : "none");
-  const titleY       = useTransform(smoothStory, [0.01, 0.12, 0.18, 0.24], [20, 0, 0, -40]);
-  const editionOpacity = useTransform(smoothStory, [0.05, 0.12, 0.18, 0.24], [0, 1, 1, 0]);
+  const titleY       = useTransform(smoothStory, [0.01, 0.12, 0.45, 0.55], [20, 0, 0, -40]);
+  const editionOpacity = useTransform(smoothStory, [0.05, 0.12, 0.45, 0.55], [0, 1, 1, 0]);
   
-  const p1Opacity = useTransform(smoothStory, [0.26, 0.34, 0.44, 0.52], [0, 1, 1, 0]);
-  const p1Y       = useTransform(smoothStory, [0.26, 0.34, 0.44, 0.52], [40, 0, 0, -40]);
+  const coordsOpacity = useTransform(smoothStory, [0.58, 0.68, 0.85, 0.92], [0, 1, 1, 0]);
+  const coordsY       = useTransform(smoothStory, [0.58, 0.68, 0.85, 0.92], [40, 0, 0, -40]);
+  const coordsSkew    = useTransform(smoothStory, [0.58, 0.68], [5, 0]);
   
-  const p2Opacity = useTransform(smoothStory, [0.54, 0.62, 0.72, 0.80], [0, 1, 1, 0]);
-  const p2Y       = useTransform(smoothStory, [0.54, 0.62, 0.72, 0.80], [40, 0, 0, -40]);
-
-  const coordsOpacity = useTransform(smoothStory, [0.82, 0.88, 0.94, 0.98], [0, 1, 1, 0]);
-  const coordsY       = useTransform(smoothStory, [0.82, 0.88, 0.94, 0.98], [40, 0, 0, -40]);
-  const coordsSkew    = useTransform(smoothStory, [0.82, 0.88], [5, 0]);
-  
-  const contactOpacity = useTransform(smoothStory, [0.96, 0.99], [0, 1]);
-  const contactY       = useTransform(smoothStory, [0.96, 1.0], [20, 0]);
+  const contactOpacity = useTransform(smoothStory, [0.94, 0.99], [0, 1]);
+  const contactY       = useTransform(smoothStory, [0.94, 1.0], [20, 0]);
 
   const [isGlitchingOut, setIsGlitchingOut] = useState(false);
 
   useMotionValueEvent(smoothStory, "change", (v) => {
     // Los glitches se activan en las transiciones de entrada/salida de cada bloque
     const isGlitchingBlock = 
-      (v > 0.08 && v < 0.12) || // Title exit
-      (v > 0.18 && v < 0.24) || // P1 entry
-      (v > 0.38 && v < 0.44) || // P2 entry
-      (v > 0.58 && v < 0.64) || // Coords entry
+      (v > 0.01 && v < 0.08) || // Title entry
+      (v > 0.48 && v < 0.55) || // Title exit
+      (v > 0.58 && v < 0.65) || // Coords entry
       (v > 0.88 && v < 0.94);   // Contact entry
 
     setIsGlitchingOut(isGlitchingBlock);
@@ -883,25 +876,7 @@ export default function AstroHero() {
               </motion.p>
             </motion.div>
 
-            {/* Historia - Párrafo 1 */}
-            <motion.div
-              className={`${styles.coordBlock} ${(isGlitching || isGlitchingOut) ? styles.dirtyTransmission : ""} ${!isMobile && !isGlitchingOut ? styles.desktopGlitchReveal : ""}`}
-              style={{ opacity: p1Opacity, y: p1Y, zIndex: 45 }}
-            >
-              <p className={styles.paragraph1}>
-                {editionData.paragraph1}
-              </p>
-            </motion.div>
 
-            {/* Historia - Párrafo 2 */}
-            <motion.div
-              className={`${styles.coordBlock} ${(isGlitching || isGlitchingOut) ? styles.dirtyTransmission : ""} ${!isMobile && !isGlitchingOut ? styles.desktopGlitchReveal : ""}`}
-              style={{ opacity: p2Opacity, y: p2Y, zIndex: 45 }}
-            >
-              <p className={styles.paragraph2}>
-                {editionData.paragraph2}
-              </p>
-            </motion.div>
 
             <motion.div
               className={`${styles.coordBlock} ${styles.terminalFrame} ${(isTyping || isGlitching || isGlitchingOut) ? styles.dirtyTransmission : ""} ${!isMobile && !isTyping && !isGlitchingOut ? styles.desktopGlitchReveal : ""}`}
@@ -927,7 +902,7 @@ export default function AstroHero() {
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0, y: -20, filter: "blur(10px)" }}
                   >
-                    <p className={styles.contactTitle}>DEJA TU CONTACTO PARA AVISO DE APERTURA</p>
+                    <p className={styles.contactTitle}>SISTEMA DE NOTIFICACIÓN</p>
                     <div className={styles.channelToggle} role="group" aria-label="Canal de contacto">
                       {(["ig", "whatsapp", "mail", "fb"] as ContactChannel[]).map((channel) => (
                         <button
@@ -940,7 +915,7 @@ export default function AstroHero() {
                           }}
                         >
                           <ChannelIcon channel={channel} />
-                          <span>{channel === "ig" ? "INSTAGRAM" : channel === "whatsapp" ? "WHATSAPP" : channel.toUpperCase()}</span>
+                          <span>{channel === "ig" ? "INSTAGRAM" : channel.toUpperCase()}</span>
                         </button>
                       ))}
                     </div>
