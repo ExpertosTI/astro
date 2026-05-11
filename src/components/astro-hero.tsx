@@ -215,11 +215,17 @@ function CornerRing({
   
   const ringFilter = useTransform(ringBlur, (value) => value > 0.05 ? `blur(${value.toFixed(1)}px) brightness(${1 - value/20})` : "none");
   const breatheScale = useTransform(time, (t) => 1 + Math.sin(t / 2200 + phase) * 0.04);
-  const ringOpacity = useTransform(visualProgress, [0, 0.05, 0.7, 1], [0, 1, 0.9, 0], { clamp: true });
-  // Escala: de muy pequeño (lejos) a muy grande (pasando la cámara)
-  const baseScale = useTransform(visualProgress, [0, 0.1, 0.7, 1], [0.05, 0.35, 1.8, 4.5], { clamp: true });
-  const finalScale = useTransform([baseScale, breatheScale], ([bs, brs]) => (bs as number) * (brs as number));
-  const ringZIndex = useTransform(visualProgress, (value) => (value > 0.65 ? 120 : 40));
+  const ringOpacity = useTransform(visualProgress, [0, 0.15, 0.85, 1], [0, 0.9, 0.9, 0], { clamp: true });
+  
+  // Efecto Orbital: escala pulsante y deriva errática
+  const orbitalScale = useTransform([visualProgress, time], ([vp, t]) => {
+    const pulse = Math.sin((t as number) / 2500 + phase) * 0.15;
+    const distanceFactor = 0.7 + Math.sin((vp as number) * Math.PI + phase) * 0.6;
+    return distanceFactor + pulse;
+  });
+
+  const finalScale = useTransform([orbitalScale, breatheScale], ([os, brs]) => (os as number) * (brs as number));
+  const ringZIndex = useTransform(visualProgress, (value) => (value > 0.5 ? 120 : 40));
   
   const displayOpacity = useTransform(ringOpacity, (v) => isCollected ? 0 : v);
 
@@ -474,24 +480,24 @@ export default function AstroHero() {
   const cameraRotateX = useTransform(smoothInteraction, [0, 0.5, 1], [1.2, 0, -1.2]);
   const cameraRotateY = useTransform(smoothInteraction, [0, 0.5, 1], [-0.8, 0, 0.8]);
 
-  const titleOpacity = useTransform(smoothStory, [0.02, 0.12, 0.88, 0.94], [0, 1, 1, 0]);
+  // Capas Mutuamente Exclusivas (Timeline de Narrativa)
+  const titleOpacity = useTransform(smoothStory, [0.01, 0.08, 0.18, 0.24], [0, 1, 1, 0]);
   const titleDisplay = useTransform(titleOpacity, (v) => v > 0.01 ? "flex" : "none");
-  const titleY       = useTransform(smoothStory, [0.02, 0.12, 0.25, 0.35], isMobile ? [20, 0, 0, -40] : [0, 0, 0, -80]);
-  const editionOpacity = useTransform(smoothStory, [0.05, 0.15, 0.88, 0.94], [0, 1, 1, 0]);
+  const titleY       = useTransform(smoothStory, [0.01, 0.12, 0.18, 0.24], [20, 0, 0, -40]);
+  const editionOpacity = useTransform(smoothStory, [0.05, 0.12, 0.18, 0.24], [0, 1, 1, 0]);
   
-  // Párrafos de Historia (Narrativa Independiente - Flotando como elementos)
-  const p1Opacity = useTransform(smoothStory, [0.25, 0.35, 0.85, 0.95], [0, 1, 1, 0]);
-  const p1Y       = useTransform(smoothStory, [0.25, 0.35, 0.45, 0.55], [40, 0, 0, -60]);
+  const p1Opacity = useTransform(smoothStory, [0.26, 0.34, 0.44, 0.52], [0, 1, 1, 0]);
+  const p1Y       = useTransform(smoothStory, [0.26, 0.34, 0.44, 0.52], [40, 0, 0, -40]);
   
-  const p2Opacity = useTransform(smoothStory, [0.45, 0.55, 0.85, 0.95], [0, 1, 1, 0]);
-  const p2Y       = useTransform(smoothStory, [0.45, 0.55, 0.65, 0.75], [40, 0, 0, 40]);
+  const p2Opacity = useTransform(smoothStory, [0.54, 0.62, 0.72, 0.80], [0, 1, 1, 0]);
+  const p2Y       = useTransform(smoothStory, [0.54, 0.62, 0.72, 0.80], [40, 0, 0, -40]);
 
-  const coordsOpacity = useTransform(smoothStory, [0.65, 0.75, 0.88, 0.98], [0, 1, 1, 0]);
-  const coordsY       = useTransform(smoothStory, [0.65, 0.75, 0.88, 0.94], isMobile ? [32, 0, 0, -20] : [60, 0, 0, -30]);
-  const coordsSkew    = useTransform(smoothStory, [0.65, 0.75], isMobile ? [8, 0] : [5, 0]);
+  const coordsOpacity = useTransform(smoothStory, [0.82, 0.88, 0.94, 0.98], [0, 1, 1, 0]);
+  const coordsY       = useTransform(smoothStory, [0.82, 0.88, 0.94, 0.98], [40, 0, 0, -40]);
+  const coordsSkew    = useTransform(smoothStory, [0.82, 0.88], [5, 0]);
   
-  const contactOpacity = useTransform(smoothStory, [0.92, 0.98], [0, 1]);
-  const contactY       = useTransform(smoothStory, [0.92, 1.0], [32, 0]);
+  const contactOpacity = useTransform(smoothStory, [0.96, 0.99], [0, 1]);
+  const contactY       = useTransform(smoothStory, [0.96, 1.0], [20, 0]);
 
   const [isGlitchingOut, setIsGlitchingOut] = useState(false);
 
@@ -867,21 +873,7 @@ export default function AstroHero() {
               className={`${styles.titleBlock} ${(isGlitching || isGlitchingOut) ? styles.dirtyTransmission : ""} ${!isMobile && !isGlitchingOut ? styles.desktopGlitchReveal : ""}`}
               style={{ opacity: titleOpacity, y: titleY, display: titleDisplay, zIndex: 55 }}
             >
-              <motion.div 
-                className={styles.logoContainer}
-                initial={{ scale: 0.8, filter: "blur(10px)" }}
-                animate={{ scale: 1, filter: "blur(0px)" }}
-                transition={{ duration: 0.8, ease: "easeOut" }}
-              >
-                <Image 
-                  src={editionData.logo} 
-                  alt="Astro Logo" 
-                  width={140} 
-                  height={140} 
-                  className={styles.logoImage} 
-                  priority
-                />
-              </motion.div>
+
               <h2 className={styles.mainTitle}>ASTRO SDQ</h2>
               <motion.p
                 className={styles.edition}
