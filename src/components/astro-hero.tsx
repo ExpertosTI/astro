@@ -215,9 +215,9 @@ function CornerRing({
   
   const ringFilter = useTransform(ringBlur, (value) => value > 0.05 ? `blur(${value.toFixed(1)}px) brightness(${1 - value/20})` : "none");
   const breatheScale = useTransform(time, (t) => 1 + Math.sin(t / 2200 + phase) * 0.04);
-  const ringOpacity = useTransform(visualProgress, [0, 0.1, 0.8, 1], [0, 0.95, 0.9, 0], { clamp: true });
-  // Los anillos ahora vienen de pequeño (lejos) a grande (cerca/pasando)
-  const baseScale = useTransform(visualProgress, [0, 0.1, 0.8, 1], [0, 0.4, 1.2, 2.5], { clamp: true });
+  const ringOpacity = useTransform(visualProgress, [0, 0.05, 0.7, 1], [0, 1, 0.9, 0], { clamp: true });
+  // Escala: de muy pequeño (lejos) a muy grande (pasando la cámara)
+  const baseScale = useTransform(visualProgress, [0, 0.1, 0.7, 1], [0.05, 0.35, 1.8, 4.5], { clamp: true });
   const finalScale = useTransform([baseScale, breatheScale], ([bs, brs]) => (bs as number) * (brs as number));
   const ringZIndex = useTransform(visualProgress, (value) => (value > 0.65 ? 120 : 40));
   
@@ -240,7 +240,7 @@ function CornerRing({
         filter: ringFilter,
         zIndex: ringZIndex,
         cursor: "pointer",
-        pointerEvents: "auto",
+        pointerEvents: isCollected ? "none" : "auto",
       }}
     >
       <img 
@@ -475,6 +475,7 @@ export default function AstroHero() {
   const cameraRotateY = useTransform(smoothInteraction, [0, 0.5, 1], [-0.8, 0, 0.8]);
 
   const titleOpacity = useTransform(smoothStory, [0.02, 0.12, 0.88, 0.94], [0, 1, 1, 0]);
+  const titleDisplay = useTransform(titleOpacity, (v) => v > 0.01 ? "flex" : "none");
   const titleY       = useTransform(smoothStory, [0.02, 0.12, 0.25, 0.35], isMobile ? [20, 0, 0, -40] : [0, 0, 0, -80]);
   const editionOpacity = useTransform(smoothStory, [0.05, 0.15, 0.88, 0.94], [0, 1, 1, 0]);
   
@@ -864,7 +865,7 @@ export default function AstroHero() {
 
             <motion.div
               className={`${styles.titleBlock} ${(isGlitching || isGlitchingOut) ? styles.dirtyTransmission : ""} ${!isMobile && !isGlitchingOut ? styles.desktopGlitchReveal : ""}`}
-              style={{ opacity: titleOpacity, y: titleY, zIndex: 55 }}
+              style={{ opacity: titleOpacity, y: titleY, display: titleDisplay, zIndex: 55 }}
             >
               <motion.div 
                 className={styles.logoContainer}
