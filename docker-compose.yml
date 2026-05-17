@@ -1,0 +1,48 @@
+version: "3.8"
+
+services:
+  astro-web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - NEXT_PUBLIC_INSFORGE_API_URL=${NEXT_PUBLIC_INSFORGE_API_URL:-https://insforge.renace.tech/api}
+    image: astro-web:latest
+    environment:
+      - NEXT_PUBLIC_INSFORGE_API_URL=${NEXT_PUBLIC_INSFORGE_API_URL:-https://insforge.renace.tech/api}
+      - INSFORGE_JWT_SECRET=${INSFORGE_JWT_SECRET}
+    networks:
+      - RenaceNet
+    deploy:
+      mode: replicated
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 512M
+      labels:
+        - "traefik.enable=true"
+        # HTTP Router
+        - "traefik.http.routers.astro_sdq_http.rule=Host(`astro.renace.tech`)"
+        - "traefik.http.routers.astro_sdq_http.entrypoints=web"
+        - "traefik.http.routers.astro_sdq_http.middlewares=astro_sdq_redirect_https"
+        # Middleware: Redirect to HTTPS
+        - "traefik.http.middlewares.astro_sdq_redirect_https.redirectscheme.scheme=https"
+        # HTTPS Router
+        - "traefik.http.routers.astro_sdq_secure.rule=Host(`astro.renace.tech`)"
+        - "traefik.http.routers.astro_sdq_secure.entrypoints=websecure"
+        - "traefik.http.routers.astro_sdq_secure.tls=true"
+        - "traefik.http.routers.astro_sdq_secure.tls.certresolver=letsencryptresolver"
+        # Service Port
+        - "traefik.http.services.astro_sdq_svc.loadbalancer.server.port=80"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  RenaceNet:
+    external: true
