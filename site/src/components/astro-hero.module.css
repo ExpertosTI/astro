@@ -282,7 +282,6 @@
     radial-gradient(3px   3px   at 50% 60%, rgba(255, 200, 100, 0.6), transparent);
   background-size: 400px 400px;
   opacity: 0.5;
-  filter: blur(0.5px);
 }
 
 /* ── BACKGROUND LAYERS ────────────────────────────── */
@@ -438,7 +437,7 @@ video::-webkit-media-controls-start-playback-button { display: none !important; 
   flex-shrink: 0;
   transform-style: preserve-3d;
   pointer-events: none;
-  will-change: transform, opacity, filter;
+  will-change: transform, opacity;
 }
 
 .ringAura {
@@ -480,7 +479,7 @@ video::-webkit-media-controls-start-playback-button { display: none !important; 
 }
 
 .ring1 {
-  filter: drop-shadow(0 0 4rem rgba(255, 115, 24, 0.58)) brightness(1.12) blur(0.4px);
+  filter: drop-shadow(0 0 2.5rem rgba(255, 115, 24, 0.45)) brightness(1.1);
 }
 
 .ring1Asset {
@@ -490,7 +489,7 @@ video::-webkit-media-controls-start-playback-button { display: none !important; 
 }
 
 .ring2 {
-  filter: drop-shadow(0 0 2.8rem rgba(255, 212, 122, 0.48)) brightness(1.04) blur(1.6px);
+  filter: drop-shadow(0 0 2rem rgba(255, 212, 122, 0.38)) brightness(1.04);
 }
 
 .ring2Asset {
@@ -500,7 +499,7 @@ video::-webkit-media-controls-start-playback-button { display: none !important; 
 }
 
 .ring3 {
-  filter: drop-shadow(0 0 4.8rem rgba(255, 92, 28, 0.64)) brightness(1.2) blur(0px);
+  filter: drop-shadow(0 0 3rem rgba(255, 92, 28, 0.5)) brightness(1.15);
 }
 
 .ring3Asset {
@@ -510,7 +509,7 @@ video::-webkit-media-controls-start-playback-button { display: none !important; 
 }
 
 .ring4 {
-  filter: drop-shadow(0 0 2.2rem rgba(255, 240, 178, 0.34)) brightness(0.98) blur(2.6px);
+  filter: drop-shadow(0 0 1.8rem rgba(255, 240, 178, 0.3)) brightness(0.98);
 }
 
 .ring4Asset {
@@ -1078,6 +1077,39 @@ video::-webkit-media-controls-start-playback-button { display: none !important; 
 
 @media (max-width: 768px) {
   .secretTrigger {
+    display: none !important;
+  }
+
+  /* ── PERFORMANCE: GPU savings ── */
+  .notifyConsole,
+  .textPanelDark,
+  .textPanelVivid {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+
+  /* Canvas ya renderiza estrellas — desactivar capas CSS redundantes */
+  .starsSmall,
+  .starsMedium,
+  .starsLarge {
+    display: none !important;
+  }
+
+  /* Reducir intensidad de efectos de grain y scanline */
+  .grain {
+    opacity: 0.01 !important;
+  }
+
+  .scanline {
+    display: none !important;
+  }
+
+  /* Simplificar filtros de anillos para GPU móvil */
+  .ring1, .ring2, .ring3, .ring4 {
+    filter: brightness(1.05) !important;
+  }
+
+  .ringAura {
     display: none !important;
   }
 

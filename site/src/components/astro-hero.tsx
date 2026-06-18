@@ -191,14 +191,14 @@ function CornerRing({
   const dx = useTransform([progress, time, mouseX], ([p, t, mx]) => {
     const driftAutoX = Math.sin((t as number) / 2800 + phase) * 35 + Math.sin((t as number) / 1400) * 12;
     const travelX = originX + driftX * (p as number) + phase * swayX * 0.7;
-    const mouseReaction = (mx as number) * 65 * (Math.sin(phase) + 1.2);
+    const mouseReaction = (mx as number) !== 0 ? (mx as number) * 65 * (Math.sin(phase) + 1.2) : 0;
     return wrap(travelX, fieldX) + driftAutoX + mouseReaction;
   });
 
   const dy = useTransform([progress, time, mouseY], ([p, t, my]) => {
     const driftAutoY = Math.cos((t as number) / 3200 + phase) * 35 + Math.cos((t as number) / 1600) * 12;
     const travelY = originY + driftY * (p as number) + phase * swayY * 0.6;
-    const mouseReaction = (my as number) * 65 * (Math.cos(phase) + 1.2);
+    const mouseReaction = (my as number) !== 0 ? (my as number) * 65 * (Math.cos(phase) + 1.2) : 0;
     return wrap(travelY, fieldY) + driftAutoY + mouseReaction;
   });
 
@@ -819,7 +819,10 @@ export default function AstroHero() {
     type Star = { x: number; y: number; r: number; a: number; da: number };
     const stars: Star[] = [];
     let rafId = 0;
-    const starCount = isMobile ? 110 : 180;
+    const starCount = isMobile ? 60 : 180;
+    const targetFps = isMobile ? 24 : 60;
+    const frameInterval = 1000 / targetFps;
+    let lastFrameTime = 0;
     const resize = () => {
       canvas.width  = window.innerWidth;
       canvas.height = window.innerHeight;
@@ -835,8 +838,14 @@ export default function AstroHero() {
         da: (Math.random() - 0.5) * 0.004,
       });
     }
-    function animate() {
+    function animate(now: number) {
       if (!ctx || !canvas) return;
+      rafId = requestAnimationFrame(animate);
+      
+      // Throttle frame rate on mobile
+      if (now - lastFrameTime < frameInterval) return;
+      lastFrameTime = now;
+
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       for (const s of stars) {
         s.a += s.da;
@@ -849,7 +858,6 @@ export default function AstroHero() {
         ctx.fill();
       }
       ctx.globalAlpha = 1;
-      rafId = requestAnimationFrame(animate);
     }
     rafId = requestAnimationFrame(animate);
     return () => {
