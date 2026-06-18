@@ -57,14 +57,14 @@ function CornerRing({
     return wrap(travelY, fieldY) + driftAutoY + mouseReaction;
   });
 
-  const idleRot = useTransform(time, (t: any) => Math.sin((t as number) / 4000 + phase) * 4);
-  const scrollRot = useTransform(progress, (value: any) => rotZ + (value as number) * speed * 15);
-  const totalRot = useTransform([scrollRot, idleRot], ([sr, ir]) => (sr as number) + (ir as number));
+  const idleRot = useTransform(time, (t: number) => Math.sin(t / 4000 + phase) * 4);
+  const scrollRot = useTransform(progress, (value: number) => rotZ + value * speed * 15);
+  const totalRot = useTransform([scrollRot, idleRot], ([sr, ir]: number[]) => sr + ir);
 
-  const visualProgress = useTransform(progress, (v: any) => Math.min(Math.max((v as number) % 1.2, 0), 1));
+  const visualProgress = useTransform(progress, (v: number) => Math.min(Math.max(v % 1.2, 0), 1));
   const ringOpacity = useTransform(visualProgress, [0, 0.15, 0.7, 1], [0, 0.95, 0.9, 0]);
   const baseScale = useTransform(visualProgress, [0, 0.3, 0.9, 1], [1.2, 0.8, 0.3, 0]);
-  const ringZIndex = useTransform(visualProgress, (value: any) => ((value as number) > 0.65 ? 120 : 40));
+  const ringZIndex = useTransform(visualProgress, (value: number) => (value > 0.65 ? 120 : 40));
 
   return (
     <motion.div
@@ -78,12 +78,13 @@ function CornerRing({
         rotate: totalRot,
         scale: baseScale,
         opacity: ringOpacity,
-        zIndex: ringZIndex as any,
+        zIndex: ringZIndex,
         cursor: "pointer",
         pointerEvents: "auto",
         position: "absolute"
       }}
     >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={src} className={styles.ringInner} alt="Orbital Ring" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
       {isBursting && <div className={styles.ringBurstEffect} />}
     </motion.div>

@@ -175,6 +175,7 @@
   flex-direction: column;
   gap: 0.4rem;
   z-index: 95;
+  pointer-events: none;
 }
 
 .camLabel {
@@ -684,7 +685,8 @@ video::-webkit-media-controls-start-playback-button { display: none !important; 
 }
 
 .terminalFrame {
-  position: absolute;
+  position: relative;
+  width: 100%;
   padding: 1.4rem 1.5rem 1.6rem;
   border: 1px solid rgba(255, 165, 86, 0.26);
   border-radius: 1.4rem;
@@ -714,12 +716,14 @@ video::-webkit-media-controls-start-playback-button { display: none !important; 
   flex-direction: column;
   align-items: center;
   gap: 0.7rem;
-  width: min(92vw, 34rem);
+  width: min(92vw, 38rem);
   z-index: 60;
 }
 
 .notifyConsole {
-  padding: 2.2rem 2.8rem;
+  position: relative;
+  width: 100%;
+  padding: 2.5rem 3rem;
   border: 1px solid rgba(255, 140, 45, 0.12);
   border-radius: 3rem;
   background: linear-gradient(
@@ -732,7 +736,6 @@ video::-webkit-media-controls-start-playback-button { display: none !important; 
     inset 0 0 0 1px rgba(255, 255, 255, 0.05);
   overflow: hidden;
   backdrop-filter: blur(50px);
-  width: min(94vw, 38rem);
 }
 
 .notifyNoise {
@@ -747,16 +750,16 @@ video::-webkit-media-controls-start-playback-button { display: none !important; 
 }
 
 .contactTitle {
-  margin: 0 0 1.2rem;
+  margin: 0 0 1.6rem;
   font-family: var(--font-display), sans-serif;
   color: #ffb562;
-  letter-spacing: 0.3em;
-  font-size: clamp(0.7rem, 1.5vw, 0.9rem);
-  font-weight: 900;
+  letter-spacing: 0.15em;
+  font-size: clamp(1.15rem, 2.2vw, 1.45rem);
+  font-weight: 950;
   text-align: center;
   text-transform: uppercase;
-  text-shadow: 0 0 1.5rem rgba(255, 120, 34, 0.5);
-  opacity: 0.8;
+  text-shadow: 0 0 1.8rem rgba(255, 120, 34, 0.6);
+  opacity: 0.95;
 }
 
 .channelToggle {
@@ -1063,7 +1066,7 @@ video::-webkit-media-controls-start-playback-button { display: none !important; 
   width: 250px;
   height: 250px;
   border-radius: 50%;
-  z-index: 150; 
+  z-index: 45; 
   cursor: crosshair;
   background: transparent;
 }
@@ -1074,6 +1077,10 @@ video::-webkit-media-controls-start-playback-button { display: none !important; 
 }
 
 @media (max-width: 768px) {
+  .secretTrigger {
+    display: none !important;
+  }
+
   .bgFallback {
     background-image: url("/astro/backgrounds/mobile-color.jpg");
     background-position: center top;
@@ -1108,18 +1115,27 @@ video::-webkit-media-controls-start-playback-button { display: none !important; 
   }
 
   .terminalFrame {
-    width: min(92vw, 32rem);
+    width: 100%;
     padding: 1rem 0.9rem 1.2rem;
   }
 
   .notifyConsole {
-    position: relative;
-    top: auto;
-    margin-top: 2rem;
-    width: min(92vw, 32rem);
-    padding: 1rem 0.9rem 1.2rem;
-    transform: scale(0.95);
+    width: 100%;
+    padding: 2.2rem 1.6rem;
     z-index: 60;
+  }
+
+  .camStatus {
+    top: 1.2rem !important;
+    left: 1.2rem !important;
+    right: 1.2rem !important;
+    font-size: 0.58rem !important;
+    letter-spacing: 0.1em !important;
+    width: auto !important;
+  }
+
+  .hudSidebar {
+    display: none !important;
   }
 
   .coordinates {
@@ -1141,10 +1157,7 @@ video::-webkit-media-controls-start-playback-button { display: none !important; 
   }
 
   .contactBlock {
-    width: 90%;
-    top: auto; 
-    padding: 0;
-    transform: none;
+    width: min(92vw, 32rem);
     z-index: 60;
   }
 
@@ -1155,12 +1168,23 @@ video::-webkit-media-controls-start-playback-button { display: none !important; 
   }
 
   .channelToggle {
-    gap: 0.45rem;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.6rem !important;
+    width: 100% !important;
+    margin-bottom: 1.2rem !important;
   }
 
   .channelButton {
-    padding: 0.5rem 0.72rem;
-    font-size: 0.68rem;
+    flex-direction: row !important;
+    gap: 0.5rem !important;
+    padding: 0.65rem 0.5rem !important;
+    font-size: 0.7rem !important;
+    letter-spacing: 0.08em !important;
+    width: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
   }
 
   .notifyForm {
@@ -1185,6 +1209,11 @@ video::-webkit-media-controls-start-playback-button { display: none !important; 
     transform: scale(1.24);
     object-position: center 32%;
   }
+  .contactTitle {
+    font-size: clamp(1rem, 4.5vw, 1.2rem);
+    margin-bottom: 1.4rem;
+    letter-spacing: 0.12em;
+  }
   .textRow   { gap: 0.8rem; }
   .elemDecor { height: clamp(3rem, 10vw, 5rem); }
   .textPanelDark, .textPanelVivid { padding: 1rem 1.2rem; }
@@ -1205,7 +1234,7 @@ video::-webkit-media-controls-start-playback-button { display: none !important; 
   }
 
   .contactBlock {
-    top: auto; 
+    width: min(92vw, 32rem);
   }
 
   .swipeCue {
@@ -1214,12 +1243,15 @@ video::-webkit-media-controls-start-playback-button { display: none !important; 
 
   .channelToggle {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    width: min(90vw, 20rem);
+    grid-template-columns: repeat(2, 1fr) !important;
+    width: 100% !important;
+    gap: 0.45rem !important;
   }
 
   .channelButton {
-    width: 100%;
+    width: 100% !important;
+    font-size: 0.65rem !important;
+    padding: 0.55rem 0.3rem !important;
   }
 
   .notifyForm    { flex-direction: column; border-radius: 1.5rem; padding: 0.8rem; gap: 0.8rem; }
@@ -1262,11 +1294,12 @@ video::-webkit-media-controls-start-playback-button { display: none !important; 
 }
 
 .successTitle {
-  font-family: 'Sora', sans-serif;
-  font-size: 20px;
-  font-weight: 800;
+  font-family: var(--font-display), sans-serif;
+  font-size: clamp(1.2rem, 2vw, 1.6rem);
+  font-weight: 950;
   letter-spacing: 0.1em;
-  color: #fff;
+  color: #ffb562;
+  text-shadow: 0 0 1.5rem rgba(255, 120, 34, 0.6);
   margin-bottom: 10px;
 }
 
@@ -1366,4 +1399,83 @@ video::-webkit-media-controls-start-playback-button { display: none !important; 
 .modalBtnCancel:hover {
   background: rgba(142, 162, 191, 0.1);
   color: #fff;
+}
+
+.ringImage {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+.redirectOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  background: rgba(2, 1, 4, 0.95);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display), monospace;
+  backdrop-filter: blur(15px);
+}
+
+.redirectCard {
+  text-align: center;
+  width: min(90vw, 36rem);
+  padding: 3.5rem 3rem;
+  border: 1px solid rgba(255, 110, 20, 0.3);
+  border-radius: 2rem;
+  background: linear-gradient(165deg, rgba(12, 6, 2, 0.92) 0%, rgba(2, 1, 0, 0.98) 100%);
+  box-shadow: 0 0 5rem rgba(255, 77, 0, 0.25), inset 0 0 2rem rgba(255, 100, 0, 0.05);
+}
+
+.glitchTitle {
+  font-size: 2.2rem;
+  color: #ff9b3e;
+  letter-spacing: 0.22em;
+  font-weight: 950;
+  text-transform: uppercase;
+  margin-bottom: 1rem;
+  text-shadow: 0 0 1.5rem rgba(255, 96, 42, 0.7);
+  animation: glitchStatic 1.5s infinite;
+}
+
+.redirectSubtext {
+  font-size: 0.95rem;
+  color: #ffd89a;
+  letter-spacing: 0.15em;
+  margin-bottom: 2.5rem;
+  opacity: 0.85;
+}
+
+.progressBarContainer {
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-bottom: 1.5rem;
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.5);
+}
+
+.progressBarFill {
+  height: 100%;
+  background: linear-gradient(90deg, #ff6a00, #ff9b3e);
+  box-shadow: 0 0 1.2rem #ff7020;
+}
+
+.redirectStatusText {
+  font-size: 0.75rem;
+  color: #ffd89a;
+  letter-spacing: 0.12em;
+  opacity: 0.6;
+}
+
+@keyframes glitchStatic {
+  0% { transform: skew(0deg); }
+  2% { transform: skew(3deg); filter: hue-rotate(45deg); }
+  4% { transform: skew(-3deg); }
+  6% { transform: skew(0deg); filter: none; }
+  100% { transform: skew(0deg); }
 }

@@ -37,11 +37,14 @@ export default function CinemaBackground({
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
-    // Si es escritorio, marcamos como "videoReady" inmediatamente ya que no cargamos video
-    if (typeof window !== "undefined" && window.innerWidth >= 768) {
-      onVideoReady();
-    }
+    const t = setTimeout(() => {
+      setMounted(true);
+      // Si es escritorio, marcamos como "videoReady" inmediatamente ya que no cargamos video
+      if (typeof window !== "undefined" && window.innerWidth >= 768) {
+        onVideoReady();
+      }
+    }, 0);
+    return () => clearTimeout(t);
   }, [onVideoReady]);
 
   if (!mounted) return null;
@@ -72,7 +75,7 @@ export default function CinemaBackground({
           poster={poster}
           className={styles.bgVideo}
           style={{ 
-            scale: (mobileVideoScale as any),
+            scale: mobileVideoScale,
             opacity: videoReady ? 1 : 0,
             zIndex: 2
           }}

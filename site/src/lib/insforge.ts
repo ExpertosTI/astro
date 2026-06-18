@@ -4,7 +4,21 @@ export type InsforgeLead = {
   contact_value: string;
   channel: string;
   project_id: string;
-  metadata?: any;
+  metadata?: Record<string, unknown>;
+};
+
+export type InsforgeSavedLead = {
+  created_at: string;
+  channel: string;
+  contact_value: string;
+  contact_value_2?: string;
+  project_id: string;
+  metadata?: Record<string, unknown>;
+};
+
+export type InsforgeStats = {
+  total: number;
+  byChannel: Record<string, number>;
 };
 
 export const insforge = {
@@ -19,7 +33,7 @@ export const insforge = {
     } catch { return false; }
   },
 
-  async getLeads(): Promise<any[]> {
+  async getLeads(): Promise<InsforgeSavedLead[]> {
     try {
       const response = await fetch(`${API_URL}/leads?order=created_at.desc`, {
         headers: { 'Accept': 'application/json' }
@@ -28,7 +42,7 @@ export const insforge = {
     } catch { return []; }
   },
 
-  async getStats() {
+  async getStats(): Promise<InsforgeStats> {
     const leads = await this.getLeads();
     const stats = { total: leads.length, byChannel: {} as Record<string, number> };
     leads.forEach(l => { stats.byChannel[l.channel] = (stats.byChannel[l.channel] || 0) + 1; });

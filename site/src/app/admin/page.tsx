@@ -1,15 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { insforge } from "@/lib/insforge";
+import { useState } from "react";
+import { insforge, InsforgeSavedLead, InsforgeStats } from "@/lib/insforge";
 import { ASTRO_CONFIG } from "@/config/astro-config";
 import styles from "./admin.module.css";
 
 export default function AdminPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [password, setPassword] = useState("");
-  const [leads, setLeads] = useState<any[]>([]);
-  const [stats, setStats] = useState<any>(null);
+  const [leads, setLeads] = useState<InsforgeSavedLead[]>([]);
+  const [stats, setStats] = useState<InsforgeStats | null>(null);
   const [loading, setLoading] = useState(false);
 
   const handleLogin = (e: React.FormEvent) => {
@@ -67,7 +67,7 @@ export default function AdminPage() {
             <div className={styles.kpiLabel}>Total Leads</div>
             <div className={styles.kpiValue}>{stats?.total || 0}</div>
           </div>
-          {stats?.byChannel && Object.entries(stats.byChannel).map(([channel, count]: any) => (
+          {stats?.byChannel && Object.entries(stats.byChannel).map(([channel, count]) => (
             <div className={styles.kpiCard} key={channel}>
               <div className={styles.kpiLabel}>Leads {channel.toUpperCase()}</div>
               <div className={styles.kpiValue}>{count}</div>
