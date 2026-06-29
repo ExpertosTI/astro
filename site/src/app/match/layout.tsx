@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { MatchProvider } from "@/components/match/MatchProvider";
 import { BottomNav } from "@/components/match/BottomNav";
+import { MatchAmbient } from "@/components/match/MatchAmbient";
 import styles from "./match.module.css";
 
 export const metadata: Metadata = {
@@ -12,6 +13,7 @@ export default function MatchLayout({ children }: { children: React.ReactNode })
   return (
     <MatchProvider>
       <div className={styles.matchApp}>
+        <MatchAmbient />
         <div className={styles.matchShell}>{children}</div>
         <BottomNav />
       </div>

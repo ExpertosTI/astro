@@ -1,5 +1,6 @@
 import { computeProfileBadges } from "@/lib/badges";
 import { MATCH_STORAGE_KEY, MATCH_STORAGE_KEY_LEGACY } from "@/lib/match-constants";
+import { processImageFile, isLikelyImageFile } from "@/lib/image-process";
 import {
   checkRateLimit,
   createSessionToken,
@@ -10,7 +11,6 @@ import {
   sanitizeCity,
   sanitizeDisplayName,
   sessionExpiresAt,
-  validateImageFile,
 } from "@/lib/security";
 import type {
   AppNotification,
@@ -830,22 +830,14 @@ export function logout(state: MatchAppState): MatchAppState {
 }
 
 export async function fileToDataUrl(file: File): Promise<string> {
-  const validationError = validateImageFile(file);
-  if (validationError) throw new Error(validationError);
-
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = reader.result as string;
-      if (!isValidUrl(result)) {
-        reject(new Error("Imagen no válida"));
-        return;
-      }
-      resolve(result);
-    };
-    reader.onerror = () => reject(new Error("No se pudo leer la imagen"));
-    reader.readAsDataURL(file);
-  });
+  if (!isLikelyImageFile(file)) {
+    throw new Error("Selecciona una imagen válida");
+  }
+  const result = await processImageFile(file);
+  if (!isValidUrl(result)) {
+    throw new Error("No se pudo optimizar la imagen");
+  }
+  return result;
 }
 
 export function getDailyLimitsRemaining(state: MatchAppState) {

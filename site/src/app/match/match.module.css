@@ -1,22 +1,97 @@
 .matchApp {
-  --match-max: 430px;
-  --match-nav-h: 72px;
+  --match-max: min(100%, 460px);
+  --match-nav-h: 76px;
+  --match-pad: clamp(1rem, 4.5vw, 1.35rem);
+  --match-radius: 1.25rem;
+  --match-glass: rgba(14, 7, 6, 0.72);
+  position: relative;
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
+  overflow-x: hidden;
+  background: #080404;
+}
+
+.matchApp::before {
+  content: "";
+  position: fixed;
+  inset: 0;
   background:
-    radial-gradient(circle at 20% 0%, rgba(255, 109, 29, 0.18), transparent 40%),
-    radial-gradient(circle at 80% 100%, rgba(123, 28, 9, 0.35), transparent 45%),
-    linear-gradient(180deg, #1a0c0b 0%, #0a0505 100%);
+    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(255, 109, 29, 0.22), transparent 55%),
+    radial-gradient(circle at 85% 90%, rgba(123, 28, 9, 0.35), transparent 40%),
+    linear-gradient(180deg, #1a0c0b 0%, #080404 55%, #050303 100%);
+  z-index: 0;
+  pointer-events: none;
+}
+
+.ambient {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.ambientOrb1,
+.ambientOrb2,
+.ambientOrb3 {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(60px);
+  opacity: 0.45;
+  animation: ambientDrift 14s ease-in-out infinite alternate;
+}
+
+.ambientOrb1 {
+  width: 220px;
+  height: 220px;
+  top: 8%;
+  left: -10%;
+  background: rgba(255, 109, 29, 0.35);
+}
+
+.ambientOrb2 {
+  width: 180px;
+  height: 180px;
+  bottom: 18%;
+  right: -8%;
+  background: rgba(180, 50, 20, 0.3);
+  animation-delay: -4s;
+}
+
+.ambientOrb3 {
+  width: 120px;
+  height: 120px;
+  top: 42%;
+  right: 20%;
+  background: rgba(255, 176, 58, 0.2);
+  animation-delay: -7s;
+}
+
+.ambientGrid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255, 194, 117, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 194, 117, 0.03) 1px, transparent 1px);
+  background-size: 32px 32px;
+  mask-image: linear-gradient(180deg, black 0%, transparent 85%);
+}
+
+@keyframes ambientDrift {
+  from { transform: translate(0, 0) scale(1); }
+  to { transform: translate(12px, -18px) scale(1.08); }
 }
 
 .matchShell {
+  position: relative;
+  z-index: 1;
   width: min(100%, var(--match-max));
   margin: 0 auto;
   flex: 1;
   display: flex;
   flex-direction: column;
-  padding: 1rem 1rem calc(var(--match-nav-h) + 1rem);
+  padding: var(--match-pad) var(--match-pad) calc(var(--match-nav-h) + var(--match-pad));
 }
 
 .matchHeader {
@@ -53,11 +128,12 @@
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   align-items: center;
-  background: rgba(10, 5, 5, 0.92);
-  border-top: 1px solid var(--line);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  background: rgba(8, 4, 4, 0.88);
+  border-top: 1px solid rgba(255, 194, 117, 0.2);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   z-index: 50;
+  padding-bottom: env(safe-area-inset-bottom, 0);
 }
 
 .navItem {
@@ -265,17 +341,19 @@
   align-items: center;
   justify-content: center;
   width: 100%;
-  padding: 0.95rem 1.2rem;
+  padding: 1rem 1.2rem;
   border: none;
   border-radius: 1rem;
-  background: linear-gradient(135deg, #ff822d, #ff5c1c);
+  background: linear-gradient(135deg, #ff9338 0%, #ff5c1c 50%, #e84a0f 100%);
   color: #fff;
   font-family: var(--font-display), sans-serif;
-  font-size: 0.85rem;
-  letter-spacing: 0.16em;
+  font-size: 0.82rem;
+  font-weight: 400;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
   cursor: pointer;
-  transition: transform 0.2s, filter 0.2s;
+  box-shadow: 0 4px 24px rgba(255, 80, 0, 0.28);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), filter 0.2s, box-shadow 0.25s;
 }
 
 .primaryBtn:hover {
@@ -308,24 +386,36 @@
 .roleGrid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 0.75rem;
-  margin: 1.5rem 0;
+  gap: 0.85rem;
+  margin-top: 1.25rem;
 }
 
 .roleCard {
-  padding: 1.25rem 0.75rem;
-  border-radius: 1.25rem;
+  padding: 1.35rem 0.85rem;
+  border-radius: var(--match-radius);
   border: 1px solid var(--line);
-  background: rgba(12, 6, 5, 0.6);
+  background: var(--match-glass);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   text-align: center;
   cursor: pointer;
-  transition: all 0.25s;
+  transition: border-color 0.3s, background 0.3s, box-shadow 0.3s, transform 0.2s;
+  color: var(--text);
 }
 
 .roleCardSelected {
   border-color: var(--ember-bright);
-  background: rgba(255, 109, 29, 0.12);
-  box-shadow: 0 0 0 1px rgba(255, 176, 58, 0.3);
+  background: rgba(255, 109, 29, 0.14);
+  box-shadow:
+    0 0 0 1px rgba(255, 176, 58, 0.35),
+    0 8px 32px rgba(255, 80, 0, 0.12);
+}
+
+.roleSvg {
+  width: 2.75rem;
+  height: 2.75rem;
+  margin: 0 auto 0.65rem;
+  color: var(--ember-bright);
 }
 
 .roleEmoji {
@@ -335,15 +425,16 @@
 
 .roleLabel {
   font-family: var(--font-display), sans-serif;
-  font-size: 0.9rem;
-  letter-spacing: 0.12em;
+  font-size: 0.95rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
 }
 
 .roleDesc {
-  font-size: 0.65rem;
+  font-size: 0.68rem;
   color: var(--muted);
-  margin-top: 0.35rem;
-  line-height: 1.4;
+  margin-top: 0.4rem;
+  line-height: 1.45;
 }
 
 .formGroup {
@@ -362,11 +453,21 @@
 .formInput,
 .formTextarea {
   width: 100%;
-  padding: 0.75rem 0.9rem;
-  border-radius: 0.85rem;
+  padding: 0.8rem 1rem;
+  border-radius: 0.9rem;
   border: 1px solid var(--line);
-  background: rgba(8, 4, 4, 0.7);
+  background: rgba(6, 3, 3, 0.75);
   color: var(--text);
+  font-family: var(--font-body), sans-serif;
+  font-size: 0.88rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.formInput:focus,
+.formTextarea:focus {
+  border-color: rgba(255, 176, 58, 0.55);
+  box-shadow: 0 0 0 3px rgba(255, 109, 29, 0.12);
+  outline: none;
 }
 
 .formTextarea {
@@ -380,21 +481,46 @@
   gap: 0.4rem;
 }
 
+.chip,
+.slotChip,
+.roleCard,
+.primaryBtn,
+.ghostBtn {
+  -webkit-tap-highlight-color: transparent;
+  outline: none;
+}
+
+.chip:focus-visible,
+.slotChip:focus-visible,
+.roleCard:focus-visible,
+.primaryBtn:focus-visible {
+  outline: 2px solid var(--ember-bright);
+  outline-offset: 2px;
+}
+
 .chip {
-  padding: 0.4rem 0.7rem;
+  padding: 0.45rem 0.75rem;
   border-radius: 999px;
   border: 1px solid var(--line);
-  background: transparent;
+  background: rgba(8, 4, 4, 0.55);
   color: var(--muted);
+  font-family: var(--font-body), sans-serif;
   font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: border-color 0.2s, background 0.2s, color 0.2s, transform 0.15s;
+}
+
+.chip:active {
+  transform: scale(0.96);
 }
 
 .chipActive {
-  border-color: var(--ember);
-  background: rgba(255, 109, 29, 0.15);
+  border-color: var(--ember-bright);
+  background: rgba(255, 109, 29, 0.18);
   color: var(--signal);
+  box-shadow: 0 0 12px rgba(255, 109, 29, 0.15);
 }
 
 .availabilityRow {
@@ -430,16 +556,43 @@
   object-fit: cover;
 }
 
+.discoverHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+  gap: 0.5rem;
+}
+
+.discoverHeader .brandRow {
+  justify-content: flex-start;
+}
+
+.discoverHeader .brandAstro {
+  font-size: 1.1rem;
+}
+
+.discoverHeader .brandMatch {
+  font-size: 0.58rem;
+}
+
 .photoAdd {
   display: flex;
   align-items: center;
   justify-content: center;
   aspect-ratio: 1;
-  border-radius: 0.75rem;
-  border: 1px dashed var(--line);
+  border-radius: 0.85rem;
+  border: 1px dashed rgba(255, 194, 117, 0.35);
+  background: rgba(8, 4, 4, 0.45);
   color: var(--muted);
   font-size: 1.5rem;
   cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.photoAdd:hover {
+  border-color: var(--ember);
+  background: rgba(255, 109, 29, 0.08);
 }
 
 .matchList {
@@ -647,7 +800,269 @@
 
 .onboardingHero {
   text-align: center;
-  padding: 2rem 0 1rem;
+  padding: 1.5rem 0 1rem;
+}
+
+.onboardingFlow {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 0.25rem;
+}
+
+.onboardingCard {
+  flex: 1;
+  padding: 1.25rem;
+  border-radius: calc(var(--match-radius) + 0.25rem);
+  border: 1px solid rgba(255, 194, 117, 0.18);
+  background: var(--match-glass);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+  min-height: 0;
+}
+
+.stepPanel {
+  width: 100%;
+}
+
+.cardTitle {
+  font-family: var(--font-display), sans-serif;
+  font-size: 1.15rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--signal);
+  margin-bottom: 0.35rem;
+}
+
+.cardHint {
+  font-size: 0.78rem;
+  color: var(--muted);
+  line-height: 1.45;
+  margin-bottom: 0.75rem;
+}
+
+.stepProgressWrap {
+  margin: 0.75rem 0 1rem;
+}
+
+.stepProgressTrack {
+  height: 3px;
+  border-radius: 999px;
+  background: rgba(255, 194, 117, 0.12);
+  overflow: hidden;
+}
+
+.stepProgressFill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #ff822d, #ffb03a);
+  box-shadow: 0 0 12px rgba(255, 109, 29, 0.5);
+}
+
+.stepLabels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0.5rem;
+  padding: 0 0.15rem;
+}
+
+.stepLabel {
+  font-size: 0.58rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(201, 170, 131, 0.45);
+  transition: color 0.3s;
+}
+
+.stepLabelActive {
+  color: var(--ember-bright);
+}
+
+.onboardingActions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  margin-top: auto;
+  padding-top: 1rem;
+}
+
+.formError {
+  color: #ff8a8a;
+  font-size: 0.75rem;
+  text-align: center;
+  margin: 0.5rem 0;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.65rem;
+  background: rgba(255, 77, 109, 0.1);
+  border: 1px solid rgba(255, 77, 109, 0.25);
+}
+
+.brandHeader {
+  text-align: center;
+  padding-bottom: 0.25rem;
+}
+
+.brandHeaderCompact {
+  padding-bottom: 0;
+}
+
+.brandRow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+.brandLogoWrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.brandLogo {
+  border-radius: 50%;
+  object-fit: contain;
+}
+
+.brandGlow {
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 109, 29, 0.35), transparent 70%);
+  z-index: -1;
+}
+
+.brandText {
+  text-align: left;
+  line-height: 1;
+}
+
+.brandAstro {
+  font-family: var(--font-display), sans-serif;
+  font-size: 1.5rem;
+  letter-spacing: 0.22em;
+  color: var(--signal);
+}
+
+.brandMatch {
+  font-family: var(--font-display), sans-serif;
+  font-size: 0.72rem;
+  letter-spacing: 0.38em;
+  color: var(--ember-bright);
+  margin-top: 0.15rem;
+}
+
+.brandSubtitle {
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin-top: 0.65rem;
+  line-height: 1.45;
+  max-width: 28ch;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.profileUploadRow {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.avatarUploader {
+  width: 5.5rem;
+  height: 5.5rem;
+  flex-shrink: 0;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid var(--line-strong);
+  background: rgba(8, 4, 4, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  position: relative;
+}
+
+.uploadPreview {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.uploadPlus {
+  font-size: 1.75rem;
+  color: var(--muted);
+  line-height: 1;
+}
+
+.uploadSpinner {
+  width: 1.5rem;
+  height: 1.5rem;
+  border: 2px solid var(--line);
+  border-top-color: var(--ember);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.availabilityGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.availabilityCard {
+  display: grid;
+  grid-template-columns: 2.5rem 1fr;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 0.65rem;
+  border-radius: 0.85rem;
+  border: 1px solid rgba(255, 194, 117, 0.12);
+  background: rgba(6, 3, 3, 0.45);
+}
+
+.slotRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.slotChip {
+  padding: 0.35rem 0.55rem;
+  border-radius: 0.55rem;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.62rem;
+  font-family: var(--font-body), sans-serif;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.slotChipActive {
+  border-color: var(--ember-bright);
+  background: rgba(255, 109, 29, 0.16);
+  color: var(--signal);
+}
+
+.photoSlot {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.photoSlotLabel {
+  font-size: 0.58rem;
+  text-align: center;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
 }
 
 .onboardingTitle {

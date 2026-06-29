@@ -51,7 +51,7 @@ export function sanitizeChatMessage(text: string): string {
 export function isValidUrl(url: string): boolean {
   if (!url) return true;
   if (url.startsWith("data:image/")) {
-    return url.length < 700_000;
+    return url.length < 900_000;
   }
   try {
     const parsed = new URL(url);

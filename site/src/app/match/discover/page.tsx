@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { useMatch } from "@/components/match/MatchProvider";
+import { MatchBrand } from "@/components/match/MatchBrand";
 import { SwipeCard } from "@/components/match/SwipeCard";
 import { ProfileDetailModal } from "@/components/match/ProfileDetailModal";
 import { FilterPanel } from "@/components/match/FilterPanel";
@@ -103,8 +104,8 @@ export default function DiscoverPage() {
 
   return (
     <>
-      <header className={styles.matchHeader}>
-        <span className={styles.matchLogo}>MATCH</span>
+      <header className={styles.discoverHeader}>
+        <MatchBrand compact />
         <div className={styles.headerActions}>
           <span className={styles.streakBadge}>🔥 {limits.streak}</span>
           <button type="button" className={styles.filterBtn} onClick={() => setFilterOpen(true)}>

@@ -2,8 +2,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
 import { useMatch } from "@/components/match/MatchProvider";
-import { fileToDataUrl } from "@/lib/match-store";
+import { MatchBrand } from "@/components/match/MatchBrand";
+import { StepPanel } from "@/components/match/StepPanel";
+import { ImageUploader } from "@/components/match/ImageUploader";
 import { BODY_PARTS, DAYS, TIME_SLOTS } from "@/lib/match-constants";
 import type {
   AvailabilitySlot,
@@ -15,7 +18,31 @@ import type {
 } from "@/types/match";
 import styles from "../match.module.css";
 
-const STEPS = ["Rol", "Perfil", "Disponibilidad", "Fotos"];
+const STEPS = [
+  { id: "rol", label: "Rol" },
+  { id: "perfil", label: "Perfil" },
+  { id: "tiempo", label: "Tiempo" },
+  { id: "fotos", label: "Fotos" },
+] as const;
+
+function RoleIcon({ role }: { role: "tatuador" | "lienzo" }) {
+  if (role === "tatuador") {
+    return (
+      <svg viewBox="0 0 48 48" className={styles.roleSvg} aria-hidden>
+        <path d="M10 38V14l14-6 14 6v24l-14 6-14-6z" fill="none" stroke="currentColor" strokeWidth="1.5" />
+        <path d="M24 8v32M10 14l14 6 14-6" fill="none" stroke="currentColor" strokeWidth="1.5" />
+        <circle cx="24" cy="24" r="3" fill="currentColor" />
+      </svg>
+    );
+  }
+  return (
+    <svg viewBox="0 0 48 48" className={styles.roleSvg} aria-hidden>
+      <ellipse cx="24" cy="30" rx="12" ry="8" fill="none" stroke="currentColor" strokeWidth="1.5" />
+      <circle cx="24" cy="16" r="7" fill="none" stroke="currentColor" strokeWidth="1.5" />
+      <path d="M18 38c2 4 10 4 12 0" fill="none" stroke="currentColor" strokeWidth="1.5" />
+    </svg>
+  );
+}
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -61,41 +88,6 @@ export default function OnboardingPage() {
   const isSlotActive = (day: DayOfWeek, slot: TimeSlot) =>
     availability.find((a) => a.day === day)?.slots.includes(slot) ?? false;
 
-  const handleAvatar = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    try {
-      setAvatarUrl(await fileToDataUrl(file));
-      setError("");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Error al subir foto");
-    }
-  };
-
-  const handleBodyPhoto = async (part: BodyPart, e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    try {
-      const url = await fileToDataUrl(file);
-      setBodyPartPhotos((prev) => [...prev.filter((p) => p.part !== part), { part, url }]);
-      setError("");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Error al subir foto");
-    }
-  };
-
-  const handlePortfolio = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    try {
-      const url = await fileToDataUrl(file);
-      setPortfolioUrls((prev) => [...prev, url].slice(0, 6));
-      setError("");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Error al subir foto");
-    }
-  };
-
   const next = () => {
     setError("");
     if (step === 0 && !role) {
@@ -133,203 +125,224 @@ export default function OnboardingPage() {
     router.push("/match/discover/");
   };
 
+  const progress = ((step + 1) / STEPS.length) * 100;
+
   return (
-    <>
-      <div className={styles.onboardingHero}>
-        <p className={styles.matchTag}>ASTRO MATCH</p>
-        <h1 className={styles.onboardingTitle}>TU LIENZO<br />TE ESPERA</h1>
-        <p className={styles.onboardingSub}>
-          Regístrate como tatuador o voluntario. Swipe, match y chat.
-        </p>
+    <div className={styles.onboardingFlow}>
+      <MatchBrand subtitle="Tu lienzo te espera · Swipe · Match · Chat" />
+
+      <div className={styles.stepProgressWrap}>
+        <div className={styles.stepProgressTrack}>
+          <motion.div
+            className={styles.stepProgressFill}
+            animate={{ width: `${progress}%` }}
+            transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+          />
+        </div>
+        <div className={styles.stepLabels}>
+          {STEPS.map((s, i) => (
+            <span
+              key={s.id}
+              className={`${styles.stepLabel} ${i <= step ? styles.stepLabelActive : ""}`}
+            >
+              {s.label}
+            </span>
+          ))}
+        </div>
       </div>
 
-      <div className={styles.stepDots}>
-        {STEPS.map((_, i) => (
-          <span key={i} className={`${styles.stepDot} ${i === step ? styles.stepDotActive : ""}`} />
-        ))}
-      </div>
-
-      {step === 0 && (
-        <>
-          <p className={styles.formLabel} style={{ textAlign: "center" }}>¿Cómo participas?</p>
-          <div className={styles.roleGrid}>
-            <button
-              type="button"
-              className={`${styles.roleCard} ${role === "tatuador" ? styles.roleCardSelected : ""}`}
-              onClick={() => setRole("tatuador")}
-            >
-              <div className={styles.roleEmoji}>🖋️</div>
-              <div className={styles.roleLabel}>TATUADOR</div>
-              <p className={styles.roleDesc}>Busca lienzos, haz match y coordina sesiones</p>
-            </button>
-            <button
-              type="button"
-              className={`${styles.roleCard} ${role === "lienzo" ? styles.roleCardSelected : ""}`}
-              onClick={() => setRole("lienzo")}
-            >
-              <div className={styles.roleEmoji}>🎨</div>
-              <div className={styles.roleLabel}>LIENZO</div>
-              <p className={styles.roleDesc}>Ofrece zonas del cuerpo y tu disponibilidad</p>
-            </button>
-          </div>
-        </>
-      )}
-
-      {step === 1 && (
-        <>
-          <div className={styles.formGroup}>
-            <label className={styles.formLabel}>Nombre / Alias</label>
-            <input
-              className={styles.formInput}
-              value={displayName}
-              onChange={(e) => setDisplayName(e.target.value)}
-              placeholder="Tu nombre artístico"
-            />
-          </div>
-          <div className={styles.formGroup}>
-            <label className={styles.formLabel}>Ciudad</label>
-            <input
-              className={styles.formInput}
-              value={city}
-              onChange={(e) => setCity(e.target.value)}
-              placeholder="Santo Domingo"
-            />
-          </div>
-          <div className={styles.formGroup}>
-            <label className={styles.formLabel}>Bio</label>
-            <textarea
-              className={styles.formTextarea}
-              value={bio}
-              onChange={(e) => setBio(e.target.value)}
-              placeholder={
-                role === "tatuador"
-                  ? "Tu estilo, experiencia, estudio..."
-                  : "Qué buscas, estilos que te gustan..."
-              }
-            />
-          </div>
-          <div className={styles.formGroup}>
-            <label className={styles.formLabel}>Foto de perfil</label>
-            <label className={styles.photoAdd}>
-              {avatarUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={avatarUrl} alt="Avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-              ) : (
-                "+"
-              )}
-              <input type="file" accept="image/*" hidden onChange={handleAvatar} />
-            </label>
-          </div>
-        </>
-      )}
-
-      {step === 2 && (
-        <>
-          {role === "lienzo" && (
-            <div className={styles.formGroup}>
-              <label className={styles.formLabel}>Zonas disponibles</label>
-              <div className={styles.chipGrid}>
-                {BODY_PARTS.map((part) => (
-                  <button
-                    key={part.id}
+      <div className={styles.onboardingCard}>
+        <StepPanel stepKey={step}>
+          {step === 0 && (
+            <>
+              <h2 className={styles.cardTitle}>¿Cómo participas?</h2>
+              <p className={styles.cardHint}>Elige tu rol en la convención ASTRO SDQ</p>
+              <div className={styles.roleGrid}>
+                {(["tatuador", "lienzo"] as const).map((r) => (
+                  <motion.button
+                    key={r}
                     type="button"
-                    className={`${styles.chip} ${bodyParts.includes(part.id) ? styles.chipActive : ""}`}
-                    onClick={() => toggleBodyPart(part.id)}
+                    className={`${styles.roleCard} ${role === r ? styles.roleCardSelected : ""}`}
+                    onClick={() => setRole(r)}
+                    whileTap={{ scale: 0.97 }}
                   >
-                    {part.label}
-                  </button>
+                    <RoleIcon role={r} />
+                    <div className={styles.roleLabel}>{r === "tatuador" ? "Tatuador" : "Lienzo"}</div>
+                    <p className={styles.roleDesc}>
+                      {r === "tatuador"
+                        ? "Busca lienzos y coordina sesiones"
+                        : "Ofrece zonas y tu disponibilidad"}
+                    </p>
+                  </motion.button>
                 ))}
               </div>
-            </div>
+            </>
           )}
-          <div className={styles.formGroup}>
-            <label className={styles.formLabel}>Disponibilidad semanal</label>
-            {DAYS.map((day) => (
-              <div key={day.id} className={styles.availabilityRow}>
-                <span className={styles.dayLabel}>{day.label}</span>
-                <div className={styles.chipGrid}>
-                  {TIME_SLOTS.map((slot) => (
-                    <button
-                      key={slot.id}
-                      type="button"
-                      className={`${styles.chip} ${isSlotActive(day.id, slot.id) ? styles.chipActive : ""}`}
-                      onClick={() => toggleSlot(day.id, slot.id)}
-                    >
-                      {slot.label}
-                    </button>
-                  ))}
+
+          {step === 1 && (
+            <>
+              <h2 className={styles.cardTitle}>Tu perfil</h2>
+              <div className={styles.profileUploadRow}>
+                <ImageUploader
+                  variant="avatar"
+                  value={avatarUrl}
+                  onChange={setAvatarUrl}
+                  onError={setError}
+                  label="Foto de perfil"
+                />
+                <div className={styles.profileUploadMeta}>
+                  <p className={styles.cardHint}>Foto visible en tu card de match</p>
                 </div>
               </div>
-            ))}
-          </div>
-        </>
-      )}
-
-      {step === 3 && (
-        <>
-          {role === "lienzo" ? (
-            <div className={styles.formGroup}>
-              <label className={styles.formLabel}>Fotos de zonas del cuerpo</label>
-              <div className={styles.photoGrid}>
-                {bodyParts.map((part) => {
-                  const photo = bodyPartPhotos.find((p) => p.part === part);
-                  const label = BODY_PARTS.find((b) => b.id === part)?.label ?? part;
-                  return (
-                    <label key={part} className={styles.photoThumb} title={label}>
-                      {photo ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={photo.url} alt={label} />
-                      ) : (
-                        <span className={styles.photoAdd}>+</span>
-                      )}
-                      <input type="file" accept="image/*" hidden onChange={(e) => handleBodyPhoto(part, e)} />
-                    </label>
-                  );
-                })}
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>Nombre / Alias</label>
+                <input
+                  className={styles.formInput}
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  placeholder="Tu nombre artístico"
+                />
               </div>
-            </div>
-          ) : (
-            <div className={styles.formGroup}>
-              <label className={styles.formLabel}>Portfolio (hasta 6 fotos)</label>
-              <div className={styles.photoGrid}>
-                {portfolioUrls.map((url, i) => (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <div key={i} className={styles.photoThumb}><img src={url} alt={`Portfolio ${i + 1}`} /></div>
-                ))}
-                {portfolioUrls.length < 6 && (
-                  <label className={styles.photoAdd}>
-                    +
-                    <input type="file" accept="image/*" hidden onChange={handlePortfolio} />
-                  </label>
-                )}
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>Ciudad</label>
+                <input
+                  className={styles.formInput}
+                  value={city}
+                  onChange={(e) => setCity(e.target.value)}
+                  placeholder="Santo Domingo"
+                />
               </div>
-            </div>
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>Bio</label>
+                <textarea
+                  className={styles.formTextarea}
+                  value={bio}
+                  onChange={(e) => setBio(e.target.value)}
+                  placeholder={
+                    role === "tatuador"
+                      ? "Estilo, experiencia, estudio..."
+                      : "Qué buscas, estilos que te gustan..."
+                  }
+                />
+              </div>
+            </>
           )}
-        </>
-      )}
 
-      {error && <p style={{ color: "#ff6d6d", fontSize: "0.75rem", marginBottom: "0.75rem" }}>{error}</p>}
+          {step === 2 && (
+            <>
+              <h2 className={styles.cardTitle}>Disponibilidad</h2>
+              {role === "lienzo" && (
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>Zonas del cuerpo</label>
+                  <div className={styles.chipGrid}>
+                    {BODY_PARTS.map((part) => (
+                      <button
+                        key={part.id}
+                        type="button"
+                        className={`${styles.chip} ${bodyParts.includes(part.id) ? styles.chipActive : ""}`}
+                        onClick={() => toggleBodyPart(part.id)}
+                      >
+                        {part.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <div className={styles.availabilityGrid}>
+                {DAYS.map((day) => (
+                  <div key={day.id} className={styles.availabilityCard}>
+                    <span className={styles.dayLabel}>{day.label}</span>
+                    <div className={styles.slotRow}>
+                      {TIME_SLOTS.map((slot) => (
+                        <button
+                          key={slot.id}
+                          type="button"
+                          className={`${styles.slotChip} ${isSlotActive(day.id, slot.id) ? styles.slotChipActive : ""}`}
+                          onClick={() => toggleSlot(day.id, slot.id)}
+                        >
+                          {slot.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
 
-      {step < STEPS.length - 1 ? (
-        <button type="button" className={styles.primaryBtn} onClick={next}>
-          Continuar
-        </button>
-      ) : (
-        <button type="button" className={styles.primaryBtn} onClick={finish}>
-          Entrar a Match
-        </button>
-      )}
+          {step === 3 && (
+            <>
+              <h2 className={styles.cardTitle}>
+                {role === "lienzo" ? "Fotos de zonas" : "Portfolio"}
+              </h2>
+              <p className={styles.cardHint}>
+                Cualquier formato · comprimimos automáticamente
+              </p>
+              {role === "lienzo" ? (
+                <div className={styles.photoGrid}>
+                  {bodyParts.map((part) => {
+                    const photo = bodyPartPhotos.find((p) => p.part === part);
+                    const label = BODY_PARTS.find((b) => b.id === part)?.label ?? part;
+                    return (
+                      <div key={part} className={styles.photoSlot}>
+                        <ImageUploader
+                          variant="thumb"
+                          value={photo?.url}
+                          onChange={(url) =>
+                            setBodyPartPhotos((prev) => [
+                              ...prev.filter((p) => p.part !== part),
+                              { part, url },
+                            ])
+                          }
+                          onError={setError}
+                          label={label}
+                        />
+                        <span className={styles.photoSlotLabel}>{label}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className={styles.photoGrid}>
+                  {portfolioUrls.map((url, i) => (
+                    <div key={i} className={styles.photoThumb}>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={url} alt={`Work ${i + 1}`} />
+                    </div>
+                  ))}
+                  {portfolioUrls.length < 6 && (
+                    <ImageUploader
+                      variant="grid"
+                      onChange={(url) => setPortfolioUrls((prev) => [...prev, url].slice(0, 6))}
+                      onError={setError}
+                      label="Agregar al portfolio"
+                    />
+                  )}
+                </div>
+              )}
+            </>
+          )}
+        </StepPanel>
+      </div>
 
-      {step > 0 && (
-        <button
-          type="button"
-          className={styles.ghostBtn}
-          style={{ marginTop: "0.5rem" }}
-          onClick={() => setStep((s) => s - 1)}
-        >
-          Atrás
-        </button>
-      )}
-    </>
+      {error && <p className={styles.formError}>{error}</p>}
+
+      <div className={styles.onboardingActions}>
+        {step < STEPS.length - 1 ? (
+          <button type="button" className={styles.primaryBtn} onClick={next}>
+            Continuar
+          </button>
+        ) : (
+          <button type="button" className={styles.primaryBtn} onClick={finish}>
+            Entrar a Match
+          </button>
+        )}
+        {step > 0 && (
+          <button type="button" className={styles.ghostBtn} onClick={() => setStep((s) => s - 1)}>
+            Atrás
+          </button>
+        )}
+      </div>
+    </div>
   );
 }
