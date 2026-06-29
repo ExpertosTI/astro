@@ -47,13 +47,26 @@ CREATE TABLE IF NOT EXISTS match_messages (
   match_id TEXT NOT NULL,
   sender_id TEXT NOT NULL,
   text TEXT NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT NOW()
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  read_at TIMESTAMPTZ
 );
+
+CREATE TABLE IF NOT EXISTS match_typing (
+  match_id TEXT NOT NULL,
+  user_id TEXT NOT NULL,
+  project_id TEXT NOT NULL DEFAULT 'ASTRO_SDQ_2026',
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  PRIMARY KEY (match_id, user_id)
+);
+
+-- Migración para instalaciones existentes
+ALTER TABLE match_messages ADD COLUMN IF NOT EXISTS read_at TIMESTAMPTZ;
 
 CREATE INDEX IF NOT EXISTS idx_match_profiles_project ON match_profiles (project_id, updated_at DESC);
 CREATE INDEX IF NOT EXISTS idx_match_swipes_project ON match_swipes (project_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_match_connections_project ON match_connections (project_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_match_messages_match ON match_messages (match_id, created_at ASC);
+CREATE INDEX IF NOT EXISTS idx_match_typing_project ON match_typing (project_id, updated_at DESC);
 
 -- PostgREST: permisos para roles anon / web_anon / authenticator
 DO $$
@@ -64,6 +77,7 @@ BEGIN
     GRANT SELECT, INSERT, UPDATE, DELETE ON match_swipes TO anon;
     GRANT SELECT, INSERT, UPDATE, DELETE ON match_connections TO anon;
     GRANT SELECT, INSERT, UPDATE, DELETE ON match_messages TO anon;
+    GRANT SELECT, INSERT, UPDATE, DELETE ON match_typing TO anon;
   END IF;
   IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'web_anon') THEN
     GRANT USAGE ON SCHEMA public TO web_anon;
@@ -71,10 +85,11 @@ BEGIN
     GRANT SELECT, INSERT, UPDATE, DELETE ON match_swipes TO web_anon;
     GRANT SELECT, INSERT, UPDATE, DELETE ON match_connections TO web_anon;
     GRANT SELECT, INSERT, UPDATE, DELETE ON match_messages TO web_anon;
+    GRANT SELECT, INSERT, UPDATE, DELETE ON match_typing TO web_anon;
   END IF;
   IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'authenticator') THEN
     GRANT USAGE ON SCHEMA public TO authenticator;
-    GRANT ALL ON match_profiles, match_swipes, match_connections, match_messages TO authenticator;
+    GRANT ALL ON match_profiles, match_swipes, match_connections, match_messages, match_typing TO authenticator;
   END IF;
 END $$;
 

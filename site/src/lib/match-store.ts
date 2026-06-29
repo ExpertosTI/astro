@@ -736,6 +736,61 @@ export function setFilters(
   return next;
 }
 
+export function markMessagesRead(
+  state: MatchAppState,
+  matchId: string,
+  readerId: string
+): { state: MatchAppState; updated: ChatMessage[] } {
+  const now = new Date().toISOString();
+  const updated: ChatMessage[] = [];
+
+  const messages = state.messages.map((m) => {
+    if (m.matchId !== matchId || m.senderId === readerId || m.readAt) return m;
+    const next = { ...m, readAt: now };
+    updated.push(next);
+    return next;
+  });
+
+  if (!updated.length) return { state, updated: [] };
+
+  const next = { ...state, messages };
+  saveMatchState(next);
+  return { state: next, updated };
+}
+
+export function getUnreadMessagesCount(
+  state: MatchAppState,
+  userId: string
+): number {
+  return state.messages.filter(
+    (m) => m.senderId !== userId && !m.readAt && state.matches.some(
+      (match) =>
+        match.id === m.matchId
+        && match.status === "matched"
+        && (match.tatuadorId === userId || match.lienzoId === userId)
+    )
+  ).length;
+}
+
+export function getMatchUnreadCount(
+  state: MatchAppState,
+  matchId: string,
+  userId: string
+): number {
+  return state.messages.filter(
+    (m) => m.matchId === matchId && m.senderId !== userId && !m.readAt
+  ).length;
+}
+
+export function getMatchLastMessage(
+  state: MatchAppState,
+  matchId: string
+): ChatMessage | undefined {
+  return state.messages
+    .filter((m) => m.matchId === matchId)
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
+}
+
 export function markNotificationsRead(state: MatchAppState): MatchAppState {
   const notifications = state.notifications.map((n) => ({ ...n, read: true }));
   const next = { ...state, notifications };

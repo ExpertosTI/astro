@@ -96,6 +96,13 @@ export type ChatMessage = {
   senderId: string;
   text: string;
   createdAt: string;
+  readAt?: string;
+};
+
+export type TypingRecord = {
+  matchId: string;
+  userId: string;
+  updatedAt: string;
 };
 
 export type UserStats = {

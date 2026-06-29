@@ -10,6 +10,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { isTypingActive } from "@/lib/chat-utils";
 import { checkMatchApiHealth } from "@/lib/match-api";
 import {
   initialCloudSync,
@@ -24,12 +25,16 @@ import {
   getDailyLimitsRemaining,
   getDiscoverProfiles,
   getLikesReceived,
+  getMatchLastMessage,
+  getMatchUnreadCount,
   getMyMatches,
   getProfileById,
   getProfileViewers,
   getUnreadCount,
+  getUnreadMessagesCount,
   loadMatchState,
   logout as logoutStore,
+  markMessagesRead,
   markNotificationsRead,
   recordProfileView,
   rejectMatch,
@@ -39,12 +44,15 @@ import {
   swipeProfile,
   updateProfile,
 } from "@/lib/match-store";
+import { MatchToast } from "@/components/match/MatchToast";
 import type {
+  AppNotification,
   AstroMatch,
   AstroProfile,
   DiscoverFilters,
   MatchAppState,
   SwipeAction,
+  TypingRecord,
   UserRole,
 } from "@/types/match";
 
@@ -62,6 +70,7 @@ type MatchContextValue = {
   likesReceived: AstroProfile[];
   profileViewers: AstroProfile[];
   unreadCount: number;
+  unreadMessagesCount: number;
   limits: ReturnType<typeof getDailyLimitsRemaining>;
   register: (role: UserRole, data: Partial<AstroProfile>) => Promise<void>;
   saveProfile: (data: Partial<AstroProfile>) => Promise<void>;
@@ -70,33 +79,58 @@ type MatchContextValue = {
   accept: (matchId: string) => void;
   reject: (matchId: string) => void;
   chat: (matchId: string, text: string) => SwipeOutcome;
+  markChatRead: (matchId: string) => void;
+  signalTyping: (matchId: string) => void;
+  isOtherTyping: (matchId: string) => boolean;
   block: (userId: string, reason: string) => void;
   viewProfile: (userId: string) => void;
   updateFilters: (filters: DiscoverFilters) => void;
   markRead: () => void;
   signOut: () => void;
   getProfile: (id: string) => AstroProfile | undefined;
+  getMatchUnread: (matchId: string) => number;
+  getLastMessage: (matchId: string) => ReturnType<typeof getMatchLastMessage>;
   refreshNow: () => Promise<void>;
+  dismissToast: () => void;
 };
 
 const MatchContext = createContext<MatchContextValue | null>(null);
 
 const POLL_MS = 3000;
+const TOAST_MS = 4200;
+
+function pickNewToast(prev: MatchAppState, next: MatchAppState): AppNotification | null {
+  const prevIds = new Set(prev.notifications.map((n) => n.id));
+  return next.notifications.find((n) => !n.read && !prevIds.has(n.id)) ?? null;
+}
 
 export function MatchProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<MatchAppState>(() => loadMatchState());
   const [ready, setReady] = useState(false);
   const [syncStatus, setSyncStatus] = useState<SyncStatusType>("syncing");
   const [syncError, setSyncError] = useState<string>();
+  const [typing, setTyping] = useState<TypingRecord[]>([]);
+  const [activeToast, setActiveToast] = useState<AppNotification | null>(null);
   const stateRef = useRef(state);
   const syncingRef = useRef(false);
+  const typingTimersRef = useRef<Map<string, number>>(new Map());
 
   stateRef.current = state;
+
+  const applyPull = useCallback((prev: MatchAppState, result: { state: MatchAppState; typing: TypingRecord[] }) => {
+    const toast = pickNewToast(prev, result.state);
+    if (toast && document.visibilityState === "visible") {
+      setActiveToast(toast);
+    }
+    setState(result.state);
+    setTyping(result.typing);
+  }, []);
 
   const runPull = useCallback(async (base?: MatchAppState) => {
     if (syncingRef.current) return;
     syncingRef.current = true;
     setSyncStatus((s) => (s === "offline" ? "offline" : "syncing"));
+    const prev = base ?? stateRef.current;
     try {
       const health = await checkMatchApiHealth();
       if (!health.online) {
@@ -104,8 +138,8 @@ export function MatchProvider({ children }: { children: ReactNode }) {
         setSyncError(health.error ?? "API no disponible. Ejecuta match-schema.sql en el servidor.");
         return;
       }
-      const merged = await pullAndMerge(base ?? stateRef.current);
-      setState(merged);
+      const result = await pullAndMerge(prev);
+      applyPull(prev, result);
       setSyncStatus("online");
       setSyncError(undefined);
     } catch (err) {
@@ -114,7 +148,7 @@ export function MatchProvider({ children }: { children: ReactNode }) {
     } finally {
       syncingRef.current = false;
     }
-  }, []);
+  }, [applyPull]);
 
   useEffect(() => {
     let cancelled = false;
@@ -122,9 +156,9 @@ export function MatchProvider({ children }: { children: ReactNode }) {
       const local = loadMatchState();
       setState(local);
       try {
-        const merged = await initialCloudSync(local);
+        const result = await initialCloudSync(local);
         if (!cancelled) {
-          setState(merged);
+          applyPull(local, result);
           setSyncStatus("online");
         }
       } catch (err) {
@@ -137,18 +171,22 @@ export function MatchProvider({ children }: { children: ReactNode }) {
       }
     })();
     return () => { cancelled = true; };
-  }, []);
+  }, [applyPull]);
 
   useEffect(() => {
     if (!ready || !state.session) return;
-
     const tick = () => {
       if (document.visibilityState === "visible") void runPull();
     };
-
     const id = window.setInterval(tick, POLL_MS);
     return () => window.clearInterval(id);
   }, [ready, state.session, runPull]);
+
+  useEffect(() => {
+    if (!activeToast) return;
+    const id = window.setTimeout(() => setActiveToast(null), TOAST_MS);
+    return () => window.clearTimeout(id);
+  }, [activeToast]);
 
   const afterMutation = useCallback(
     async (next: MatchAppState, patch: Parameters<typeof syncMutation>[1]) => {
@@ -171,8 +209,8 @@ export function MatchProvider({ children }: { children: ReactNode }) {
       try {
         const ok = await syncProfileToCloud(profile);
         if (!ok) throw new Error("No se pudo publicar tu perfil");
-        const merged = await pullAndMerge(next);
-        setState(merged);
+        const result = await pullAndMerge(next);
+        applyPull(next, result);
         setSyncStatus("online");
       } catch (err) {
         setSyncStatus("offline");
@@ -180,7 +218,7 @@ export function MatchProvider({ children }: { children: ReactNode }) {
         throw err;
       }
     },
-    []
+    [applyPull]
   );
 
   const saveProfile = useCallback(async (data: Partial<AstroProfile>) => {
@@ -239,6 +277,50 @@ export function MatchProvider({ children }: { children: ReactNode }) {
     return { ok: true };
   }, [afterMutation]);
 
+  const markChatRead = useCallback((matchId: string) => {
+    const me = stateRef.current.session?.userId;
+    if (!me) return;
+    const { state: next, updated } = markMessagesRead(stateRef.current, matchId, me);
+    if (!updated.length) return;
+    setState(next);
+    void afterMutation(next, { messages: updated });
+  }, [afterMutation]);
+
+  const signalTyping = useCallback((matchId: string) => {
+    const me = stateRef.current.session?.userId;
+    if (!me) return;
+
+    const existing = typingTimersRef.current.get(matchId);
+    if (existing) window.clearTimeout(existing);
+
+    const record: TypingRecord = {
+      matchId,
+      userId: me,
+      updatedAt: new Date().toISOString(),
+    };
+
+    const timer = window.setTimeout(() => {
+      void syncMutation(stateRef.current, { typing: record });
+      typingTimersRef.current.delete(matchId);
+    }, 280);
+
+    typingTimersRef.current.set(matchId, timer);
+  }, []);
+
+  const isOtherTyping = useCallback(
+    (matchId: string) => {
+      const me = stateRef.current.session?.userId;
+      if (!me) return false;
+      return typing.some(
+        (t) =>
+          t.matchId === matchId
+          && t.userId !== me
+          && isTypingActive(t.updatedAt)
+      );
+    },
+    [typing]
+  );
+
   const block = useCallback((userId: string, reason: string) => {
     setState(blockUser(stateRef.current, userId, reason));
   }, []);
@@ -263,6 +345,10 @@ export function MatchProvider({ children }: { children: ReactNode }) {
     await runPull();
   }, [runPull]);
 
+  const dismissToast = useCallback(() => setActiveToast(null), []);
+
+  const userId = state.session?.userId;
+
   const value = useMemo<MatchContextValue>(
     () => ({
       state,
@@ -274,6 +360,7 @@ export function MatchProvider({ children }: { children: ReactNode }) {
       likesReceived: getLikesReceived(state),
       profileViewers: getProfileViewers(state),
       unreadCount: getUnreadCount(state),
+      unreadMessagesCount: userId ? getUnreadMessagesCount(state, userId) : 0,
       limits: getDailyLimitsRemaining(state),
       register,
       saveProfile,
@@ -282,19 +369,26 @@ export function MatchProvider({ children }: { children: ReactNode }) {
       accept,
       reject,
       chat,
+      markChatRead,
+      signalTyping,
+      isOtherTyping,
       block,
       viewProfile,
       updateFilters,
       markRead,
       signOut,
       getProfile: (id) => getProfileById(state, id),
+      getMatchUnread: (matchId) => (userId ? getMatchUnreadCount(state, matchId, userId) : 0),
+      getLastMessage: (matchId) => getMatchLastMessage(state, matchId),
       refreshNow,
+      dismissToast,
     }),
     [
       state,
       ready,
       syncStatus,
       syncError,
+      userId,
       register,
       saveProfile,
       swipe,
@@ -302,16 +396,25 @@ export function MatchProvider({ children }: { children: ReactNode }) {
       accept,
       reject,
       chat,
+      markChatRead,
+      signalTyping,
+      isOtherTyping,
       block,
       viewProfile,
       updateFilters,
       markRead,
       signOut,
       refreshNow,
+      dismissToast,
     ]
   );
 
-  return <MatchContext.Provider value={value}>{children}</MatchContext.Provider>;
+  return (
+    <MatchContext.Provider value={value}>
+      <MatchToast toast={activeToast} onDismiss={dismissToast} />
+      {children}
+    </MatchContext.Provider>
+  );
 }
 
 export function useMatch() {

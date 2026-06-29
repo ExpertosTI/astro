@@ -4,11 +4,22 @@ import { useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMatch } from "@/components/match/MatchProvider";
+import { formatRelativeTime } from "@/lib/chat-utils";
 import styles from "../match.module.css";
 
 export default function MatchesPage() {
   const router = useRouter();
-  const { state, ready, matches, getProfile, accept, reject } = useMatch();
+  const {
+    state,
+    ready,
+    matches,
+    getProfile,
+    accept,
+    reject,
+    getMatchUnread,
+    getLastMessage,
+    unreadMessagesCount,
+  } = useMatch();
   const me = state.session?.userId;
 
   useEffect(() => {
@@ -16,15 +27,20 @@ export default function MatchesPage() {
     if (!state.session) router.replace("/match/onboarding/");
   }, [ready, state.session, router]);
 
-  const sorted = [...matches].sort(
-    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-  );
+  const sorted = [...matches].sort((a, b) => {
+    const lastA = getLastMessage(a.id)?.createdAt ?? a.createdAt;
+    const lastB = getLastMessage(b.id)?.createdAt ?? b.createdAt;
+    return new Date(lastB).getTime() - new Date(lastA).getTime();
+  });
 
   return (
     <>
       <header className={styles.matchHeader}>
         <span className={styles.matchLogo}>MATCHES</span>
-        <span className={styles.matchTag}>{sorted.length} conexiones</span>
+        <span className={styles.matchTag}>
+          {sorted.length} conexiones
+          {unreadMessagesCount > 0 ? ` · ${unreadMessagesCount} msgs` : ""}
+        </span>
       </header>
 
       {sorted.length === 0 ? (
@@ -45,6 +61,8 @@ export default function MatchesPage() {
             const isPending = match.status === "pending";
             const isIncoming =
               isPending && match.initiatedBy !== me && state.session?.profile.role === "lienzo";
+            const lastMsg = getLastMessage(match.id);
+            const unread = getMatchUnread(match.id);
 
             return (
               <div key={match.id} className={styles.matchListItem}>
@@ -55,15 +73,26 @@ export default function MatchesPage() {
                   className={styles.matchAvatar}
                 />
                 <div className={styles.matchListInfo}>
-                  <p className={styles.matchListName}>{other.displayName}</p>
-                  <p className={styles.matchListStatus}>
-                    {match.isSuperLike && "⭐ "}
-                    {match.status === "matched"
-                      ? "Match confirmado · Chat disponible"
-                      : isIncoming
-                        ? "Quiere conectar contigo"
-                        : "Esperando respuesta"}
+                  <p className={styles.matchListName}>
+                    {other.displayName}
+                    {unread > 0 && <span className={styles.matchUnreadBadge}>{unread}</span>}
                   </p>
+                  <p className={styles.matchListStatus}>
+                    {lastMsg
+                      ? `${lastMsg.senderId === me ? "Tú: " : ""}${lastMsg.text.slice(0, 48)}${lastMsg.text.length > 48 ? "…" : ""}`
+                      : match.isSuperLike
+                        ? "⭐ Super Like"
+                        : match.status === "matched"
+                          ? "Match confirmado · Inicia el chat"
+                          : isIncoming
+                            ? "Quiere conectar contigo"
+                            : "Esperando respuesta"}
+                  </p>
+                  {lastMsg && (
+                    <span className={styles.matchListTime}>
+                      {formatRelativeTime(lastMsg.createdAt)}
+                    </span>
+                  )}
                 </div>
                 {isIncoming ? (
                   <div className={styles.matchActions}>

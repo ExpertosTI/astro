@@ -4,6 +4,7 @@ import type {
   AstroProfile,
   ChatMessage,
   SwipeRecord,
+  TypingRecord,
 } from "@/types/match";
 
 const API_URL = process.env.NEXT_PUBLIC_INSFORGE_API_URL ?? "/api/insforge";
@@ -56,6 +57,13 @@ type RemoteMessage = {
   sender_id: string;
   text: string;
   created_at: string;
+  read_at: string | null;
+};
+
+type RemoteTyping = {
+  match_id: string;
+  user_id: string;
+  updated_at: string;
 };
 
 export type MatchRemoteBundle = {
@@ -63,6 +71,7 @@ export type MatchRemoteBundle = {
   swipes: SwipeRecord[];
   matches: AstroMatch[];
   messages: ChatMessage[];
+  typing: TypingRecord[];
 };
 
 export type ApiHealth = {
@@ -163,7 +172,7 @@ export async function checkMatchApiHealth(): Promise<ApiHealth> {
 export async function fetchMatchBundle(since?: string): Promise<MatchRemoteBundle> {
   const msgSince = since ? `&created_at=gt.${encodeURIComponent(since)}` : "";
 
-  const [profiles, swipes, connections, messages] = await Promise.all([
+  const [profiles, swipes, connections, messages, typing] = await Promise.all([
     apiGet<RemoteProfile>(
       `/match_profiles?project_id=eq.${PROJECT_ID}&order=updated_at.desc&limit=500`
     ),
@@ -176,6 +185,9 @@ export async function fetchMatchBundle(since?: string): Promise<MatchRemoteBundl
     apiGet<RemoteMessage>(
       `/match_messages?project_id=eq.${PROJECT_ID}&order=created_at.asc&limit=3000${msgSince}`
     ),
+    apiGet<RemoteTyping>(
+      `/match_typing?project_id=eq.${PROJECT_ID}&order=updated_at.desc&limit=200`
+    ).catch(() => [] as RemoteTyping[]),
   ]);
 
   return {
@@ -203,6 +215,12 @@ export async function fetchMatchBundle(since?: string): Promise<MatchRemoteBundl
       senderId: msg.sender_id,
       text: msg.text,
       createdAt: msg.created_at,
+      readAt: msg.read_at ?? undefined,
+    })),
+    typing: typing.map((t) => ({
+      matchId: t.match_id,
+      userId: t.user_id,
+      updatedAt: t.updated_at,
     })),
   };
 }
@@ -249,6 +267,18 @@ export async function pushMessage(message: ChatMessage): Promise<boolean> {
       sender_id: message.senderId,
       text: message.text,
       created_at: message.createdAt,
+      read_at: message.readAt ?? null,
+    },
+  ]);
+}
+
+export async function pushTyping(record: TypingRecord): Promise<boolean> {
+  return apiUpsert("/match_typing", [
+    {
+      match_id: record.matchId,
+      user_id: record.userId,
+      project_id: PROJECT_ID,
+      updated_at: record.updatedAt,
     },
   ]);
 }

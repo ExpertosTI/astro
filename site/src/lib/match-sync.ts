@@ -5,6 +5,7 @@ import {
   pushMessage,
   pushProfile,
   pushSwipe,
+  pushTyping,
   type MatchRemoteBundle,
 } from "@/lib/match-api";
 import { computeProfileBadges } from "@/lib/badges";
@@ -16,6 +17,7 @@ import type {
   ChatMessage,
   MatchAppState,
   SwipeRecord,
+  TypingRecord,
 } from "@/types/match";
 
 const SYNC_TS_KEY = "astro-match-last-sync";
@@ -24,6 +26,25 @@ function mergeById<T extends { id: string }>(local: T[], remote: T[]): T[] {
   const map = new Map<string, T>();
   for (const item of [...local, ...remote]) {
     map.set(item.id, item);
+  }
+  return [...map.values()];
+}
+
+function mergeMessages(local: ChatMessage[], remote: ChatMessage[]): ChatMessage[] {
+  const map = new Map<string, ChatMessage>();
+  for (const m of [...local, ...remote]) {
+    const prev = map.get(m.id);
+    if (!prev) {
+      map.set(m.id, m);
+      continue;
+    }
+    const readAt =
+      prev.readAt && m.readAt
+        ? new Date(prev.readAt) > new Date(m.readAt)
+          ? prev.readAt
+          : m.readAt
+        : prev.readAt ?? m.readAt;
+    map.set(m.id, { ...prev, ...m, readAt });
   }
   return [...map.values()];
 }
@@ -118,7 +139,7 @@ export function mergeRemoteIntoState(
 
   const swipes = mergeById(local.swipes, remote.swipes) as SwipeRecord[];
   const matches = mergeById(local.matches, remote.matches) as AstroMatch[];
-  const messages = mergeById(local.messages, remote.messages) as ChatMessage[];
+  const messages = mergeMessages(local.messages, remote.messages);
 
   let session = local.session;
   if (session) {
@@ -142,7 +163,9 @@ export function mergeRemoteIntoState(
   };
 }
 
-export async function pullAndMerge(state: MatchAppState): Promise<MatchAppState> {
+export async function pullAndMerge(
+  state: MatchAppState
+): Promise<{ state: MatchAppState; typing: TypingRecord[] }> {
   const since = typeof window !== "undefined"
     ? localStorage.getItem(SYNC_TS_KEY) ?? undefined
     : undefined;
@@ -154,7 +177,7 @@ export async function pullAndMerge(state: MatchAppState): Promise<MatchAppState>
     localStorage.setItem(SYNC_TS_KEY, new Date().toISOString());
   }
   saveMatchState(merged);
-  return merged;
+  return { state: merged, typing: remote.typing };
 }
 
 export async function syncProfileToCloud(profile: AstroProfile): Promise<boolean> {
@@ -168,6 +191,8 @@ export async function syncMutation(
     swipe?: SwipeRecord;
     match?: AstroMatch;
     message?: ChatMessage;
+    messages?: ChatMessage[];
+    typing?: TypingRecord;
   }
 ): Promise<void> {
   const tasks: Promise<boolean>[] = [];
@@ -175,6 +200,10 @@ export async function syncMutation(
   if (patch.swipe) tasks.push(pushSwipe(patch.swipe));
   if (patch.match) tasks.push(pushMatch(patch.match));
   if (patch.message) tasks.push(pushMessage(patch.message));
+  if (patch.messages?.length) {
+    for (const m of patch.messages) tasks.push(pushMessage(m));
+  }
+  if (patch.typing) tasks.push(pushTyping(patch.typing));
   await Promise.all(tasks);
 
   if (state.session?.profile && !patch.profile) {
@@ -182,7 +211,9 @@ export async function syncMutation(
   }
 }
 
-export async function initialCloudSync(state: MatchAppState): Promise<MatchAppState> {
+export async function initialCloudSync(
+  state: MatchAppState
+): Promise<{ state: MatchAppState; typing: TypingRecord[] }> {
   if (state.session?.profile) {
     await pushFullState({
       profile: state.session.profile,

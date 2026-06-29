@@ -14,7 +14,7 @@ const NAV = [
 
 export function BottomNav() {
   const pathname = usePathname();
-  const { matches, unreadCount } = useMatch();
+  const { matches, unreadCount, unreadMessagesCount } = useMatch();
 
   if (
     pathname === "/match" ||
@@ -26,14 +26,15 @@ export function BottomNav() {
   }
 
   const pending = matches.filter((m) => m.status === "pending").length;
+  const matchBadge = pending + unreadMessagesCount;
 
   return (
     <nav className={styles.matchBottomNav} aria-label="Navegación principal">
       {NAV.map((item) => {
         const active = pathname.startsWith(item.href);
         const badge =
-          item.href === "/match/matches/" ? pending :
-          item.href === "/match/activity/" ? unreadCount : 0;
+          item.href === "/match/matches/" ? matchBadge :
+          item.href === "/match/activity/" ? unreadCount + unreadMessagesCount : 0;
 
         return (
           <Link
