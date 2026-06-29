@@ -6,10 +6,10 @@ services:
       context: ./site
       dockerfile: Dockerfile
       args:
-        - NEXT_PUBLIC_INSFORGE_API_URL=${NEXT_PUBLIC_INSFORGE_API_URL:-https://insforge.renace.tech/api}
+        - NEXT_PUBLIC_INSFORGE_API_URL=${NEXT_PUBLIC_INSFORGE_API_URL:-/api/insforge}
     image: astro-web:latest
     environment:
-      - NEXT_PUBLIC_INSFORGE_API_URL=${NEXT_PUBLIC_INSFORGE_API_URL:-https://insforge.renace.tech/api}
+      - NEXT_PUBLIC_INSFORGE_API_URL=${NEXT_PUBLIC_INSFORGE_API_URL:-/api/insforge}
       - INSFORGE_JWT_SECRET=${INSFORGE_JWT_SECRET}
     networks:
       - RenaceNet

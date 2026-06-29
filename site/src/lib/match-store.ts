@@ -761,6 +761,8 @@ export function getDiscoverProfiles(state: MatchAppState): AstroProfile[] {
 
   return state.profiles.filter((p) => {
     if (p.id === me.id || p.role !== oppositeRole) return false;
+    if (!p.displayName?.trim()) return false;
+    if (p.id.startsWith("seed-")) return false;
     if (swipedIds.has(p.id) || blocked.has(p.id)) return false;
     if (city && !p.city.toLowerCase().includes(city.toLowerCase())) return false;
     if (bodyPart && !p.bodyParts.includes(bodyPart)) return false;

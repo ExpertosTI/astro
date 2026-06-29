@@ -44,6 +44,12 @@ if [ ! -f "site/out/match/index.html" ]; then
 fi
 echo "✓ Build Match verificado ($(git rev-parse --short HEAD))"
 
+# 3b. Tablas Match en Postgres (Insforge)
+if [ -x "scripts/apply-match-schema.sh" ]; then
+  echo "📡 Verificando tablas ASTRO Match..."
+  ./scripts/apply-match-schema.sh || echo "⚠️  Schema no aplicado — ejecuta scripts/apply-match-schema.sh manualmente"
+fi
+
 # 4. Build Docker image (Optimized for 1-CPU VPS)
 echo "🛠 Building image with low priority..."
 

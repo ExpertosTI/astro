@@ -1539,3 +1539,55 @@
   color: #ff6d6d;
   margin-bottom: 0.35rem;
 }
+
+.syncPill {
+  position: fixed;
+  top: max(0.65rem, env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 60;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border: 1px solid var(--line);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.syncOnline {
+  background: rgba(74, 222, 128, 0.12);
+  border-color: rgba(74, 222, 128, 0.45);
+  color: #86efac;
+}
+
+.syncSyncing {
+  background: rgba(255, 176, 58, 0.12);
+  border-color: rgba(255, 176, 58, 0.4);
+  color: var(--signal);
+  animation: pulseSync 1.2s ease-in-out infinite;
+}
+
+.syncOffline {
+  background: rgba(255, 77, 109, 0.1);
+  border-color: rgba(255, 77, 109, 0.35);
+  color: #ff8a8a;
+}
+
+.syncHint {
+  font-size: 0.72rem;
+  color: var(--muted);
+  text-align: center;
+  margin: 0.5rem 0;
+  line-height: 1.45;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.65rem;
+  background: rgba(255, 77, 109, 0.08);
+  border: 1px solid rgba(255, 77, 109, 0.2);
+}
+
+@keyframes pulseSync {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.65; }
+}

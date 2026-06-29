@@ -16,6 +16,8 @@ export default function DiscoverPage() {
     state,
     ready,
     discover,
+    syncStatus,
+    syncError,
     swipe,
     rewind,
     block,
@@ -176,7 +178,14 @@ export default function DiscoverPage() {
         ) : (
           <div className={styles.emptyState}>
             <h2>SIN MÁS PERFILES</h2>
-            <p>Ajusta filtros o vuelve mañana. Nueva gente entra cada día.</p>
+            {syncStatus === "offline" ? (
+              <p>
+                Sin conexión en vivo — los perfiles de otros dispositivos no aparecen hasta activar el servidor.
+                {syncError ? ` (${syncError})` : ""}
+              </p>
+            ) : (
+              <p>Esperando nuevos {roleLabel.toLowerCase()} en la red. Se actualiza cada pocos segundos.</p>
+            )}
             <button
               type="button"
               className={styles.primaryBtn}

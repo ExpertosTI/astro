@@ -46,7 +46,7 @@ function RoleIcon({ role }: { role: "tatuador" | "lienzo" }) {
 
 export default function OnboardingPage() {
   const router = useRouter();
-  const { register, saveProfile, state } = useMatch();
+  const { register, saveProfile, state, syncStatus } = useMatch();
 
   const [step, setStep] = useState(0);
   const [role, setRole] = useState<UserRole | null>(state.session?.profile.role ?? null);
@@ -65,6 +65,7 @@ export default function OnboardingPage() {
     state.session?.profile.portfolioUrls ?? []
   );
   const [error, setError] = useState("");
+  const [syncing, setSyncing] = useState(false);
 
   const toggleBodyPart = (part: BodyPart) => {
     setBodyParts((prev) =>
@@ -105,7 +106,7 @@ export default function OnboardingPage() {
     setStep((s) => Math.min(s + 1, STEPS.length - 1));
   };
 
-  const finish = () => {
+  const finish = async () => {
     const data = {
       displayName: displayName.trim(),
       bio: bio.trim(),
@@ -117,12 +118,24 @@ export default function OnboardingPage() {
       portfolioUrls,
     };
 
-    if (!state.session && role) {
-      register(role, data);
-    } else {
-      saveProfile(data);
+    setError("");
+    setSyncing(true);
+    try {
+      if (!state.session && role) {
+        await register(role, data);
+      } else {
+        await saveProfile(data);
+      }
+      router.push("/match/discover/");
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "No se pudo publicar. Verifica conexión o ejecuta match-schema.sql en el servidor."
+      );
+    } finally {
+      setSyncing(false);
     }
-    router.push("/match/discover/");
   };
 
   const progress = ((step + 1) / STEPS.length) * 100;
@@ -327,15 +340,21 @@ export default function OnboardingPage() {
 
       {error && <p className={styles.formError}>{error}</p>}
 
+      {syncStatus === "offline" && !error && (
+        <p className={styles.syncHint}>
+          Sin servidor en vivo — los perfiles solo se ven en este dispositivo hasta conectar la API.
+        </p>
+      )}
+
       <div className={styles.onboardingActions}>
         {step < STEPS.length - 1 ? (
           <button type="button" className={styles.primaryBtn} onClick={next}>
             Continuar
           </button>
         ) : (
-          <button type="button" className={styles.primaryBtn} onClick={finish}>
-            Entrar a Match
-          </button>
+        <button type="button" className={styles.primaryBtn} onClick={finish} disabled={syncing}>
+          {syncing ? "Publicando en la red…" : "Entrar a Match"}
+        </button>
         )}
         {step > 0 && (
           <button type="button" className={styles.ghostBtn} onClick={() => setStep((s) => s - 1)}>
