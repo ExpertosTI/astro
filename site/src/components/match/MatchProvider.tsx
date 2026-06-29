@@ -42,9 +42,13 @@ import {
   sendMessage,
   setFilters,
   swipeProfile,
+  toggleMessageReaction,
   updateProfile,
 } from "@/lib/match-store";
 import { MatchToast } from "@/components/match/MatchToast";
+import { triggerHaptic } from "@/lib/match-haptics";
+import { notifyViaServiceWorker } from "@/lib/match-push";
+import { playMatchChord, playMatchSfx } from "@/lib/match-sfx";
 import type {
   AppNotification,
   AstroMatch,
@@ -92,6 +96,7 @@ type MatchContextValue = {
   getLastMessage: (matchId: string) => ReturnType<typeof getMatchLastMessage>;
   refreshNow: () => Promise<void>;
   dismissToast: () => void;
+  reactToMessage: (messageId: string, emoji: string) => void;
 };
 
 const MatchContext = createContext<MatchContextValue | null>(null);
@@ -119,8 +124,25 @@ export function MatchProvider({ children }: { children: ReactNode }) {
 
   const applyPull = useCallback((prev: MatchAppState, result: { state: MatchAppState; typing: TypingRecord[] }) => {
     const toast = pickNewToast(prev, result.state);
-    if (toast && document.visibilityState === "visible") {
-      setActiveToast(toast);
+    if (toast) {
+      if (document.visibilityState === "visible") {
+        setActiveToast(toast);
+      }
+      const url =
+        toast.relatedMatchId && (toast.type === "match" || toast.type === "message")
+          ? `/match/chat/?id=${toast.relatedMatchId}`
+          : "/match/activity/";
+      void notifyViaServiceWorker(toast.title, toast.body, url);
+      if (toast.type === "match") {
+        playMatchChord();
+        void triggerHaptic("success");
+      } else if (toast.type === "message") {
+        playMatchSfx("message");
+        void triggerHaptic("light");
+      } else {
+        playMatchSfx("tap");
+        void triggerHaptic("selection");
+      }
     }
     setState(result.state);
     setTyping(result.typing);
@@ -240,6 +262,19 @@ export function MatchProvider({ children }: { children: ReactNode }) {
 
     const newSwipe = next.swipes.find((s) => !prev.swipes.some((p) => p.id === s.id));
     const newMatch = next.matches.find((m) => !prev.matches.some((p) => p.id === m.id));
+    if (action === "superlike") {
+      playMatchSfx("superlike");
+      void triggerHaptic("medium");
+    } else if (action === "like") {
+      playMatchSfx("swipe");
+      void triggerHaptic("selection");
+    } else {
+      void triggerHaptic("light");
+    }
+    if (outcome.matched) {
+      playMatchChord();
+      void triggerHaptic("success");
+    }
     void afterMutation(next, { swipe: newSwipe, match: newMatch });
 
     return { ok: true, matched: outcome.matched };
@@ -257,6 +292,8 @@ export function MatchProvider({ children }: { children: ReactNode }) {
     const prev = stateRef.current;
     const next = acceptMatch(prev, matchId);
     setState(next);
+    playMatchChord();
+    void triggerHaptic("success");
     const match = next.matches.find((m) => m.id === matchId);
     void afterMutation(next, { match });
   }, [afterMutation]);
@@ -272,9 +309,27 @@ export function MatchProvider({ children }: { children: ReactNode }) {
     const outcome = sendMessage(stateRef.current, matchId, text);
     if (outcome.error) return { ok: false, error: outcome.error };
     setState(outcome.state);
+    playMatchSfx("send");
+    void triggerHaptic("light");
     const msg = outcome.state.messages[outcome.state.messages.length - 1];
     void afterMutation(outcome.state, { message: msg });
     return { ok: true };
+  }, [afterMutation]);
+
+  const reactToMessage = useCallback((messageId: string, emoji: string) => {
+    const me = stateRef.current.session?.userId;
+    if (!me) return;
+    const { state: next, message } = toggleMessageReaction(
+      stateRef.current,
+      messageId,
+      emoji,
+      me
+    );
+    if (!message) return;
+    setState(next);
+    void triggerHaptic("selection");
+    playMatchSfx("tap");
+    void afterMutation(next, { message });
   }, [afterMutation]);
 
   const markChatRead = useCallback((matchId: string) => {
@@ -382,6 +437,7 @@ export function MatchProvider({ children }: { children: ReactNode }) {
       getLastMessage: (matchId) => getMatchLastMessage(state, matchId),
       refreshNow,
       dismissToast,
+      reactToMessage,
     }),
     [
       state,
@@ -406,6 +462,7 @@ export function MatchProvider({ children }: { children: ReactNode }) {
       signOut,
       refreshNow,
       dismissToast,
+      reactToMessage,
     ]
   );
 

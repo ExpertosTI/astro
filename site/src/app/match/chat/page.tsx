@@ -8,6 +8,8 @@ import { ChatBubble } from "@/components/match/ChatBubble";
 import { EmojiPicker } from "@/components/match/EmojiPicker";
 import { QuickReplies } from "@/components/match/QuickReplies";
 import { TypingIndicator } from "@/components/match/TypingIndicator";
+import { ReactionPicker } from "@/components/match/ReactionPicker";
+import { loadMatchPreferences } from "@/lib/match-settings";
 import { canAccessChat } from "@/lib/match-store";
 import { formatMessageTime, groupMessagesByDay } from "@/lib/chat-utils";
 import styles from "../match.module.css";
@@ -25,10 +27,12 @@ function ChatContent() {
     markChatRead,
     signalTyping,
     isOtherTyping,
+    reactToMessage,
   } = useMatch();
   const [text, setText] = useState("");
   const [error, setError] = useState("");
   const [emojiOpen, setEmojiOpen] = useState(false);
+  const [reactionMsgId, setReactionMsgId] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const seenIdsRef = useRef<Set<string>>(new Set());
@@ -168,7 +172,15 @@ function ChatContent() {
                   mine={msg.senderId === me}
                   time={formatMessageTime(msg.createdAt)}
                   readAt={msg.readAt}
-                  animate={msg.id === typingMsgId && msg.senderId !== me}
+                  reactions={msg.reactions}
+                  myUserId={me}
+                  animate={
+                    loadMatchPreferences().typingFx
+                    && msg.id === typingMsgId
+                    && msg.senderId !== me
+                  }
+                  onReact={() => setReactionMsgId(msg.id)}
+                  onToggleReaction={(emoji) => reactToMessage(msg.id, emoji)}
                 />
               ))}
             </div>
@@ -205,6 +217,15 @@ function ChatContent() {
           </button>
         </form>
       </div>
+
+      <ReactionPicker
+        open={!!reactionMsgId}
+        onClose={() => setReactionMsgId(null)}
+        onSelect={(emoji) => {
+          if (reactionMsgId) reactToMessage(reactionMsgId, emoji);
+          setReactionMsgId(null);
+        }}
+      />
     </>
   );
 }

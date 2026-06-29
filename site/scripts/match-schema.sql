@@ -61,6 +61,20 @@ CREATE TABLE IF NOT EXISTS match_typing (
 
 -- Migración para instalaciones existentes
 ALTER TABLE match_messages ADD COLUMN IF NOT EXISTS read_at TIMESTAMPTZ;
+ALTER TABLE match_messages ADD COLUMN IF NOT EXISTS reactions JSONB DEFAULT '{}'::jsonb;
+
+CREATE TABLE IF NOT EXISTS match_push_tokens (
+  id TEXT PRIMARY KEY,
+  project_id TEXT NOT NULL DEFAULT 'ASTRO_SDQ_2026',
+  user_id TEXT NOT NULL,
+  token TEXT NOT NULL,
+  platform TEXT NOT NULL CHECK (platform IN ('web', 'android', 'ios')),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE (user_id, platform, token)
+);
+
+CREATE INDEX IF NOT EXISTS idx_match_push_tokens_user ON match_push_tokens (user_id, updated_at DESC);
 
 CREATE INDEX IF NOT EXISTS idx_match_profiles_project ON match_profiles (project_id, updated_at DESC);
 CREATE INDEX IF NOT EXISTS idx_match_swipes_project ON match_swipes (project_id, created_at DESC);
@@ -78,6 +92,7 @@ BEGIN
     GRANT SELECT, INSERT, UPDATE, DELETE ON match_connections TO anon;
     GRANT SELECT, INSERT, UPDATE, DELETE ON match_messages TO anon;
     GRANT SELECT, INSERT, UPDATE, DELETE ON match_typing TO anon;
+    GRANT SELECT, INSERT, UPDATE, DELETE ON match_push_tokens TO anon;
   END IF;
   IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'web_anon') THEN
     GRANT USAGE ON SCHEMA public TO web_anon;
@@ -86,10 +101,11 @@ BEGIN
     GRANT SELECT, INSERT, UPDATE, DELETE ON match_connections TO web_anon;
     GRANT SELECT, INSERT, UPDATE, DELETE ON match_messages TO web_anon;
     GRANT SELECT, INSERT, UPDATE, DELETE ON match_typing TO web_anon;
+    GRANT SELECT, INSERT, UPDATE, DELETE ON match_push_tokens TO web_anon;
   END IF;
   IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'authenticator') THEN
     GRANT USAGE ON SCHEMA public TO authenticator;
-    GRANT ALL ON match_profiles, match_swipes, match_connections, match_messages, match_typing TO authenticator;
+    GRANT ALL ON match_profiles, match_swipes, match_connections, match_messages, match_typing, match_push_tokens TO authenticator;
   END IF;
 END $$;
 

@@ -30,6 +30,17 @@ function mergeById<T extends { id: string }>(local: T[], remote: T[]): T[] {
   return [...map.values()];
 }
 
+function mergeReactions(
+  a?: ChatMessage["reactions"],
+  b?: ChatMessage["reactions"]
+): ChatMessage["reactions"] {
+  const out: NonNullable<ChatMessage["reactions"]> = { ...(a ?? {}) };
+  for (const [emoji, users] of Object.entries(b ?? {})) {
+    out[emoji] = [...new Set([...(out[emoji] ?? []), ...users])];
+  }
+  return Object.keys(out).length ? out : undefined;
+}
+
 function mergeMessages(local: ChatMessage[], remote: ChatMessage[]): ChatMessage[] {
   const map = new Map<string, ChatMessage>();
   for (const m of [...local, ...remote]) {
@@ -44,7 +55,12 @@ function mergeMessages(local: ChatMessage[], remote: ChatMessage[]): ChatMessage
           ? prev.readAt
           : m.readAt
         : prev.readAt ?? m.readAt;
-    map.set(m.id, { ...prev, ...m, readAt });
+    map.set(m.id, {
+      ...prev,
+      ...m,
+      readAt,
+      reactions: mergeReactions(prev.reactions, m.reactions),
+    });
   }
   return [...map.values()];
 }

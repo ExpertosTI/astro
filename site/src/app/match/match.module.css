@@ -1,6 +1,6 @@
 .matchApp {
   --match-max: min(100%, 460px);
-  --match-nav-h: 76px;
+  --match-nav-h: calc(76px + env(safe-area-inset-bottom));
   --match-pad: clamp(1rem, 4.5vw, 1.35rem);
   --match-radius: 1.25rem;
   --match-glass: rgba(14, 7, 6, 0.72);
@@ -10,6 +10,9 @@
   flex-direction: column;
   overflow-x: hidden;
   background: #080404;
+  padding-top: env(safe-area-inset-top);
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 
 .matchApp::before {
@@ -1968,4 +1971,193 @@
 @keyframes pulseSync {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.65; }
+}
+
+.chatBubbleWrap {
+  display: flex;
+  flex-direction: column;
+  max-width: 82%;
+}
+
+.chatBubbleWrapMine {
+  align-self: flex-end;
+  align-items: flex-end;
+}
+
+.reactionRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin-top: 0.2rem;
+}
+
+.reactionChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.15rem 0.45rem;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: rgba(12, 6, 5, 0.75);
+  font-size: 0.72rem;
+  cursor: pointer;
+}
+
+.reactionChipActive {
+  border-color: rgba(255, 109, 29, 0.5);
+  background: rgba(255, 109, 29, 0.15);
+}
+
+.reactionCount {
+  font-size: 0.58rem;
+  color: var(--muted);
+}
+
+.reactionPickerBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: calc(var(--match-nav-h) + 1rem);
+}
+
+.reactionPicker {
+  display: flex;
+  gap: 0.35rem;
+  padding: 0.65rem 0.85rem;
+  border-radius: 999px;
+  background: rgba(14, 7, 6, 0.96);
+  border: 1px solid var(--line);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+}
+
+.reactionPickerBtn {
+  width: 2.4rem;
+  height: 2.4rem;
+  border: none;
+  background: transparent;
+  font-size: 1.25rem;
+  cursor: pointer;
+  border-radius: 50%;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.reactionPickerBtn:active {
+  transform: scale(1.15);
+  background: rgba(255, 109, 29, 0.15);
+}
+
+.settingsPanel {
+  margin: 1.25rem 0;
+  padding: 1rem;
+  border-radius: var(--match-radius);
+  border: 1px solid var(--line);
+  background: var(--match-glass);
+  backdrop-filter: blur(12px);
+}
+
+.settingsList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.settingRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  gap: 1rem;
+}
+
+.settingRow input {
+  width: 1.1rem;
+  height: 1.1rem;
+  accent-color: var(--ember);
+}
+
+.settingHint {
+  font-size: 0.68rem;
+  color: var(--muted);
+  margin-top: 0.5rem;
+}
+
+.secondaryBtn {
+  margin-top: 0.75rem;
+  width: 100%;
+  padding: 0.65rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--signal);
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.installBanner {
+  position: fixed;
+  bottom: calc(var(--match-nav-h) + 0.5rem);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 70;
+  width: min(92vw, var(--match-max));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 109, 29, 0.35);
+  background: rgba(12, 6, 5, 0.94);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+}
+
+.installTitle {
+  font-size: 0.78rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.installBody {
+  font-size: 0.65rem;
+  color: var(--muted);
+  margin: 0.15rem 0 0;
+}
+
+.installActions {
+  display: flex;
+  gap: 0.4rem;
+  flex-shrink: 0;
+}
+
+.pullWrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.pullIndicator {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  overflow: hidden;
+  transition: height 0.15s ease;
+  color: var(--muted);
+  font-size: 0.7rem;
+}
+
+.pullSpin {
+  display: inline-block;
+  animation: spinRefresh 0.8s linear infinite;
+}
+
+@keyframes spinRefresh {
+  to { transform: rotate(360deg); }
 }

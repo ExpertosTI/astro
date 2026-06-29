@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">ASTRO Match</string>
+    <string name="title_activity_main">ASTRO Match</string>
+    <string name="package_name">tech.renace.astro.match</string>
+    <string name="custom_url_scheme">tech.renace.astro.match</string>
+</resources>

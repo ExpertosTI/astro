@@ -90,6 +90,8 @@ export type AstroMatch = {
   matchedAt?: string;
 };
 
+export type MessageReactions = Record<string, string[]>;
+
 export type ChatMessage = {
   id: string;
   matchId: string;
@@ -97,12 +99,30 @@ export type ChatMessage = {
   text: string;
   createdAt: string;
   readAt?: string;
+  reactions?: MessageReactions;
 };
 
 export type TypingRecord = {
   matchId: string;
   userId: string;
   updatedAt: string;
+};
+
+export type PushPlatform = "web" | "android" | "ios";
+
+export type PushSubscriptionRecord = {
+  id: string;
+  userId: string;
+  token: string;
+  platform: PushPlatform;
+  updatedAt: string;
+};
+
+export type MatchPreferences = {
+  sound: boolean;
+  haptics: boolean;
+  push: boolean;
+  typingFx: boolean;
 };
 
 export type UserStats = {
@@ -174,6 +194,10 @@ export type MatchAppState = {
   filters: DiscoverFilters;
   lastSwipe: SwipeRecord | null;
 };
+
+export const REACTION_EMOJIS = ["❤️", "🔥", "😂", "👍", "😮", "🎨"] as const;
+
+export type ReactionEmoji = (typeof REACTION_EMOJIS)[number];
 
 export const DAILY_LIMITS = {
   superLikes: 3,

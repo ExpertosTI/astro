@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMatch } from "@/components/match/MatchProvider";
 import { BadgeRow } from "@/components/match/BadgeRow";
+import { MatchSettingsPanel } from "@/components/match/MatchSettingsPanel";
 import { BODY_PARTS, DAYS, TIME_SLOTS } from "@/lib/match-constants";
 import styles from "../match.module.css";
 
@@ -55,6 +56,8 @@ export default function ProfilePage() {
           <span className={styles.statLabel}>Likes</span>
         </div>
       </div>
+
+      <MatchSettingsPanel userId={profile.id} />
 
       {profile.bio && (
         <>

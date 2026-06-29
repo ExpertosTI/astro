@@ -58,6 +58,7 @@ type RemoteMessage = {
   text: string;
   created_at: string;
   read_at: string | null;
+  reactions: Record<string, string[]> | null;
 };
 
 type RemoteTyping = {
@@ -216,6 +217,7 @@ export async function fetchMatchBundle(since?: string): Promise<MatchRemoteBundl
       text: msg.text,
       createdAt: msg.created_at,
       readAt: msg.read_at ?? undefined,
+      reactions: msg.reactions ?? undefined,
     })),
     typing: typing.map((t) => ({
       matchId: t.match_id,
@@ -268,6 +270,7 @@ export async function pushMessage(message: ChatMessage): Promise<boolean> {
       text: message.text,
       created_at: message.createdAt,
       read_at: message.readAt ?? null,
+      reactions: message.reactions ?? {},
     },
   ]);
 }

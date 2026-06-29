@@ -1,0 +1,29 @@
+{
+  "name": "ASTRO Match",
+  "short_name": "Match",
+  "description": "Conecta tatuadores y lienzos en ASTRO SDQ",
+  "start_url": "/match/",
+  "scope": "/match/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0a0505",
+  "theme_color": "#ff5c1c",
+  "lang": "es",
+  "categories": ["social", "lifestyle"],
+  "icons": [
+    {
+      "src": "/astro/logo-icon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/astro/logo-icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [],
+  "prefer_related_applications": false
+}

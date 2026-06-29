@@ -8,6 +8,7 @@ import { MatchBrand } from "@/components/match/MatchBrand";
 import { SwipeCard } from "@/components/match/SwipeCard";
 import { ProfileDetailModal } from "@/components/match/ProfileDetailModal";
 import { FilterPanel } from "@/components/match/FilterPanel";
+import { PullToRefresh } from "@/components/match/PullToRefresh";
 import styles from "../match.module.css";
 
 export default function DiscoverPage() {
@@ -24,6 +25,7 @@ export default function DiscoverPage() {
     viewProfile,
     updateFilters,
     limits,
+    refreshNow,
   } = useMatch();
 
   const [index, setIndex] = useState(0);
@@ -105,6 +107,7 @@ export default function DiscoverPage() {
   const roleLabel = state.session?.profile.role === "tatuador" ? "Lienzos" : "Tatuadores";
 
   return (
+    <PullToRefresh onRefresh={refreshNow}>
     <>
       <header className={styles.discoverHeader}>
         <MatchBrand compact />
@@ -225,5 +228,6 @@ export default function DiscoverPage() {
         )}
       </AnimatePresence>
     </>
+    </PullToRefresh>
   );
 }

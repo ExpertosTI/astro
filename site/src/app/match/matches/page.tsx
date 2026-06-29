@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMatch } from "@/components/match/MatchProvider";
 import { formatRelativeTime } from "@/lib/chat-utils";
+import { PullToRefresh } from "@/components/match/PullToRefresh";
 import styles from "../match.module.css";
 
 export default function MatchesPage() {
@@ -19,6 +20,7 @@ export default function MatchesPage() {
     getMatchUnread,
     getLastMessage,
     unreadMessagesCount,
+    refreshNow,
   } = useMatch();
   const me = state.session?.userId;
 
@@ -34,6 +36,7 @@ export default function MatchesPage() {
   });
 
   return (
+    <PullToRefresh onRefresh={refreshNow}>
     <>
       <header className={styles.matchHeader}>
         <span className={styles.matchLogo}>MATCHES</span>
@@ -122,5 +125,6 @@ export default function MatchesPage() {
         </div>
       )}
     </>
+    </PullToRefresh>
   );
 }

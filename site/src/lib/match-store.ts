@@ -675,6 +675,39 @@ export function sendMessage(
   return { state: next };
 }
 
+export function toggleMessageReaction(
+  state: MatchAppState,
+  messageId: string,
+  emoji: string,
+  userId: string
+): { state: MatchAppState; message?: ChatMessage } {
+  let updated: ChatMessage | undefined;
+
+  const messages = state.messages.map((m) => {
+    if (m.id !== messageId) return m;
+    const reactions = { ...(m.reactions ?? {}) };
+    const users = reactions[emoji] ?? [];
+    if (users.includes(userId)) {
+      const nextUsers = users.filter((id) => id !== userId);
+      if (nextUsers.length) reactions[emoji] = nextUsers;
+      else delete reactions[emoji];
+    } else {
+      reactions[emoji] = [...users, userId];
+    }
+    updated = {
+      ...m,
+      reactions: Object.keys(reactions).length ? reactions : undefined,
+    };
+    return updated;
+  });
+
+  if (!updated) return { state };
+
+  const next = { ...state, messages };
+  saveMatchState(next);
+  return { state: next, message: updated };
+}
+
 export function recordProfileView(
   state: MatchAppState,
   viewedId: string
