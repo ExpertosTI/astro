@@ -1,25 +1,49 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { insforge, InsforgeSavedLead, InsforgeStats } from "@/lib/insforge";
-import { ASTRO_CONFIG } from "@/config/astro-config";
+import {
+  verifyAdminPassword,
+  createAdminSession,
+  isAdminAuthenticated,
+  clearAdminSession,
+} from "@/lib/admin-auth";
 import styles from "./admin.module.css";
 
 export default function AdminPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [password, setPassword] = useState("");
+  const [loginError, setLoginError] = useState("");
   const [leads, setLeads] = useState<InsforgeSavedLead[]>([]);
   const [stats, setStats] = useState<InsforgeStats | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (password === ASTRO_CONFIG.project.adminPass) {
+  useEffect(() => {
+    if (isAdminAuthenticated()) {
       setIsAuthenticated(true);
       fetchData();
-    } else {
-      alert("Acceso Denegado");
     }
+  }, []);
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoginError("");
+    const valid = await verifyAdminPassword(password);
+    if (valid) {
+      createAdminSession();
+      setIsAuthenticated(true);
+      setPassword("");
+      fetchData();
+    } else {
+      setLoginError("Acceso denegado. Intentos limitados.");
+    }
+  };
+
+  const handleLogout = () => {
+    clearAdminSession();
+    setIsAuthenticated(false);
+    setLeads([]);
+    setStats(null);
   };
 
   const fetchData = async () => {
@@ -43,8 +67,12 @@ export default function AdminPage() {
               placeholder="Código de Acceso"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              autoComplete="current-password"
               autoFocus
             />
+            {loginError && (
+              <p style={{ color: "#ff6d6d", fontSize: "0.8rem", marginTop: "0.5rem" }}>{loginError}</p>
+            )}
             <button type="submit" className={styles.button}>INGRESAR AL SISTEMA</button>
           </form>
         </div>
@@ -57,9 +85,14 @@ export default function AdminPage() {
       <div className={styles.wrap}>
         <header className={styles.header}>
           <h1 className={styles.title}>DASHBOARD EJECUTIVO</h1>
-          <button className={styles.button} style={{ width: "auto", padding: "8px 16px" }} onClick={fetchData}>
-            {loading ? "CARGANDO..." : "RECARGAR"}
-          </button>
+          <div style={{ display: "flex", gap: "0.5rem" }}>
+            <button className={styles.button} style={{ width: "auto", padding: "8px 16px" }} onClick={fetchData}>
+              {loading ? "CARGANDO..." : "RECARGAR"}
+            </button>
+            <button className={styles.button} style={{ width: "auto", padding: "8px 16px", opacity: 0.7 }} onClick={handleLogout}>
+              SALIR
+            </button>
+          </div>
         </header>
 
         <div className={styles.kpiGrid}>

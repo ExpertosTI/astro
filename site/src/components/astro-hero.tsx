@@ -7,27 +7,24 @@ import {
   useScroll, useTransform, useSpring, MotionValue, useMotionValueEvent, useTime, useMotionValue, animate,
 } from "framer-motion";
 import { editionData as localEditionData } from "@/content/edition";
+import { ASTRO_CONFIG } from "@/config/astro-config";
+import { verifyAdminPassword, createAdminSession } from "@/lib/admin-auth";
 import { insforge } from "@/lib/insforge";
+import Link from "next/link";
 import styles from "./astro-hero.module.css";
 
 /* ────────────────────────────────────────────────────────
    PRELOADER: loop hasta que ready (video cargado) + 1 ciclo completo
 ──────────────────────────────────────────────────────── */
-const ELEMENTS = [
-  "/astro/elements/ELMENTO-1.png",
-  "/astro/elements/ELEMENTO-2.png",
-  "/astro/elements/ELEMENTO-3.png",
-  "/astro/elements/ELEMENTO-4.png",
-];
-
+const ELEMENTS = ASTRO_CONFIG.assets.preloader;
 const PRELOADER_SEQUENCE = [...ELEMENTS, localEditionData.logo];
 const PRELOADER_LOGO_STEP = PRELOADER_SEQUENCE.length - 1;
-const VIDEO_SCRUB_START = 1.2;
-const VIDEO_SCRUB_END_PADDING = 0.25;
-const MOBILE_WEBM_SRC: string = "/astro/backgrounds/video.webm";
-const DESKTOP_VIDEO_SRC: string = "/astro/backgrounds/video-optimized.mp4";
-const NOTIFY_STORAGE_KEY = "astro-notify-leads";
-const MAX_NOTIFY_LEADS = 100;
+const VIDEO_SCRUB_START = ASTRO_CONFIG.videos.scrubStart;
+const VIDEO_SCRUB_END_PADDING = ASTRO_CONFIG.videos.scrubEndPadding;
+const MOBILE_WEBM_SRC = ASTRO_CONFIG.videos.mobile;
+const DESKTOP_VIDEO_SRC = ASTRO_CONFIG.videos.desktop;
+const NOTIFY_STORAGE_KEY = ASTRO_CONFIG.storage.leadsKey;
+const MAX_NOTIFY_LEADS = ASTRO_CONFIG.storage.maxLeads;
 
 type ContactChannel = "mail" | "ig" | "fb" | "whatsapp";
 type NotifyLead = { value: string; channel: ContactChannel; createdAt: string };
@@ -628,7 +625,7 @@ export default function AstroHero() {
     const success = await insforge.saveLead({
       contact_value: value2 ? `${contactChannel}:${value} | extra:${value2}` : `${contactChannel}:${value}`,
       channel: contactChannel,
-      project_id: "astro-sdq",
+      project_id: ASTRO_CONFIG.project.id,
       metadata: { source: "web-landing", viewport: `${viewport.w}x${viewport.h}`, contact2: value2 || "" }
     });
 
@@ -952,7 +949,7 @@ export default function AstroHero() {
               muted
               playsInline
               loop={false}
-              poster={isMobile ? "/astro/backgrounds/mobile-color.jpg" : "/astro/backgrounds/IMAGEN-FONDO-A-COLOR-WEB-GRANDE.jpg"}
+              poster={isMobile ? ASTRO_CONFIG.assets.mobilePoster : ASTRO_CONFIG.assets.fallbackPoster}
               className={styles.bgVideo}
               style={{ scale: isMobile ? mobileVideoScale : 1 }}
               onLoadedMetadata={() => setVideoReady(true)}
@@ -1013,9 +1010,10 @@ export default function AstroHero() {
             {/* Zona secreta: Casco del Astronauta */}
             <div 
               className={styles.secretTrigger} 
-              onDoubleClick={() => {
+              onDoubleClick={async () => {
                 const pass = prompt("ACCESO RESTRINGIDO. INGRESE CLAVE DE COMANDO:");
-                if (pass === "astro2026") {
+                if (pass && await verifyAdminPassword(pass)) {
+                  createAdminSession();
                   window.location.href = "/admin";
                 } else if (pass !== null) {
                   alert("ACCESO DENEGADO.");
@@ -1064,7 +1062,7 @@ export default function AstroHero() {
                 className={styles.edition}
                 style={{ opacity: editionOpacity }}
               >
-                5TA EDICIÓN
+                {ASTRO_CONFIG.project.edition}
               </motion.p>
             </motion.div>
 
@@ -1135,6 +1133,10 @@ export default function AstroHero() {
                         </div>
                         <button className={styles.notifyButton} type="submit" onClick={() => playSound("click")}>NOTIFICARME</button>
                       </form>
+                      <Link href="/match/" className={styles.matchCta} onClick={() => playSound("click")}>
+                        <span className={styles.matchCtaLabel}>ASTRO MATCH</span>
+                        <span className={styles.matchCtaSub}>Encuentra tu lienzo · Conecta con artistas</span>
+                      </Link>
                     </motion.div>
                   ) : (
                     <motion.div

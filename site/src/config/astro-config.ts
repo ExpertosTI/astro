@@ -22,6 +22,5 @@ export const ASTRO_CONFIG = {
   project: {
     id: "ASTRO_SDQ_2026",
     edition: "5TA EDICIÓN",
-    adminPass: "astro2026",
   }
 };

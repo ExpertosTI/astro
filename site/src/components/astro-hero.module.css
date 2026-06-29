@@ -1026,6 +1026,39 @@ video::-webkit-media-controls-start-playback-button { display: none !important; 
   transform: translateY(-1px);
 }
 
+.matchCta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  margin-top: 1rem;
+  padding: 0.9rem 1.2rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 194, 117, 0.35);
+  background: rgba(12, 6, 5, 0.55);
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.matchCta:hover {
+  border-color: rgba(255, 217, 168, 0.7);
+  background: rgba(255, 109, 29, 0.12);
+  transform: translateY(-2px);
+}
+
+.matchCtaLabel {
+  font-family: var(--font-display), sans-serif;
+  font-size: clamp(0.78rem, 1.4vw, 0.95rem);
+  letter-spacing: 0.22em;
+  color: var(--signal);
+}
+
+.matchCtaSub {
+  font-size: clamp(0.62rem, 1.1vw, 0.75rem);
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
 .notifySuccess {
   margin-top: 0.7rem;
   padding: 1.2rem 2rem;

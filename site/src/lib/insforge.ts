@@ -1,4 +1,4 @@
-const API_URL = "/api/insforge";
+const API_URL = process.env.NEXT_PUBLIC_INSFORGE_API_URL ?? "/api/insforge";
 
 export type InsforgeLead = {
   contact_value: string;

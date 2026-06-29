@@ -6,18 +6,20 @@ REPO_URL="https://github.com/ExpertosTI/astro.git"
 PROJECT_DIR="/opt/astro"
 STACK_NAME="astro"
 SERVICE_NAME="${STACK_NAME}_astro-web"
+DEPLOY_BRANCH="${DEPLOY_BRANCH:-main}"
 
-echo "🚀 Starting deployment for $STACK_NAME..."
+echo "🚀 Starting deployment for $STACK_NAME (branch: $DEPLOY_BRANCH)..."
 
 # 1. Sync code via Git
 if [ -d "$PROJECT_DIR" ]; then
     echo "📂 Directory exists, pulling latest changes..."
     cd "$PROJECT_DIR"
-    git fetch origin main
-    git reset --hard origin/main
+    git fetch origin "$DEPLOY_BRANCH"
+    git checkout "$DEPLOY_BRANCH" 2>/dev/null || git checkout -b "$DEPLOY_BRANCH" "origin/$DEPLOY_BRANCH"
+    git reset --hard "origin/$DEPLOY_BRANCH"
 else
     echo "📥 Cloning repository..."
-    git clone $REPO_URL $PROJECT_DIR
+    git clone --branch "$DEPLOY_BRANCH" $REPO_URL $PROJECT_DIR
     cd $PROJECT_DIR
 fi
 

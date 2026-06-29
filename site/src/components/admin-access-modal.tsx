@@ -2,7 +2,7 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
-import { ASTRO_CONFIG } from "@/config/astro-config";
+import { verifyAdminPassword, createAdminSession } from "@/lib/admin-auth";
 import styles from "./astro-hero.module.css";
 
 interface AdminAccessModalProps {
@@ -14,8 +14,9 @@ interface AdminAccessModalProps {
 export default function AdminAccessModal({ isOpen, onClose, onSuccess }: AdminAccessModalProps) {
   const [adminPass, setAdminPass] = useState("");
 
-  const handleAccess = () => {
-    if (adminPass === ASTRO_CONFIG.project.adminPass) {
+  const handleAccess = async () => {
+    if (await verifyAdminPassword(adminPass)) {
+      createAdminSession();
       onSuccess();
       window.location.href = "/admin";
     } else {
