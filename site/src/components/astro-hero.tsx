@@ -9,7 +9,7 @@ import {
 import { editionData as localEditionData } from "@/content/edition";
 import { ASTRO_CONFIG } from "@/config/astro-config";
 import { verifyAdminPassword, createAdminSession } from "@/lib/admin-auth";
-import { insforge } from "@/lib/insforge";
+import { LeadService, type ContactChannel } from "@/services/lead-service";
 import Link from "next/link";
 import styles from "./astro-hero.module.css";
 
@@ -23,39 +23,6 @@ const VIDEO_SCRUB_START = ASTRO_CONFIG.videos.scrubStart;
 const VIDEO_SCRUB_END_PADDING = ASTRO_CONFIG.videos.scrubEndPadding;
 const MOBILE_WEBM_SRC = ASTRO_CONFIG.videos.mobile;
 const DESKTOP_VIDEO_SRC = ASTRO_CONFIG.videos.desktop;
-const NOTIFY_STORAGE_KEY = ASTRO_CONFIG.storage.leadsKey;
-const MAX_NOTIFY_LEADS = ASTRO_CONFIG.storage.maxLeads;
-
-type ContactChannel = "mail" | "ig" | "fb" | "whatsapp";
-type NotifyLead = { value: string; channel: ContactChannel; createdAt: string };
-
-function readNotifyLeads(storage: Storage): NotifyLead[] {
-  try {
-    const raw = storage.getItem(NOTIFY_STORAGE_KEY);
-    if (!raw) return [];
-
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-
-    return parsed
-      .filter((item): item is NotifyLead => (
-        typeof item === "object"
-        && item !== null
-        && typeof item.value === "string"
-        && typeof item.channel === "string"
-        && typeof item.createdAt === "string"
-      ))
-      .slice(-MAX_NOTIFY_LEADS);
-  } catch {
-    return [];
-  }
-}
-
-function persistNotifyLead(storage: Storage, lead: NotifyLead) {
-  const leads = readNotifyLeads(storage);
-  leads.push(lead);
-  storage.setItem(NOTIFY_STORAGE_KEY, JSON.stringify(leads.slice(-MAX_NOTIFY_LEADS)));
-}
 
 function ChannelIcon({ channel }: { channel: ContactChannel }) {
   if (channel === "mail") {
@@ -283,8 +250,8 @@ export default function AstroHero() {
   const [viewport, setViewport] = useState({ w: 1920, h: 1080 });
   const [isMobile, setIsMobile] = useState(true); // Mobile first para evitar carga pesada
   const [contactChannel, setContactChannel] = useState<ContactChannel>("ig");
-  const [contactValue, setContactValue] = useState("");
-  const [contactValue2, setContactValue2] = useState("");
+  const [contact, setContact] = useState("");
+  const [phone, setPhone] = useState("");
   const [notifySent, setNotifySent] = useState(false);
   const [notifyMessage, setNotifyMessage] = useState("");
   const [typingStarted, setTypingStarted] = useState(false);
@@ -598,45 +565,31 @@ export default function AstroHero() {
     if (contactChannel === "mail") return "Tu email (Requerido)";
     if (contactChannel === "ig") return "@tu_usuario_ig (Requerido)";
     if (contactChannel === "fb") return "Enlace de tu Facebook (Requerido)";
-    return "Tu número de WhatsApp (Requerido)";
-  }, [contactChannel]);
-
-  const contact2Placeholder = useMemo(() => {
-    if (contactChannel === "ig") return "Email o Teléfono (Opcional)";
-    return "@tu_usuario_ig (Opcional)";
+    return "Tu nombre (Requerido)";
   }, [contactChannel]);
 
   const handleNotifySubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const value  = contactValue.trim();
-    const value2 = contactValue2.trim();
-    if (!value) return;
+    const contactValue = contact.trim();
+    const phoneValue = phone.trim();
+    if (!contactValue || !phoneValue) return;
 
-    const payload: NotifyLead = { value, channel: contactChannel, createdAt: new Date().toISOString() };
-    const payload2: NotifyLead | null = value2 ? { value: value2, channel: contactChannel === "ig" ? "mail" : "ig", createdAt: new Date().toISOString() } : null;
-
-    try {
-      persistNotifyLead(window.localStorage, payload);
-      if (payload2) {
-        persistNotifyLead(window.localStorage, payload2);
-      }
-    } catch (e) { console.warn("LocalStorage persist failed", e); }
-
-    const success = await insforge.saveLead({
-      contact_value: value2 ? `${contactChannel}:${value} | extra:${value2}` : `${contactChannel}:${value}`,
+    const ok = await LeadService.registerLead({
+      contact: contactValue,
+      phone: phoneValue,
       channel: contactChannel,
-      project_id: ASTRO_CONFIG.project.id,
-      metadata: { source: "web-landing", viewport: `${viewport.w}x${viewport.h}`, contact2: value2 || "" }
-    });
+    }, { viewport: `${viewport.w}x${viewport.h}` });
 
-    setNotifyMessage(success
+    setNotifyMessage(ok
       ? "MISIÓN CONFIRMADA. TE AVISAREMOS AL INSTANTE."
-      : "SISTEMA DE RESPALDO ACTIVO. REGISTRO COMPLETADO."
+      : "VERIFICA TU WHATSAPP E INTENTA DE NUEVO."
     );
+    if (!ok) return;
+
     setNotifySent(true);
     playSound("transition");
-    setContactValue("");
-    setContactValue2("");
+    setContact("");
+    setPhone("");
   };
 
   const rings = useMemo(() => [
@@ -1118,17 +1071,20 @@ export default function AstroHero() {
                           <input
                             className={styles.notifyInput}
                             type={contactChannel === "mail" ? "email" : "text"}
-                            value={contactValue}
+                            value={contact}
                             placeholder={contactPlaceholder}
-                            onChange={(e) => { setContactValue(e.target.value); }}
+                            onChange={(e) => { setContact(e.target.value); }}
                             required
                           />
                           <input
                             className={`${styles.notifyInput} ${styles.notifyInput2}`}
-                            type="text"
-                            value={contactValue2}
-                            placeholder={contact2Placeholder}
-                            onChange={(e) => { setContactValue2(e.target.value); }}
+                            type="tel"
+                            inputMode="tel"
+                            autoComplete="tel"
+                            value={phone}
+                            placeholder="Tu WhatsApp (Requerido)"
+                            onChange={(e) => { setPhone(e.target.value); }}
+                            required
                           />
                         </div>
                         <button className={styles.notifyButton} type="submit" onClick={() => playSound("click")}>NOTIFICARME</button>

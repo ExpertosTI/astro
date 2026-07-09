@@ -128,7 +128,9 @@ export default function AdminPage() {
                     <span className={styles.channelBadge}>{lead.channel}</span>
                   </td>
                   <td style={{ fontWeight: 600 }}>{lead.contact_value}</td>
-                  <td style={{ color: "#8ea2bf" }}>{lead.contact_value_2 || "-"}</td>
+                  <td style={{ color: "#8ea2bf" }}>
+                    {String(lead.metadata?.phone ?? lead.contact_value_2 ?? "-")}
+                  </td>
                 </tr>
               ))}
               {leads.length === 0 && (

@@ -7,6 +7,7 @@ services:
       dockerfile: Dockerfile
       args:
         - NEXT_PUBLIC_INSFORGE_API_URL=${NEXT_PUBLIC_INSFORGE_API_URL:-/api/insforge}
+        - NEXT_PUBLIC_NOTIFY_SECRET=${NOTIFY_SECRET:-}
     image: astro-web:latest
     environment:
       - NEXT_PUBLIC_INSFORGE_API_URL=${NEXT_PUBLIC_INSFORGE_API_URL:-/api/insforge}
@@ -42,6 +43,35 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+
+  notify:
+    image: astro-notify:latest
+    build:
+      context: ./services/notify
+      dockerfile: Dockerfile
+    environment:
+      PORT: "8789"
+      NOTIFY_SECRET: ${NOTIFY_SECRET:-}
+      ADMIN_WHATSAPP: ${ADMIN_WHATSAPP:-}
+      EVOLUTION_API_URL: ${EVOLUTION_API_URL:-}
+      EVOLUTION_API_KEY: ${EVOLUTION_API_KEY:-}
+      EVOLUTION_INSTANCE: ${EVOLUTION_INSTANCE:-}
+      ASTRO_PROJECT_ID: ${ASTRO_PROJECT_ID:-ASTRO_SDQ_2026}
+      ASTRO_EDITION: ${ASTRO_EDITION:-5TA EDICIÓN}
+      SITE_URL: ${SITE_URL:-https://astro.renace.tech}
+    networks:
+      RenaceNet:
+        aliases:
+          - astro-notify
+    deploy:
+      mode: replicated
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+      resources:
+        limits:
+          cpus: "0.25"
+          memory: 128M
 
 networks:
   RenaceNet:

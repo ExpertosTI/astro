@@ -37,13 +37,21 @@ function ChannelIcon({ channel }: { channel: ContactChannel }) {
 
 export default function ContactSystem({ opacity, y, isMobile }: ContactSystemProps) {
   const [channel, setChannel] = useState<ContactChannel>("ig");
-  const [val1, setVal1] = useState("");
-  const [val2, setVal2] = useState("");
+  const [contact, setContact] = useState("");
+  const [phone, setPhone] = useState("");
   const [sent, setSent] = useState(false);
+
+  const contactPlaceholder = channel === "mail"
+    ? "Tu email (Requerido)"
+    : channel === "ig"
+      ? "@tu_usuario_ig (Requerido)"
+      : channel === "fb"
+        ? "Enlace de tu Facebook (Requerido)"
+        : "Tu nombre (Requerido)";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const success = await LeadService.registerLead({ value: val1, value2: val2, channel });
+    const success = await LeadService.registerLead({ contact: contact.trim(), phone: phone.trim(), channel });
     if (success) {
       setSent(true);
       AudioService.play("transition");
@@ -74,8 +82,24 @@ export default function ContactSystem({ opacity, y, isMobile }: ContactSystemPro
             </div>
             <form className={styles.notifyForm} onSubmit={handleSubmit}>
               <div className={styles.notifyInputGroup}>
-                <input className={styles.notifyInput} value={val1} onChange={e => setVal1(e.target.value)} placeholder="NOMBRE / IG / USER" required />
-                <input className={styles.notifyInput} value={val2} onChange={e => setVal2(e.target.value)} placeholder="WHATSAPP / EMAIL" required />
+                <input
+                  className={styles.notifyInput}
+                  type={channel === "mail" ? "email" : "text"}
+                  value={contact}
+                  onChange={(e) => setContact(e.target.value)}
+                  placeholder={contactPlaceholder}
+                  required
+                />
+                <input
+                  className={styles.notifyInput}
+                  type="tel"
+                  inputMode="tel"
+                  autoComplete="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="Tu WhatsApp (Requerido)"
+                  required
+                />
               </div>
               <button className={styles.notifyButton} type="submit" onClick={() => AudioService.play("click")}>NOTIFICARME</button>
             </form>

@@ -23,17 +23,38 @@ else
     cd $PROJECT_DIR
 fi
 
-# 2. Check for .env (if project uses one)
-if [ ! -f ".env" ]; then
-    if [ -f ".env.example" ]; then
-        echo "📄 Creating .env from .env.example..."
-        cp .env.example .env
-        echo "❌ Edit .env with production secrets, then re-run."
-        exit 1
-    else
-        echo "ℹ️ No .env or .env.example found. Proceeding..."
+# 2. Load env + Evolution WhatsApp
+load_env_file() {
+  local file="$1" line key val
+  [ -f "$file" ] || return 0
+  while IFS= read -r line || [ -n "$line" ]; do
+    line="${line%$'\r'}"
+    case "$line" in
+      ''|\#*) continue ;;
+    esac
+    key="${line%%=*}"
+    val="${line#*=}"
+    key="${key%"${key##*[![:space:]]}"}"
+    key="${key#"${key%%[![:space:]]*}"}"
+    [[ "$key" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]] || continue
+    if [[ "$val" =~ ^\"(.*)\"$ ]]; then val="${BASH_REMATCH[1]}"
+    elif [[ "$val" =~ ^\'(.*)\'$ ]]; then val="${BASH_REMATCH[1]}"
     fi
+    export "$key=$val"
+  done < "$file"
+}
+if [ -f ".env" ]; then
+    set -a; source .env; set +a
 fi
+if [ -f ".evolution.local" ]; then
+    load_env_file ".evolution.local"
+    echo "✓ Evolution loaded (${EVOLUTION_INSTANCE:-?}) → admin …${ADMIN_WHATSAPP: -4}"
+elif [ -n "${EVOLUTION_API_URL:-}" ]; then
+    echo "✓ Evolution from .env (${EVOLUTION_INSTANCE:-?})"
+else
+    echo "⚠️  WhatsApp notify: crea .evolution.local (ver .evolution.local.example)"
+fi
+export SITE_URL="${SITE_URL:-https://astro.renace.tech}"
 
 # 3. Verificar que el build incluye ASTRO Match
 if [ ! -f "site/out/match/index.html" ]; then
@@ -64,14 +85,12 @@ docker network ls | grep RenaceNet > /dev/null || \
 
 # 6. Deploy stack
 echo "🚢 Deploying stack $STACK_NAME..."
-if [ -f ".env" ]; then
-    set -a; source .env; set +a
-fi
 docker stack deploy -c docker-compose.yml $STACK_NAME
 
 # 7. Force service to pick up new local image
 echo "🔄 Forcing service update..."
 docker service update --force $SERVICE_NAME 2>/dev/null || true
+docker service update --force ${STACK_NAME}_notify 2>/dev/null || true
 
 # 8. Cleanup
 echo "🧹 Cleaning up old images..."
