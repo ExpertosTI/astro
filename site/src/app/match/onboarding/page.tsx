@@ -128,7 +128,7 @@ export default function OnboardingPage() {
       if (!rateOpenToDiscuss) {
         const min = Number(sessionMinRate);
         if (!sessionMinRate || !Number.isFinite(min) || min <= 0) {
-          setError("Indica tu mínimo por sesión o elige abierto a discusión en DM");
+          setError("Indica tu mínimo o elige abierto a discusión en DM");
           return;
         }
       }
@@ -338,7 +338,7 @@ export default function OnboardingPage() {
 
               {role === "tatuador" && (
                 <div className={styles.payBlock}>
-                  <label className={styles.formLabel}>Tarifa por sesión</label>
+                  <label className={styles.formLabel}>Tarifa</label>
                   <div className={styles.chipGrid}>
                     <button
                       type="button"
@@ -360,7 +360,7 @@ export default function OnboardingPage() {
                   </div>
                   {!rateOpenToDiscuss && (
                     <div className={styles.formGroup}>
-                      <label className={styles.formLabel}>Mínimo USD / sesión</label>
+                      <label className={styles.formLabel}>Mínimo USD</label>
                       <input
                         className={styles.formInput}
                         type="number"

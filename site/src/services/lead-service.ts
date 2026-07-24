@@ -89,11 +89,11 @@ export const LeadService = {
         metadata: { source: "web-landing", ...metadata },
       });
 
-      if (!notify.client) {
-        console.warn("[astro] lead saved but WhatsApp to contact failed:", notify.error);
+      if (!notify.client && !notify.clientMail) {
+        console.warn("[astro] lead saved but client notify failed:", notify.error);
       }
 
-      return { ok: true, notified: notify.client };
+      return { ok: true, notified: notify.client || notify.clientMail };
     } catch (e) {
       console.error("Lead registration sync error:", e);
       return { ok: true, notified: false };

@@ -15,7 +15,7 @@ export const editionData = {
   stands: {
     regular: {
       label: "Premium",
-      price: "US$600",
+      price: "US$500",
       detail:
         "Un artista · 7 × 8 pie · 1 Kit Higiene · 1 T-Shirt · Souvenir · 1 Pase Extra × 3 días · Agua · Papel · 1 Mesa · 2 Sillas · 1 Container de bioseguridad.",
     },

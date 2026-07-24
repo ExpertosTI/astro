@@ -750,8 +750,8 @@ export default function AstroHero() {
       }
 
       setNotifyMessage(result.notified
-        ? "REGISTRO CONFIRMADO. REVISA TU WHATSAPP — TE LLEGÓ LA CONFIRMACIÓN."
-        : "REGISTRO GUARDADO. SI NO LLEGA EL WHATSAPP, REVISA EL NÚMERO."
+        ? "REGISTRO CONFIRMADO. REVISA TU CORREO Y WHATSAPP."
+        : "REGISTRO GUARDADO. REVISA TU CORREO Y WHATSAPP."
       );
       setNotifySent(true);
       playSound("transition");

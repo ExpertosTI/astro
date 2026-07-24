@@ -17,6 +17,7 @@ export type LeadNotifyPayload = {
 export type LeadNotifyResult = {
   ok: boolean;
   client: boolean;
+  clientMail: boolean;
   admin: boolean;
   mail: boolean;
   error?: string;
@@ -46,6 +47,7 @@ export async function notifyLeadRegistration(
       return {
         ok: false,
         client: false,
+        clientMail: false,
         admin: false,
         mail: false,
         error: String(data.error || `http_${res.status}`),
@@ -54,6 +56,7 @@ export async function notifyLeadRegistration(
     return {
       ok: true,
       client: Boolean(data.client),
+      clientMail: Boolean(data.clientMail),
       admin: Boolean(data.admin),
       mail: Boolean(data.mail),
       error: data.clientError ? String(data.clientError) : undefined,
@@ -63,6 +66,7 @@ export async function notifyLeadRegistration(
     return {
       ok: false,
       client: false,
+      clientMail: false,
       admin: false,
       mail: false,
       error: "network_error",

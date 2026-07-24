@@ -392,6 +392,48 @@ function buildClientMessage({ contact, channel }) {
   ].filter(Boolean).join('\n');
 }
 
+function resolveClientEmail(contact, channel, metadata) {
+  const fromMeta = String(metadata?.email || '').trim();
+  if (fromMeta.includes('@')) return fromMeta;
+  const fromContact = String(contact || '').trim();
+  if (channel === 'mail' && fromContact.includes('@')) return fromContact;
+  return '';
+}
+
+function buildClientEmailText({ contact, metadata }) {
+  const name = metadata?.fullName || metadata?.firstName || contact || 'artista';
+  return [
+    `Hola ${name},`,
+    '',
+    'Recibimos tu registro para ASTRO SDQ.',
+    EDITION,
+    '',
+    metadata?.stand ? `Stand: ${standLabel(metadata.stand)}` : '',
+    metadata?.standExtra ? `Stand extra: ${standLabel(metadata.standExtra)}` : '',
+    '',
+    'Pronto te contactaremos con los siguientes pasos.',
+    '',
+    SITE_URL,
+    '',
+    '— Equipo ASTRO SDQ',
+  ].filter((line) => line !== undefined).join('\n');
+}
+
+function buildClientEmailHtml({ contact, metadata }) {
+  const name = metadata?.fullName || metadata?.firstName || contact || 'artista';
+  return `
+    <div style="font-family:sans-serif;max-width:560px;color:#111;line-height:1.55">
+      <h2 style="margin:0 0 8px;color:#c2410c">Registro recibido · ASTRO SDQ</h2>
+      <p style="margin:0 0 12px;color:#444">${EDITION}</p>
+      <p>Hola <strong>${name}</strong>,</p>
+      <p>Confirmamos que recibimos tu registro. Pronto te contactaremos con los siguientes pasos.</p>
+      ${metadata?.stand ? `<p><strong>Stand:</strong> ${standLabel(metadata.stand)}${metadata?.standExtra ? ` · Extra: ${standLabel(metadata.standExtra)}` : ''}</p>` : ''}
+      <p style="margin-top:18px"><a href="${SITE_URL}" style="color:#c2410c">astro.renace.tech</a></p>
+      <p style="color:#777;font-size:13px">— Equipo ASTRO SDQ</p>
+    </div>
+  `;
+}
+
 function standLabel(stand) {
   if (stand === 'regular') return 'Premium';
   if (stand === 'doble') return 'Doble';
@@ -455,8 +497,9 @@ async function handleLead(req, res) {
 
   const canClientWa = whatsappApiConfigured();
   const canAdminWa = canClientWa && adminWhatsAppConfigured();
-  const canMail = mailConfigured() && Boolean(ADMIN_EMAIL);
-  if (!canClientWa && !canMail) {
+  const canSmtp = mailConfigured();
+  const canAdminMail = canSmtp && Boolean(ADMIN_EMAIL);
+  if (!canClientWa && !canSmtp) {
     return json(res, 503, { ok: false, error: 'notify_not_configured' });
   }
 
@@ -480,12 +523,15 @@ async function handleLead(req, res) {
   }
 
   const metadata = body.metadata && typeof body.metadata === 'object' ? body.metadata : {};
+  const clientEmail = resolveClientEmail(contact, channel, metadata);
 
   let clientOk = false;
   let adminOk = false;
   let mailOk = false;
+  let clientMailOk = false;
   let clientError = null;
   let adminError = null;
+  let clientMailError = null;
 
   // 1) Prioridad: aviso al WhatsApp que el contacto escribió en el form
   if (canClientWa) {
@@ -495,6 +541,22 @@ async function handleLead(req, res) {
     } catch (err) {
       clientError = err.message;
       console.warn('[astro-notify] client WA failed:', clientError);
+    }
+  }
+
+  // 1b) Correo de confirmación al registrado
+  if (canSmtp && clientEmail) {
+    try {
+      await sendMail({
+        to: clientEmail,
+        subject: 'Registro recibido · ASTRO SDQ',
+        text: buildClientEmailText({ contact, metadata }),
+        html: buildClientEmailHtml({ contact, metadata }),
+      });
+      clientMailOk = true;
+    } catch (err) {
+      clientMailError = err.message;
+      console.warn('[astro-notify] client mail failed:', clientMailError);
     }
   }
 
@@ -513,7 +575,7 @@ async function handleLead(req, res) {
     }
   }
 
-  if (canMail) {
+  if (canAdminMail) {
     try {
       await sendMail({
         to: ADMIN_EMAIL,
@@ -527,15 +589,17 @@ async function handleLead(req, res) {
     }
   }
 
-  // El lead del contacto es lo crítico: si falló el WA del cliente y no hubo ningún canal, 502
-  if (!clientOk && !adminOk && !mailOk) {
+  // El lead del contacto es lo crítico: si falló WA/correo del cliente y no hubo ningún canal, 502
+  if (!clientOk && !clientMailOk && !adminOk && !mailOk) {
     return json(res, 502, {
       ok: false,
       error: 'notify_send_failed',
       client: clientOk,
+      clientMail: clientMailOk,
       admin: adminOk,
       mail: mailOk,
       clientError,
+      clientMailError,
       adminError,
       to: maskPhone(phone),
     });
@@ -553,10 +617,12 @@ async function handleLead(req, res) {
   return json(res, 200, {
     ok: true,
     client: clientOk,
+    clientMail: clientMailOk,
     admin: adminOk,
     mail: mailOk,
     to: maskPhone(phone),
     clientError: clientOk ? undefined : clientError,
+    clientMailError: clientMailOk ? undefined : clientMailError,
     adminError: adminOk ? undefined : adminError,
   });
 }

@@ -18,5 +18,5 @@ export function formatProfilePricing(profile: AstroProfile): string | null {
   }
   if (profile.rateOpenToDiscuss) return "Tarifa: abierta a DM";
   const min = money(profile.sessionMinRate);
-  return min ? `Mínimo ${min} / sesión` : null;
+  return min ? `Mínimo ${min}` : null;
 }

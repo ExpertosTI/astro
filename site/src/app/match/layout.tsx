@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { MatchProvider } from "@/components/match/MatchProvider";
 import { BottomNav } from "@/components/match/BottomNav";
 import { MatchAmbient } from "@/components/match/MatchAmbient";
-import { SyncStatus } from "@/components/match/SyncStatus";
 import { MatchPageTransition } from "@/components/match/MatchPageTransition";
 import { MatchAppExtras } from "@/components/match/MatchAppExtras";
 import styles from "./match.module.css";
@@ -27,7 +26,6 @@ export default function MatchLayout({ children }: { children: React.ReactNode })
       <MatchAppExtras>
         <div className={styles.matchApp}>
           <MatchAmbient />
-          <SyncStatus />
           <MatchPageTransition>
             <div className={styles.matchShell}>{children}</div>
           </MatchPageTransition>
