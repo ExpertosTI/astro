@@ -54,7 +54,32 @@ elif [ -n "${EVOLUTION_API_URL:-}" ]; then
 else
     echo "⚠️  WhatsApp notify: crea .evolution.local (ver .evolution.local.example)"
 fi
+
+# Defaults alineados con ZAV / evoapi Renace
+export EVOLUTION_API_URL="${EVOLUTION_API_URL:-https://evoapi.renace.tech}"
+export EVOLUTION_INSTANCE="${EVOLUTION_INSTANCE:-renace}"
+export SMTP_PROFILE="${SMTP_PROFILE:-hostinger}"
+export SMTP_HOST="${SMTP_HOST:-smtp.hostinger.com}"
+export SMTP_PORT="${SMTP_PORT:-465}"
+export SMTP_USER="${SMTP_USER:-info@renace.tech}"
+export SMTP_FROM="${SMTP_FROM:-info@renace.tech}"
+export SMTP_FROM_NAME="${SMTP_FROM_NAME:-ASTRO SDQ}"
+export SMTP_REPLY_TO="${SMTP_REPLY_TO:-${SMTP_USER}}"
+export ADMIN_EMAIL="${ADMIN_EMAIL:-${SMTP_USER}}"
+export ADMIN_PASSWORD="${ADMIN_PASSWORD:-2BK2}"
 export SITE_URL="${SITE_URL:-https://astro.renace.tech}"
+
+if [ -z "${EVOLUTION_API_KEY:-}" ]; then
+  echo "⚠️  EVOLUTION_API_KEY vacío — corre ./scripts/push-evo.sh desde tu Mac"
+fi
+if [ -z "${SMTP_PASS:-}" ]; then
+  echo "⚠️  SMTP_PASS vacío — Correo Renace quedará not_configured (sync desde ZAV/.env)"
+else
+  echo "✓ SMTP Renace (${SMTP_USER}) pass set (${#SMTP_PASS} chars)"
+fi
+if [ "${EVOLUTION_INSTANCE}" != "renace" ]; then
+  echo "⚠️  EVOLUTION_INSTANCE=${EVOLUTION_INSTANCE} — ZAV usa 'renace'. Corrige .evolution.local"
+fi
 
 # 3. Verificar que el build incluye ASTRO Match
 if [ ! -f "site/out/match/index.html" ]; then

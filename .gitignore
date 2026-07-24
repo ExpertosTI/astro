@@ -17,3 +17,9 @@ site/.env*
 # Sistema
 .DS_Store
 *.log
+.evolution.local
+*.evolution.local
+.env
+.env.*
+!.env.example
+!.evolution.local.example

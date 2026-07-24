@@ -708,14 +708,112 @@ video::-webkit-media-controls-start-playback-button { display: none !important; 
 }
 
 .contactInvite {
-  margin: -0.6rem auto 1.2rem;
+  margin: -0.6rem auto 0.55rem;
   font-family: var(--font-body), sans-serif;
   font-size: clamp(0.72rem, 1.5vw, 0.92rem);
   line-height: 1.45;
   letter-spacing: 0.04em;
   color: rgba(255, 236, 210, 0.78);
   text-align: center;
-  max-width: 36ch;
+  max-width: 40ch;
+}
+
+.eventAddress {
+  margin: 0 auto 1.1rem;
+  font-size: clamp(0.62rem, 1.3vw, 0.78rem);
+  line-height: 1.45;
+  color: rgba(255, 210, 170, 0.55);
+  text-align: center;
+  max-width: 42ch;
+}
+
+.standFieldset {
+  border: 1px solid rgba(255, 140, 45, 0.18);
+  border-radius: 1rem;
+  padding: 0.75rem 0.85rem 0.9rem;
+  margin: 0 0 0.75rem;
+}
+
+.standLegend {
+  padding: 0 0.4rem;
+  font-size: 0.68rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #ffb562;
+}
+
+.standOptions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.standOption {
+  flex: 1 1 8rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.7rem 0.8rem;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(255, 174, 84, 0.16);
+  background: rgba(255, 255, 255, 0.03);
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.standOption input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.standOptionActive {
+  border-color: rgba(255, 140, 45, 0.65);
+  background: rgba(255, 120, 34, 0.12);
+}
+
+.standLabel {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #fff6df;
+}
+
+.standPrice {
+  font-family: var(--font-display), sans-serif;
+  font-size: 1rem;
+  color: #ffd89a;
+}
+
+.standDetails {
+  margin: 0 0 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.standDetails p {
+  margin: 0;
+  font-size: clamp(0.62rem, 1.3vw, 0.74rem);
+  line-height: 1.45;
+  color: rgba(255, 226, 190, 0.62);
+}
+
+.formMode .scanline,
+.formMode .grain {
+  opacity: 0.03 !important;
+}
+
+.formMode .hudSidebar,
+.formMode .camStatus {
+  opacity: 0.35;
+}
+
+.formMode .notifyConsole {
+  max-height: min(88vh, 920px);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .skipIntro {

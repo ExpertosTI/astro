@@ -14,7 +14,7 @@ const SITE_URL = (process.env.SITE_URL || 'https://astro.renace.tech').replace(/
 const EVOLUTION = {
   baseUrl: (process.env.EVOLUTION_API_URL || 'https://evoapi.renace.tech').replace(/\/$/, ''),
   apiKey: process.env.EVOLUTION_API_KEY || '',
-  instance: process.env.EVOLUTION_INSTANCE || 'RENACE.TECH',
+  instance: process.env.EVOLUTION_INSTANCE || 'renace',
 };
 
 const SMTP = {
@@ -250,7 +250,7 @@ function extractOwnerPhone(data) {
 }
 
 function activeInstance() {
-  return envTrim(EVOLUTION.instance, waState.instanceName) || 'RENACE.TECH';
+  return envTrim(EVOLUTION.instance, waState.instanceName) || 'renace';
 }
 
 async function refreshConnection() {

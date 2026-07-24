@@ -57,7 +57,7 @@ services:
       ADMIN_EMAIL: ${ADMIN_EMAIL:-info@renace.tech}
       EVOLUTION_API_URL: ${EVOLUTION_API_URL:-https://evoapi.renace.tech}
       EVOLUTION_API_KEY: ${EVOLUTION_API_KEY:-}
-      EVOLUTION_INSTANCE: ${EVOLUTION_INSTANCE:-RENACE.TECH}
+      EVOLUTION_INSTANCE: ${EVOLUTION_INSTANCE:-renace}
       SMTP_HOST: ${SMTP_HOST:-smtp.hostinger.com}
       SMTP_PORT: ${SMTP_PORT:-465}
       SMTP_USER: ${SMTP_USER:-info@renace.tech}
@@ -66,8 +66,8 @@ services:
       SMTP_FROM_NAME: ${SMTP_FROM_NAME:-ASTRO SDQ}
       SMTP_REPLY_TO: ${SMTP_REPLY_TO:-info@renace.tech}
       SMTP_PROFILE: ${SMTP_PROFILE:-hostinger}
-      ASTRO_PROJECT_ID: ${ASTRO_PROJECT_ID:-ASTRO_SDQ_2026}
-      ASTRO_EDITION: ${ASTRO_EDITION:-5TA EDICIÓN}
+      ASTRO_PROJECT_ID: ${ASTRO_PROJECT_ID:-ASTRO_SDQ_2027}
+      ASTRO_EDITION: ${ASTRO_EDITION:-5TA EDICIÓN · 2027}
       SITE_URL: ${SITE_URL:-https://astro.renace.tech}
     networks:
       RenaceNet:

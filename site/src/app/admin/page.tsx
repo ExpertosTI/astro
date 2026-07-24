@@ -112,19 +112,19 @@ export default function AdminPage() {
     setWaMsg("");
     const { ok, data } = await fetchWhatsAppQr();
     if (!ok) {
-      setWaMsg(String(data.error || "No se pudo obtener QR"));
+      setWaMsg(String(data.error || "No se pudo obtener QR — revisa EVOLUTION_API_KEY (global evoapi)"));
       setWaBusy(false);
       return;
     }
     if (data.alreadyConnected) {
-      setWaMsg("Instancia ya vinculada.");
+      setWaMsg("Instancia renace ya vinculada.");
       setWaQr(null);
       await refreshWa();
       setWaBusy(false);
       return;
     }
     setWaQr(String(data.qrcode || ""));
-    setWaMsg(`Escanea el QR · instancia ${data.instanceName || ""}`);
+    setWaMsg(`Escanea el QR · instancia ${data.instanceName || "renace"}`);
     setWaBusy(false);
   };
 
@@ -170,7 +170,7 @@ export default function AdminPage() {
     }
     setMailStatus(data);
     const verify = data.verify as { ok?: boolean; error?: string } | undefined;
-    setMailMsg(verify?.ok ? "SMTP Renace OK" : String(verify?.error || "SMTP pendiente"));
+    setMailMsg(verify?.ok ? "SMTP Renace listo" : String(verify?.error || "SMTP pendiente — sync con ./scripts/push-evo.sh"));
     setMailBusy(false);
   };
 
@@ -185,22 +185,27 @@ export default function AdminPage() {
     return (
       <div className={styles.loginOverlay}>
         <div className={styles.loginCard}>
-          <h2 className={styles.title} style={{ marginBottom: "8px" }}>ASTRO ADMIN</h2>
-          <p className={styles.loginHint}>Escribe SDQ en el landing o entra aquí con la clave de comando.</p>
+          <p className={styles.eyebrow}>Mission control</p>
+          <h2 className={styles.title} style={{ marginBottom: "0.2rem" }}>ASTRO ADMIN</h2>
+          <p className={styles.loginHint}>
+            Escribe <strong>SDQ</strong> en el landing o entra con la clave de comando.
+          </p>
           <form onSubmit={handleLogin}>
             <input
               type="password"
               className={styles.input}
-              placeholder="Código de Acceso"
+              placeholder="CLAVE"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               autoComplete="current-password"
               autoFocus
             />
             {loginError && (
-              <p style={{ color: "#ff6d6d", fontSize: "0.8rem", marginTop: "0.5rem" }}>{loginError}</p>
+              <p style={{ color: "#ff8f8f", fontSize: "0.8rem", margin: "0 0 0.8rem" }}>{loginError}</p>
             )}
-            <button type="submit" className={styles.button}>INGRESAR AL SISTEMA</button>
+            <button type="submit" className={`${styles.button} ${styles.buttonWide}`}>
+              INGRESAR
+            </button>
           </form>
         </div>
       </div>
@@ -208,18 +213,23 @@ export default function AdminPage() {
   }
 
   const mailMeta = (mailStatus?.status || {}) as Record<string, string | null>;
+  const waConnected = Boolean(waStatus?.connected);
+  const mailOk = Boolean((mailStatus?.verify as { ok?: boolean } | undefined)?.ok);
 
   return (
     <div className={styles.adminContainer}>
       <div className={styles.wrap}>
         <header className={styles.header}>
-          <h1 className={styles.title}>COMANDO CENTRAL · ASTRO SDQ</h1>
-          <div style={{ display: "flex", gap: "0.5rem" }}>
-            <button className={styles.button} style={{ width: "auto", padding: "8px 16px" }} onClick={fetchData}>
-              {loading ? "CARGANDO..." : "RECARGAR"}
+          <div className={styles.headerCopy}>
+            <p className={styles.eyebrow}>evoapi · renace · 5ta edición</p>
+            <h1 className={styles.title}>COMANDO CENTRAL</h1>
+          </div>
+          <div className={styles.headerActions}>
+            <button type="button" className={styles.button} onClick={fetchData}>
+              {loading ? "…" : "Recargar"}
             </button>
-            <button className={styles.button} style={{ width: "auto", padding: "8px 16px", opacity: 0.7 }} onClick={handleLogout}>
-              SALIR
+            <button type="button" className={`${styles.button} ${styles.buttonGhost}`} onClick={handleLogout}>
+              Salir
             </button>
           </div>
         </header>
@@ -228,8 +238,8 @@ export default function AdminPage() {
           {(
             [
               ["leads", "Leads"],
-              ["whatsapp", "WhatsApp · evoapi"],
-              ["mail", "Correo · Renace"],
+              ["whatsapp", "WhatsApp"],
+              ["mail", "Correo"],
             ] as const
           ).map(([id, label]) => (
             <button
@@ -247,12 +257,12 @@ export default function AdminPage() {
           <>
             <div className={styles.kpiGrid}>
               <div className={styles.kpiCard}>
-                <div className={styles.kpiLabel}>Total Leads</div>
+                <div className={styles.kpiLabel}>Total leads</div>
                 <div className={styles.kpiValue}>{stats?.total || 0}</div>
               </div>
               {stats?.byChannel && Object.entries(stats.byChannel).map(([channel, count]) => (
                 <div className={styles.kpiCard} key={channel}>
-                  <div className={styles.kpiLabel}>Leads {channel.toUpperCase()}</div>
+                  <div className={styles.kpiLabel}>{channel}</div>
                   <div className={styles.kpiValue}>{count}</div>
                 </div>
               ))}
@@ -265,28 +275,28 @@ export default function AdminPage() {
                     <th>Fecha</th>
                     <th>Canal</th>
                     <th>Contacto</th>
-                    <th>Extra</th>
+                    <th>WhatsApp</th>
                   </tr>
                 </thead>
                 <tbody>
                   {leads.map((lead, i) => (
                     <tr key={i}>
-                      <td style={{ color: "#8ea2bf", fontSize: "12px" }}>
+                      <td style={{ color: "rgba(255,210,170,0.55)", fontSize: "12px" }}>
                         {new Date(lead.created_at).toLocaleString()}
                       </td>
                       <td>
                         <span className={styles.channelBadge}>{lead.channel}</span>
                       </td>
                       <td style={{ fontWeight: 600 }}>{lead.contact_value}</td>
-                      <td style={{ color: "#8ea2bf" }}>
-                        {String(lead.metadata?.phone ?? lead.contact_value_2 ?? "-")}
+                      <td style={{ color: "rgba(255,210,170,0.7)" }}>
+                        {String(lead.metadata?.phone ?? lead.contact_value_2 ?? "—")}
                       </td>
                     </tr>
                   ))}
                   {leads.length === 0 && (
                     <tr>
-                      <td colSpan={4} style={{ textAlign: "center", padding: "40px", color: "#8ea2bf" }}>
-                        No hay registros aún.
+                      <td colSpan={4} style={{ textAlign: "center", padding: "40px", color: "rgba(255,210,170,0.45)" }}>
+                        Aún no hay registros.
                       </td>
                     </tr>
                   )}
@@ -298,16 +308,17 @@ export default function AdminPage() {
 
         {tab === "whatsapp" && (
           <section className={styles.panelCard}>
-            <h2 className={styles.panelTitle}>WhatsApp · Evolution (evoapi.renace.tech)</h2>
+            <h2 className={styles.panelTitle}>WhatsApp · Evolution</h2>
             <p className={styles.panelLead}>
-              Vincula la instancia compartida con ZAV / Renace. Los leads del formulario notifican por WhatsApp.
+              Misma identidad Renace que ZAV · instancia <strong>renace</strong> en evoapi.renace.tech.
+              Los leads confirman al WhatsApp del contacto.
             </p>
             <div className={styles.statusRow}>
-              <span className={`${styles.badge} ${waStatus?.connected ? styles.badgeOk : styles.badgeWarn}`}>
-                {waStatus?.connected ? "CONECTADO" : "DESCONECTADO"}
+              <span className={`${styles.badge} ${waConnected ? styles.badgeOk : styles.badgeWarn}`}>
+                {waConnected ? "CONECTADO" : "DESCONECTADO"}
               </span>
               <span className={styles.meta}>
-                instancia · {String(waStatus?.instance || "—")} · estado · {String(waStatus?.connectionState || "—")}
+                {String(waStatus?.instance || "renace")} · {String(waStatus?.connectionState || "—")}
               </span>
               {waStatus?.adminTo ? <span className={styles.meta}>admin · {String(waStatus.adminTo)}</span> : null}
             </div>
@@ -321,11 +332,15 @@ export default function AdminPage() {
               <button type="button" className={styles.button} disabled={waBusy} onClick={sendWaTest}>
                 Enviar prueba
               </button>
-              <button type="button" className={styles.button} disabled={waBusy} onClick={disconnectWa} style={{ opacity: 0.75 }}>
+              <button type="button" className={`${styles.button} ${styles.buttonGhost}`} disabled={waBusy} onClick={disconnectWa}>
                 Desconectar
               </button>
             </div>
-            {waMsg && <p className={styles.panelMsg}>{waMsg}</p>}
+            {waMsg && (
+              <p className={`${styles.panelMsg} ${/unauth|fail|error|no se/i.test(waMsg) ? styles.panelMsgErr : ""}`}>
+                {waMsg}
+              </p>
+            )}
             {waQr && (
               <div className={styles.qrWrap}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -338,18 +353,19 @@ export default function AdminPage() {
 
         {tab === "mail" && (
           <section className={styles.panelCard}>
-            <h2 className={styles.panelTitle}>Correo · Renace (Hostinger SMTP)</h2>
+            <h2 className={styles.panelTitle}>Correo · Renace</h2>
             <p className={styles.panelLead}>
-              Notificaciones de leads por email vía <strong>info@renace.tech</strong>, mismo relay que ZAV.
+              Relay Hostinger vía <strong>info@renace.tech</strong> — mismas credenciales SMTP que ZAV.
+              Se configuran solas con <code>./scripts/push-evo.sh</code>.
             </p>
             <div className={styles.statusRow}>
-              <span className={`${styles.badge} ${(mailStatus?.verify as { ok?: boolean } | undefined)?.ok ? styles.badgeOk : styles.badgeWarn}`}>
-                {(mailStatus?.verify as { ok?: boolean } | undefined)?.ok ? "SMTP OK" : "SMTP PENDIENTE"}
+              <span className={`${styles.badge} ${mailOk ? styles.badgeOk : styles.badgeWarn}`}>
+                {mailOk ? "SMTP OK" : "SMTP PENDIENTE"}
               </span>
               <span className={styles.meta}>
-                {mailMeta.provider || "—"} · {mailMeta.host || "—"}:{mailMeta.port || "—"} · {mailMeta.user || "—"}
+                {mailMeta.provider || "hostinger"} · {mailMeta.host || "smtp.hostinger.com"}:{mailMeta.port || "465"}
               </span>
-              {mailMeta.adminEmail ? <span className={styles.meta}>avisos · {mailMeta.adminEmail}</span> : null}
+              {mailMeta.user ? <span className={styles.meta}>{mailMeta.user}</span> : null}
             </div>
             <div className={styles.actionRow}>
               <button type="button" className={styles.button} disabled={mailBusy} onClick={refreshMail}>
@@ -359,7 +375,11 @@ export default function AdminPage() {
                 Enviar prueba
               </button>
             </div>
-            {mailMsg && <p className={styles.panelMsg}>{mailMsg}</p>}
+            {mailMsg && (
+              <p className={`${styles.panelMsg} ${/not_configured|fail|error|pendiente/i.test(mailMsg) ? styles.panelMsgErr : ""}`}>
+                {mailMsg}
+              </p>
+            )}
           </section>
         )}
       </div>

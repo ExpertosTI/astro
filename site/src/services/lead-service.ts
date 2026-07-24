@@ -4,11 +4,25 @@ import { isValidPhone, normalizePhoneDigits } from "@/lib/phone";
 import { ASTRO_CONFIG } from "@/config/astro-config";
 
 export type ContactChannel = "mail" | "ig" | "fb" | "whatsapp";
+export type StandType = "regular" | "doble";
+export type StandExtra = "" | "regular" | "doble";
+
 export type NotifyLead = {
   contact: string;
   phone: string;
   channel: ContactChannel;
   createdAt: string;
+};
+
+export type LeadRegistration = {
+  firstName: string;
+  lastName?: string;
+  email: string;
+  phone: string;
+  instagram?: string;
+  nationality?: string;
+  stand: StandType;
+  standExtra?: StandExtra;
 };
 
 export const LeadService = {
@@ -80,5 +94,43 @@ export const LeadService = {
       console.error("Lead registration sync error:", e);
       return { ok: true, notified: false };
     }
+  },
+
+  /** Registro completo estilo edición anterior (stand + datos personales). */
+  registerArtist: async (
+    data: LeadRegistration,
+    metadata?: Record<string, unknown>,
+  ): Promise<{ ok: boolean; notified: boolean }> => {
+    const firstName = data.firstName.trim();
+    const lastName = (data.lastName || "").trim();
+    const email = data.email.trim();
+    const phone = data.phone.trim();
+    const instagram = (data.instagram || "").trim().replace(/^@/, "");
+    const nationality = (data.nationality || "").trim();
+
+    if (!firstName || !email || !isValidPhone(phone) || !data.stand) {
+      return { ok: false, notified: false };
+    }
+
+    const fullName = [firstName, lastName].filter(Boolean).join(" ");
+    const channel: ContactChannel = instagram ? "ig" : "mail";
+    const contact = instagram ? `@${instagram}` : email;
+
+    return LeadService.registerLead(
+      { contact, phone, channel },
+      {
+        ...metadata,
+        kind: "artist-registration",
+        firstName,
+        lastName,
+        fullName,
+        email,
+        instagram: instagram ? `@${instagram}` : "",
+        nationality,
+        stand: data.stand,
+        standExtra: data.standExtra || "",
+        edition: ASTRO_CONFIG.project.edition,
+      },
+    );
   },
 };

@@ -1,14 +1,19 @@
+# Evolution + Renace SMTP — copiar a .evolution.local (NO va a git)
+# En Mac: ./scripts/push-evo.sh  (sync desde rnv-manger + SMTP de ZAV)
+#
+# Instancia viva en evoapi = renace (igual que ZAV). NUNCA hardcodear API keys.
+
 EVOLUTION_API_URL=https://evoapi.renace.tech
 EVOLUTION_API_KEY=
-EVOLUTION_INSTANCE=RENACE.TECH
+EVOLUTION_INSTANCE=renace
 
-# WhatsApp del equipo ASTRO (número del negocio)
+# WhatsApp admin (desde env / rnv-manger — sin hardcode)
 ADMIN_WHATSAPP=
-
-# Clave del panel admin (también hash client-side 2BK2)
 ADMIN_PASSWORD=2BK2
+ADMIN_EMAIL=info@renace.tech
 
-# Correo Renace (Hostinger SMTP) — mismo relay que ZAV
+# Hostinger relay — mismo que ZAV / Renace
+SMTP_PROFILE=hostinger
 SMTP_HOST=smtp.hostinger.com
 SMTP_PORT=465
 SMTP_USER=info@renace.tech
@@ -16,8 +21,3 @@ SMTP_PASS=
 SMTP_FROM=info@renace.tech
 SMTP_FROM_NAME=ASTRO SDQ
 SMTP_REPLY_TO=info@renace.tech
-SMTP_PROFILE=hostinger
-ADMIN_EMAIL=info@renace.tech
-
-# Opcional: secreto compartido front → notify
-NOTIFY_SECRET=

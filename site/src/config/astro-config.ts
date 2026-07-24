@@ -20,7 +20,7 @@ export const ASTRO_CONFIG = {
     maxLeads: 100,
   },
   project: {
-    id: "ASTRO_SDQ_2026",
-    edition: "5TA EDICIÓN",
+    id: "ASTRO_SDQ_2027",
+    edition: "5TA EDICIÓN · 2027",
   }
 };

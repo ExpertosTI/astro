@@ -8,7 +8,7 @@ import {
 } from "framer-motion";
 import { editionData as localEditionData } from "@/content/edition";
 import { ASTRO_CONFIG } from "@/config/astro-config";
-import { LeadService, type ContactChannel } from "@/services/lead-service";
+import { LeadService, type StandType, type StandExtra } from "@/services/lead-service";
 import Link from "next/link";
 import AdminAccessModal from "@/components/admin-access-modal";
 import styles from "./astro-hero.module.css";
@@ -23,39 +23,6 @@ const VIDEO_SCRUB_START = ASTRO_CONFIG.videos.scrubStart;
 const VIDEO_SCRUB_END_PADDING = ASTRO_CONFIG.videos.scrubEndPadding;
 const MOBILE_WEBM_SRC = ASTRO_CONFIG.videos.mobile;
 const DESKTOP_VIDEO_SRC = ASTRO_CONFIG.videos.desktop;
-
-function ChannelIcon({ channel }: { channel: ContactChannel }) {
-  if (channel === "mail") {
-    return (
-      <svg viewBox="0 0 24 24" aria-hidden="true" className={styles.channelIcon}>
-        <path d="M3 6h18v12H3z" fill="none" stroke="currentColor" strokeWidth="1.8" />
-        <path d="M3 7l9 7 9-7" fill="none" stroke="currentColor" strokeWidth="1.8" />
-      </svg>
-    );
-  }
-  if (channel === "ig") {
-    return (
-      <svg viewBox="0 0 24 24" aria-hidden="true" className={styles.channelIcon}>
-        <rect x="4" y="4" width="16" height="16" rx="4" fill="none" stroke="currentColor" strokeWidth="1.8" />
-        <circle cx="12" cy="12" r="3.7" fill="none" stroke="currentColor" strokeWidth="1.8" />
-        <circle cx="17.2" cy="6.8" r="1" fill="currentColor" />
-      </svg>
-    );
-  }
-  if (channel === "fb") {
-    return (
-      <svg viewBox="0 0 24 24" aria-hidden="true" className={styles.channelIcon}>
-        <path d="M13 21v-7h2.4l.4-3H13V9.2c0-.9.3-1.5 1.6-1.5h1.4V5.1c-.2 0-1-.1-2-.1-2 0-3.4 1.2-3.4 3.5V11H8.2v3h2.4v7h2.4z" fill="currentColor" />
-      </svg>
-    );
-  }
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" className={styles.channelIcon}>
-      <path d="M12 3.2A8.8 8.8 0 0 0 4.6 17.8L3.5 22l4.3-1.1A8.8 8.8 0 1 0 12 3.2z" fill="none" stroke="currentColor" strokeWidth="1.8" />
-      <path d="M8.4 9.1c.1-.2.2-.2.4-.2h.8c.1 0 .3 0 .4.3l.6 1.5c.1.2.1.3 0 .5l-.5.7c-.1.2-.1.3 0 .5.3.5 1 .9 1.4 1.2.5.3.9.5 1.4.2l.7-.4c.2-.1.3-.1.5 0l1.4.7c.2.1.2.2.2.4v.8c0 .2-.1.3-.2.4-.3.3-.8.5-1.3.5-2.9 0-6-3-6-5.9 0-.5.2-1 .4-1.2z" fill="currentColor" />
-    </svg>
-  );
-}
 
 const PRELOADER_STEP_MS = 380;
 const PRELOADER_EXIT_MS = 420;
@@ -253,11 +220,17 @@ export default function AstroHero() {
   const [introReady, setIntroReady]       = useState(false);
   const [viewport, setViewport] = useState({ w: 1920, h: 1080 });
   const [isMobile, setIsMobile] = useState(true); // Mobile first para evitar carga pesada
-  const [contactChannel, setContactChannel] = useState<ContactChannel>("ig");
-  const [contact, setContact] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [instagram, setInstagram] = useState("");
+  const [nationality, setNationality] = useState("");
+  const [stand, setStand] = useState<StandType>("regular");
+  const [standExtra, setStandExtra] = useState<StandExtra>("");
   const [notifySent, setNotifySent] = useState(false);
   const [notifyMessage, setNotifyMessage] = useState("");
+  const [submitting, setSubmitting] = useState(false);
   const [typingStarted, setTypingStarted] = useState(false);
   const [typedLocation, setTypedLocation] = useState("");
   const [editionData] = useState(localEditionData);
@@ -267,6 +240,7 @@ export default function AstroHero() {
   const [collectedCount, setCollectedCount] = useState(0);
   const [missionTime, setMissionTime] = useState("00:00");
   const [adminModalOpen, setAdminModalOpen] = useState(false);
+  const [fxActive, setFxActive] = useState(true);
   const adminGestureRef = useRef({ taps: 0, timer: 0 as ReturnType<typeof setTimeout> | number, pressAt: 0 });
 
   const openAdminModal = () => {
@@ -513,6 +487,7 @@ export default function AstroHero() {
     storyControlsRef.current?.stop();
     storyProgress.set(1);
     setIntroFinished(true);
+    setFxActive(false);
     setTypingStarted(true);
     setTypedLocation(editionData.location);
   };
@@ -525,6 +500,7 @@ export default function AstroHero() {
         ease: "linear",
         onComplete: () => {
           setIntroFinished(true);
+          setFxActive(false);
         },
       });
     }, 60);
@@ -610,6 +586,7 @@ export default function AstroHero() {
 
     if (v >= 0.88 && !introFinished) {
       setIntroFinished(true);
+      setFxActive(false);
     }
 
     if (!typingStarted && v >= 0.58) {
@@ -643,38 +620,43 @@ export default function AstroHero() {
     };
   }, [typingStarted, editionData.location]);
 
-  const contactPlaceholder = useMemo(() => {
-    if (contactChannel === "mail") return "Tu email (Requerido)";
-    if (contactChannel === "ig") return "@tu_usuario_ig (Requerido)";
-    if (contactChannel === "fb") return "Enlace de tu Facebook (Requerido)";
-    return "Tu nombre (Requerido)";
-  }, [contactChannel]);
-
   const handleNotifySubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const contactValue = contact.trim();
-    const phoneValue = phone.trim();
-    if (!contactValue || !phoneValue) return;
+    if (submitting) return;
+    setSubmitting(true);
 
-    const result = await LeadService.registerLead({
-      contact: contactValue,
-      phone: phoneValue,
-      channel: contactChannel,
+    const result = await LeadService.registerArtist({
+      firstName,
+      lastName,
+      email,
+      phone,
+      instagram,
+      nationality,
+      stand,
+      standExtra,
     }, { viewport: `${viewport.w}x${viewport.h}` });
 
+    setSubmitting(false);
+
     if (!result.ok) {
-      setNotifyMessage("VERIFICA TU WHATSAPP E INTENTA DE NUEVO.");
+      setNotifyMessage("REVISA NOMBRE, EMAIL Y WHATSAPP E INTENTA DE NUEVO.");
       return;
     }
 
     setNotifyMessage(result.notified
-      ? "MISIÓN CONFIRMADA. REVISA TU WHATSAPP — TE LLEGÓ LA CONFIRMACIÓN."
-      : "REGISTRO GUARDADO. SI NO LLEGA EL WHATSAPP, REVISA EL NÚMERO (809/829/849)."
+      ? "REGISTRO CONFIRMADO. REVISA TU WHATSAPP — TE LLEGÓ LA CONFIRMACIÓN."
+      : "REGISTRO GUARDADO. SI NO LLEGA EL WHATSAPP, REVISA EL NÚMERO."
     );
     setNotifySent(true);
     playSound("transition");
-    setContact("");
+    setFirstName("");
+    setLastName("");
+    setEmail("");
     setPhone("");
+    setInstagram("");
+    setNationality("");
+    setStand("regular");
+    setStandExtra("");
   };
 
   const rings = useMemo(() => [
@@ -847,7 +829,13 @@ export default function AstroHero() {
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!canvas || !fxActive) {
+      if (canvas) {
+        const ctx = canvas.getContext("2d");
+        ctx?.clearRect(0, 0, canvas.width, canvas.height);
+      }
+      return;
+    }
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
@@ -873,11 +861,10 @@ export default function AstroHero() {
         da: (Math.random() - 0.5) * 0.004,
       });
     }
-    function animate(now: number) {
+    function animateStars(now: number) {
       if (!ctx || !canvas) return;
-      rafId = requestAnimationFrame(animate);
+      rafId = requestAnimationFrame(animateStars);
       
-      // Throttle frame rate on mobile
       if (now - lastFrameTime < frameInterval) return;
       lastFrameTime = now;
 
@@ -894,12 +881,12 @@ export default function AstroHero() {
       }
       ctx.globalAlpha = 1;
     }
-    rafId = requestAnimationFrame(animate);
+    rafId = requestAnimationFrame(animateStars);
     return () => {
       cancelAnimationFrame(rafId);
       window.removeEventListener("resize", resize);
     };
-  }, [isMobile]);
+  }, [isMobile, fxActive]);
 
   return (
     <>
@@ -918,22 +905,22 @@ export default function AstroHero() {
         onClose={() => setAdminModalOpen(false)}
       />
 
-      <main className={`${styles.page} ${preloaderDone ? styles.pageMounted : ""} ${!introFinished ? styles.locked : ""}`}>
+      <main className={`${styles.page} ${preloaderDone ? styles.pageMounted : ""} ${!introFinished ? styles.locked : ""} ${introFinished ? styles.formMode : ""}`}>
         <section className={styles.heroShell}>
           <motion.div
             className={styles.stage}
             style={{
-              rotateX: cameraRotateX,
-              rotateY: cameraRotateY,
+              rotateX: fxActive ? cameraRotateX : 0,
+              rotateY: fxActive ? cameraRotateY : 0,
             }}
           >
-            {isGlitching && <div className={styles.glitchOverlay} style={{ pointerEvents: "none" }} />}
+            {fxActive && isGlitching && <div className={styles.glitchOverlay} style={{ pointerEvents: "none" }} />}
             
             {/* Outline Interface - "Elementos" trace */}
             <div className={styles.interfaceField} aria-hidden="true" />
 
             {/* Scanline CRT FX */}
-            <div className={styles.scanline} style={{ opacity: 0.08 }} />
+            {fxActive && <div className={styles.scanline} style={{ opacity: 0.08 }} />}
 
             {/* Camera feed overlay */}
             <div className={styles.camStatus}>
@@ -990,7 +977,7 @@ export default function AstroHero() {
               />
             )}
 
-            {!isMobile && (
+            {!isMobile && fxActive && (
               <motion.div
                 className={styles.desktopNebulaFx}
                 style={{
@@ -1003,7 +990,7 @@ export default function AstroHero() {
               />
             )}
 
-            {!isMobile && (
+            {!isMobile && fxActive && (
               <motion.div
                 className={styles.desktopRayFx}
                 style={{
@@ -1042,7 +1029,7 @@ export default function AstroHero() {
               }}
             />
 
-            {rings.map((r) => (
+            {fxActive && rings.map((r) => (
                 <CornerRing
                 key={r.id}
                 src={r.src}
@@ -1067,12 +1054,13 @@ export default function AstroHero() {
               />
             ))}
 
-            {introFinished && (
+            {introFinished && fxActive && (
               <motion.div className={styles.swipeCue} style={{ opacity: swipeOpacity }}>
                 <span className={styles.swipeArrows}>⌄⌄⌄</span>
               </motion.div>
             )}
 
+            {!introFinished && (
             <motion.div
               className={`${styles.titleBlock} ${(isGlitching || isGlitchingOut) ? styles.dirtyTransmission : ""} ${!isMobile && !isGlitchingOut ? styles.desktopGlitchReveal : ""}`}
               style={{ opacity: titleOpacity, y: titleY, display: titleDisplay, zIndex: 55 }}
@@ -1089,7 +1077,9 @@ export default function AstroHero() {
                 {ASTRO_CONFIG.project.edition}
               </motion.p>
             </motion.div>
+            )}
 
+            {!introFinished && (
             <motion.div
               className={`${styles.storyBlock} ${(isGlitching || isGlitchingOut) ? styles.dirtyTransmission : ""} ${!isMobile && !isGlitchingOut ? styles.desktopGlitchReveal : ""}`}
               style={{ opacity: storyOpacity, y: storyY, display: storyDisplay, zIndex: 52 }}
@@ -1097,7 +1087,9 @@ export default function AstroHero() {
               <p className={styles.storyParagraph}>{editionData.paragraph1}</p>
               <p className={styles.storyHighlight}>{editionData.paragraph2}</p>
             </motion.div>
+            )}
 
+            {!introFinished && (
             <motion.div
               className={`${styles.coordBlock} ${!isMobile && !isTyping && !isGlitchingOut ? styles.desktopGlitchReveal : ""}`}
               style={{ opacity: coordsOpacity, y: coordsY, skewY: coordsSkew, zIndex: 50 }}
@@ -1109,6 +1101,7 @@ export default function AstroHero() {
                 <p className={styles.coordinates}>{editionData.coordinates}</p>
               </div>
             </motion.div>
+            )}
 
             <motion.div
               className={`${styles.contactBlock} ${!isMobile ? styles.desktopGlitchReveal : ""}`}
@@ -1130,50 +1123,72 @@ export default function AstroHero() {
                         onPointerDown={onAdminBrandDown}
                         onPointerUp={onAdminBrandUp}
                       >
-                        DEJA TU CONTACTO PARA AVISO DE APERTURA
+                        REGISTRO ASTRO SDQ {editionData.year}
                       </p>
                       <p className={styles.contactInvite}>
-                        Sé de los primeros en enterarte de la {ASTRO_CONFIG.project.edition}. Te avisamos al instante.
+                        {editionData.dates} · {editionData.venue}
                       </p>
-                      <div className={styles.channelToggle} role="group" aria-label="Canal de contacto">
-                        {(["ig", "whatsapp", "mail", "fb"] as ContactChannel[]).map((channel) => (
-                          <button
-                            key={channel}
-                            type="button"
-                            className={`${styles.channelButton} ${contactChannel === channel ? styles.channelButtonActive : ""}`}
-                            onClick={() => {
-                              setContactChannel(channel);
-                              playSound("click");
-                            }}
-                          >
-                            <ChannelIcon channel={channel} />
-                            <span>{channel === "ig" ? "INSTAGRAM" : channel.toUpperCase()}</span>
-                          </button>
-                        ))}
-                      </div>
+                      <p className={styles.eventAddress}>{editionData.address}</p>
 
                       <form className={styles.notifyForm} onSubmit={handleNotifySubmit}>
                         <div className={styles.notifyInputGroup}>
-                          <input
-                            className={styles.notifyInput}
-                            type={contactChannel === "mail" ? "email" : "text"}
-                            value={contact}
-                            placeholder={contactPlaceholder}
-                            onChange={(e) => { setContact(e.target.value); }}
-                            required
-                          />
-                          <input
-                            className={`${styles.notifyInput} ${styles.notifyInput2}`}
-                            type="tel"
-                            inputMode="tel"
-                            autoComplete="tel"
-                            value={phone}
-                            placeholder="WhatsApp 809/829/849…"
-                            onChange={(e) => { setPhone(e.target.value); }}
-                            required
-                          />
+                          <input className={styles.notifyInput} type="text" value={firstName} placeholder="Nombre *" required autoComplete="given-name" onChange={(e) => setFirstName(e.target.value)} />
+                          <input className={`${styles.notifyInput} ${styles.notifyInput2}`} type="text" value={lastName} placeholder="Apellido" autoComplete="family-name" onChange={(e) => setLastName(e.target.value)} />
                         </div>
-                        <button className={styles.notifyButton} type="submit" onClick={() => playSound("click")}>NOTIFICARME</button>
+                        <div className={styles.notifyInputGroup}>
+                          <input className={styles.notifyInput} type="email" value={email} placeholder="Email *" required autoComplete="email" onChange={(e) => setEmail(e.target.value)} />
+                          <input className={`${styles.notifyInput} ${styles.notifyInput2}`} type="tel" inputMode="tel" autoComplete="tel" value={phone} placeholder="WhatsApp *" required onChange={(e) => setPhone(e.target.value)} />
+                        </div>
+                        <div className={styles.notifyInputGroup}>
+                          <input className={styles.notifyInput} type="text" value={instagram} placeholder="@Instagram" autoComplete="username" onChange={(e) => setInstagram(e.target.value)} />
+                          <input className={`${styles.notifyInput} ${styles.notifyInput2}`} type="text" value={nationality} placeholder="Nacionalidad" onChange={(e) => setNationality(e.target.value)} />
+                        </div>
+
+                        <fieldset className={styles.standFieldset}>
+                          <legend className={styles.standLegend}>Stand *</legend>
+                          <div className={styles.standOptions}>
+                            {(["regular", "doble"] as StandType[]).map((opt) => (
+                              <label key={opt} className={`${styles.standOption} ${stand === opt ? styles.standOptionActive : ""}`}>
+                                <input
+                                  type="radio"
+                                  name="stand"
+                                  value={opt}
+                                  checked={stand === opt}
+                                  onChange={() => { setStand(opt); playSound("click"); }}
+                                />
+                                <span className={styles.standLabel}>{editionData.stands[opt].label}</span>
+                                <span className={styles.standPrice}>{editionData.stands[opt].price}</span>
+                              </label>
+                            ))}
+                          </div>
+                        </fieldset>
+
+                        <fieldset className={styles.standFieldset}>
+                          <legend className={styles.standLegend}>Stand extra</legend>
+                          <div className={styles.standOptions}>
+                            <label className={`${styles.standOption} ${standExtra === "" ? styles.standOptionActive : ""}`}>
+                              <input type="radio" name="standExtra" value="" checked={standExtra === ""} onChange={() => setStandExtra("")} />
+                              <span className={styles.standLabel}>Ninguno</span>
+                            </label>
+                            <label className={`${styles.standOption} ${standExtra === "regular" ? styles.standOptionActive : ""}`}>
+                              <input type="radio" name="standExtra" value="regular" checked={standExtra === "regular"} onChange={() => setStandExtra("regular")} />
+                              <span className={styles.standLabel}>+ Regular</span>
+                            </label>
+                            <label className={`${styles.standOption} ${standExtra === "doble" ? styles.standOptionActive : ""}`}>
+                              <input type="radio" name="standExtra" value="doble" checked={standExtra === "doble"} onChange={() => setStandExtra("doble")} />
+                              <span className={styles.standLabel}>+ Doble</span>
+                            </label>
+                          </div>
+                        </fieldset>
+
+                        <div className={styles.standDetails}>
+                          <p><strong>Regular · {editionData.stands.regular.price}</strong> — {editionData.stands.regular.detail}</p>
+                          <p><strong>Doble · {editionData.stands.doble.price}</strong> — {editionData.stands.doble.detail}</p>
+                        </div>
+
+                        <button className={styles.notifyButton} type="submit" disabled={submitting} onClick={() => playSound("click")}>
+                          {submitting ? "ENVIANDO…" : "ENVIAR REGISTRO"}
+                        </button>
                       </form>
                       <Link href="/match/" className={styles.matchCta} onClick={() => playSound("click")}>
                         <span className={styles.matchCtaLabel}>ASTRO MATCH</span>
@@ -1188,7 +1203,7 @@ export default function AstroHero() {
                       className={styles.successContainer}
                     >
                       <div className={styles.successIcon}>✓</div>
-                      <h3 className={styles.successTitle}>ACCESO CONCEDIDO</h3>
+                      <h3 className={styles.successTitle}>REGISTRO RECIBIDO</h3>
                       <motion.p 
                         className={styles.successText}
                         initial={{ opacity: 0 }}
