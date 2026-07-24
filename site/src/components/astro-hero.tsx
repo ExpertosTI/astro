@@ -745,7 +745,7 @@ export default function AstroHero() {
       });
 
       if (!result.ok) {
-        setNotifyMessage("REVISA NOMBRE, EMAIL Y WHATSAPP E INTENTA DE NUEVO.");
+        setNotifyMessage("REVISA NOMBRE, EMAIL, INSTAGRAM Y WHATSAPP E INTENTA DE NUEVO.");
         return;
       }
 
@@ -1311,7 +1311,7 @@ export default function AstroHero() {
                         <div className={styles.notifyInputGroup}>
                           <label className={styles.fieldShell}>
                             <span className={styles.fieldIcon}><FieldIcon name="ig" /></span>
-                            <input className={styles.notifyInput} type="text" value={instagram} placeholder="@Instagram" autoComplete="username" onChange={(e) => setInstagram(e.target.value)} />
+                            <input className={styles.notifyInput} type="text" value={instagram} placeholder="@Instagram *" required autoComplete="username" onChange={(e) => setInstagram(e.target.value)} />
                           </label>
                           <label className={`${styles.fieldShell} ${styles.notifyInput2}`}>
                             <span className={styles.fieldIcon}><FieldIcon name="flag" /></span>

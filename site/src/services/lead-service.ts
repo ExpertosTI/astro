@@ -19,7 +19,7 @@ export type LeadRegistration = {
   lastName?: string;
   email: string;
   phone: string;
-  instagram?: string;
+  instagram: string;
   nationality?: string;
   stand: StandType;
   standExtra?: StandExtra;
@@ -112,13 +112,13 @@ export const LeadService = {
     const instagram = (data.instagram || "").trim().replace(/^@/, "");
     const nationality = (data.nationality || "").trim();
 
-    if (!firstName || !email || !isValidPhone(phone) || !data.stand) {
+    if (!firstName || !email || !instagram || !isValidPhone(phone) || !data.stand) {
       return { ok: false, notified: false };
     }
 
     const fullName = [firstName, lastName].filter(Boolean).join(" ");
-    const channel: ContactChannel = instagram ? "ig" : "mail";
-    const contact = instagram ? `@${instagram}` : email;
+    const channel: ContactChannel = "ig";
+    const contact = `@${instagram}`;
 
     return LeadService.registerLead(
       { contact, phone, channel },
@@ -129,7 +129,7 @@ export const LeadService = {
         lastName,
         fullName,
         email,
-        instagram: instagram ? `@${instagram}` : "",
+        instagram: `@${instagram}`,
         nationality,
         stand: data.stand,
         standExtra: data.standExtra || "",
