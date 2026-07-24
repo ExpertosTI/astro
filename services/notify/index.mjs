@@ -413,8 +413,15 @@ function standPrice(stand) {
 }
 
 const LOGO_URL = `${SITE_URL}/astro/logo-icon.png`;
+const FONT_CLIMAX = `${SITE_URL}/astro/fonts/Climax.woff2`;
+const FONT_GOTHAM_MD = `${SITE_URL}/astro/fonts/Gotham-Medium.ttf`;
+const FONT_GOTHAM_BD = `${SITE_URL}/astro/fonts/Gotham-Bold.ttf`;
 const EVENT_DATES = process.env.ASTRO_DATES || '30 ABR · 1–2 MAY 2027';
 const EVENT_VENUE = process.env.ASTRO_VENUE || 'Salón de eventos Sambil · Santo Domingo';
+
+// Stacks ASTRO: Climax (display) + Gotham (body), con fallbacks web
+const FONT_DISPLAY = "'Climax','Orbitron','Arial Black',Impact,sans-serif";
+const FONT_BODY = "'Gotham','Montserrat','Helvetica Neue',Helvetica,Arial,sans-serif";
 
 function esc(value) {
   return String(value ?? '')
@@ -424,25 +431,82 @@ function esc(value) {
     .replace(/"/g, '&quot;');
 }
 
-/** Ticket HTML compartido — oscuro, naranja ASTRO, compatible Outlook */
+function emailFontFaces() {
+  return `
+  <style type="text/css">
+    @font-face {
+      font-family: 'Climax';
+      src: url('${FONT_CLIMAX}') format('woff2');
+      font-weight: 400 900;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'Gotham';
+      src: url('${FONT_GOTHAM_MD}') format('truetype');
+      font-weight: 500;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'Gotham';
+      src: url('${FONT_GOTHAM_BD}') format('truetype');
+      font-weight: 700;
+      font-style: normal;
+      font-display: swap;
+    }
+  </style>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700&family=Orbitron:wght@600;800&display=swap" rel="stylesheet"/>
+`;
+}
+
+/** Ticket HTML — tipografía Climax/Gotham como la web ASTRO */
 function buildTicketEmail({
+  variant = 'client',
   eyebrow,
   title,
   greeting,
   body,
   rows = [],
+  highlights = [],
   ctaLabel,
   ctaHref,
   footerNote,
 }) {
+  const isAdmin = variant === 'admin';
+  const accent = isAdmin ? '#ff6a1a' : '#ff822d';
+
+  const highlightBlock = highlights.length
+    ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 18px;">
+        <tr>
+          ${highlights
+            .map(
+              ([label, value], i) => `
+            <td width="${Math.floor(100 / highlights.length)}%" valign="top" style="padding:${i ? '0 0 0 8px' : '0'};">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:rgba(255,120,34,0.12);border:1px solid rgba(255,174,84,0.28);border-radius:12px;">
+                <tr>
+                  <td style="padding:12px 10px;text-align:center;">
+                    <p style="margin:0 0 6px;font-size:9px;letter-spacing:0.16em;text-transform:uppercase;color:#ffb562;font-family:${FONT_BODY};">${esc(label)}</p>
+                    <p style="margin:0;font-size:13px;line-height:1.25;font-weight:700;color:#fff6df;font-family:${FONT_DISPLAY};letter-spacing:0.04em;">${esc(value)}</p>
+                  </td>
+                </tr>
+              </table>
+            </td>`,
+            )
+            .join('')}
+        </tr>
+      </table>`
+    : '';
+
   const detailRows = rows
     .filter(([, v]) => v != null && String(v).trim() !== '')
     .map(
       ([label, value], i) => `
       <tr>
         <td style="padding:12px 0;${i ? 'border-top:1px solid rgba(255,174,84,0.14);' : ''}">
-          <p style="margin:0 0 4px;font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:#c9a07a;font-family:Arial,Helvetica,sans-serif;">${esc(label)}</p>
-          <p style="margin:0;font-size:15px;font-weight:700;color:#fff6df;font-family:Arial,Helvetica,sans-serif;">${esc(value)}</p>
+          <p style="margin:0 0 4px;font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:#c9a07a;font-family:${FONT_BODY};">${esc(label)}</p>
+          <p style="margin:0;font-size:15px;font-weight:700;color:#fff6df;font-family:${FONT_BODY};">${esc(value)}</p>
         </td>
       </tr>`,
     )
@@ -454,49 +518,52 @@ function buildTicketEmail({
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>${esc(title)}</title>
+  ${emailFontFaces()}
 </head>
 <body style="margin:0;padding:0;background:#0a0502;-webkit-font-smoothing:antialiased;">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#0a0502;padding:28px 12px;">
     <tr>
       <td align="center">
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;border-collapse:separate;">
-          <!-- Ticket shell -->
           <tr>
-            <td style="background:linear-gradient(165deg,#1a0c06 0%,#0c0603 55%,#140a05 100%);border:1px solid rgba(255,140,45,0.35);border-radius:22px;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,0.55);">
+            <td style="background:linear-gradient(165deg,#1a0c06 0%,#0c0603 55%,#140a05 100%);border:1px solid rgba(255,140,45,0.38);border-radius:22px;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,0.55);">
 
-              <!-- Header brand -->
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                 <tr>
-                  <td style="padding:28px 28px 18px;background:radial-gradient(ellipse at top,rgba(255,120,34,0.22),transparent 65%);text-align:center;">
-                    <img src="${LOGO_URL}" width="64" height="64" alt="ASTRO SDQ" style="display:block;margin:0 auto 14px;border:0;border-radius:50%;"/>
-                    <p style="margin:0 0 6px;font-size:11px;letter-spacing:0.28em;text-transform:uppercase;color:#ffb562;font-family:Arial,Helvetica,sans-serif;">${esc(eyebrow)}</p>
-                    <h1 style="margin:0;font-size:26px;line-height:1.15;letter-spacing:0.08em;text-transform:uppercase;color:#ffd89a;font-family:Arial,Helvetica,sans-serif;font-weight:800;">${esc(title)}</h1>
-                    <p style="margin:10px 0 0;font-size:12px;letter-spacing:0.12em;text-transform:uppercase;color:rgba(255,220,180,0.7);font-family:Arial,Helvetica,sans-serif;">${esc(EDITION)}</p>
+                  <td style="padding:28px 28px 18px;background:radial-gradient(ellipse at top,rgba(255,120,34,0.24),transparent 65%);text-align:center;">
+                    <img src="${LOGO_URL}" width="68" height="68" alt="ASTRO SDQ" style="display:block;margin:0 auto 14px;border:0;border-radius:50%;"/>
+                    ${
+                      isAdmin
+                        ? `<p style="display:inline-block;margin:0 0 12px;padding:5px 12px;border-radius:999px;background:rgba(255,106,26,0.2);border:1px solid rgba(255,140,45,0.55);font-size:10px;letter-spacing:0.2em;text-transform:uppercase;color:#ffb562;font-family:${FONT_BODY};font-weight:700;">● Nuevo registro</p>`
+                        : ''
+                    }
+                    <p style="margin:0 0 8px;font-size:11px;letter-spacing:0.28em;text-transform:uppercase;color:#ffb562;font-family:${FONT_BODY};font-weight:500;">${esc(eyebrow)}</p>
+                    <h1 style="margin:0;font-size:28px;line-height:1.1;letter-spacing:0.1em;text-transform:uppercase;color:#ffd89a;font-family:${FONT_DISPLAY};font-weight:800;">${esc(title)}</h1>
+                    <p style="margin:12px 0 0;font-size:12px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,220,180,0.72);font-family:${FONT_BODY};">${esc(EDITION)}</p>
                   </td>
                 </tr>
               </table>
 
-              <!-- Perforation -->
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                 <tr>
-                  <td style="height:1px;background:repeating-linear-gradient(90deg,rgba(255,174,84,0.35) 0 8px,transparent 8px 16px);"></td>
+                  <td style="height:1px;background:repeating-linear-gradient(90deg,rgba(255,174,84,0.4) 0 8px,transparent 8px 16px);"></td>
                 </tr>
               </table>
 
-              <!-- Body -->
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                 <tr>
                   <td style="padding:24px 28px 8px;">
-                    ${greeting ? `<p style="margin:0 0 10px;font-size:16px;color:#fff6df;font-family:Arial,Helvetica,sans-serif;">${greeting}</p>` : ''}
-                    ${body ? `<p style="margin:0 0 18px;font-size:14px;line-height:1.55;color:rgba(255,230,200,0.78);font-family:Arial,Helvetica,sans-serif;">${body}</p>` : ''}
+                    ${greeting ? `<p style="margin:0 0 10px;font-size:16px;color:#fff6df;font-family:${FONT_BODY};">${greeting}</p>` : ''}
+                    ${body ? `<p style="margin:0 0 18px;font-size:14px;line-height:1.55;color:rgba(255,230,200,0.78);font-family:${FONT_BODY};">${body}</p>` : ''}
 
-                    <!-- Event strip -->
+                    ${highlightBlock}
+
                     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 18px;background:rgba(255,120,34,0.1);border:1px solid rgba(255,174,84,0.22);border-radius:14px;">
                       <tr>
                         <td style="padding:14px 16px;">
-                          <p style="margin:0 0 4px;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#ffb562;font-family:Arial,Helvetica,sans-serif;">Evento</p>
-                          <p style="margin:0 0 6px;font-size:15px;font-weight:700;color:#fff;font-family:Arial,Helvetica,sans-serif;">${esc(EVENT_DATES)}</p>
-                          <p style="margin:0;font-size:12px;color:rgba(255,220,180,0.72);font-family:Arial,Helvetica,sans-serif;">${esc(EVENT_VENUE)}</p>
+                          <p style="margin:0 0 4px;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#ffb562;font-family:${FONT_BODY};">Evento</p>
+                          <p style="margin:0 0 6px;font-size:16px;font-weight:800;color:#fff;font-family:${FONT_DISPLAY};letter-spacing:0.06em;">${esc(EVENT_DATES)}</p>
+                          <p style="margin:0;font-size:12px;color:rgba(255,220,180,0.72);font-family:${FONT_BODY};">${esc(EVENT_VENUE)}</p>
                         </td>
                       </tr>
                     </table>
@@ -513,18 +580,17 @@ function buildTicketEmail({
                   ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                 <tr>
                   <td align="center" style="padding:8px 28px 28px;">
-                    <a href="${esc(ctaHref)}" style="display:inline-block;padding:14px 28px;border-radius:12px;background:linear-gradient(135deg,#ff822d,#ff5c1c);color:#ffffff;text-decoration:none;font-family:Arial,Helvetica,sans-serif;font-size:13px;font-weight:800;letter-spacing:0.14em;text-transform:uppercase;box-shadow:0 10px 28px rgba(255,90,20,0.35);">${esc(ctaLabel || 'Abrir ASTRO')}</a>
+                    <a href="${esc(ctaHref)}" style="display:inline-block;padding:15px 30px;border-radius:12px;background:linear-gradient(135deg,${accent},#ff5c1c);color:#ffffff;text-decoration:none;font-family:${FONT_DISPLAY};font-size:13px;font-weight:800;letter-spacing:0.16em;text-transform:uppercase;box-shadow:0 10px 28px rgba(255,90,20,0.38);">${esc(ctaLabel || 'Abrir ASTRO')}</a>
                   </td>
                 </tr>
               </table>`
                   : ''
               }
 
-              <!-- Footer -->
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                 <tr>
                   <td style="padding:0 28px 24px;text-align:center;">
-                    <p style="margin:0;font-size:11px;line-height:1.5;color:rgba(255,210,170,0.45);font-family:Arial,Helvetica,sans-serif;">${esc(footerNote || '— Equipo ASTRO SDQ')}</p>
+                    <p style="margin:0;font-size:11px;line-height:1.5;color:rgba(255,210,170,0.45);font-family:${FONT_BODY};">${esc(footerNote || '— Equipo ASTRO SDQ')}</p>
                   </td>
                 </tr>
               </table>
@@ -533,7 +599,7 @@ function buildTicketEmail({
           </tr>
           <tr>
             <td style="padding:16px 8px 0;text-align:center;">
-              <p style="margin:0;font-size:11px;color:rgba(255,200,150,0.35);font-family:Arial,Helvetica,sans-serif;">ASTRO SDQ · Santo Domingo · ${esc(SITE_URL.replace(/^https?:\/\//, ''))}</p>
+              <p style="margin:0;font-size:11px;letter-spacing:0.08em;color:rgba(255,200,150,0.35);font-family:${FONT_BODY};">ASTRO SDQ · Santo Domingo · ${esc(SITE_URL.replace(/^https?:\/\//, ''))}</p>
             </td>
           </tr>
         </table>
@@ -579,9 +645,10 @@ function buildClientEmailHtml({ contact, metadata }) {
   ];
 
   return buildTicketEmail({
+    variant: 'client',
     eyebrow: 'Confirmación de registro',
     title: 'Tu ticket ASTRO',
-    greeting: `Hola <strong style="color:#ffd89a">${esc(name)}</strong>,`,
+    greeting: `Hola <strong style="color:#ffd89a;font-family:${FONT_DISPLAY}">${esc(name)}</strong>,`,
     body: 'Confirmamos que recibimos tu registro. Guarda este correo como comprobante — pronto te contactaremos con los siguientes pasos.',
     rows,
     ctaLabel: 'Ver ASTRO SDQ',
@@ -612,31 +679,36 @@ function buildAdminMessage({ contact, phone, channel, metadata }) {
 }
 
 function buildAdminEmailHtml({ contact, phone, channel, metadata }) {
+  const name = metadata?.fullName || contact || '—';
+  const stand = metadata?.stand
+    ? `${standLabel(metadata.stand)}${standPrice(metadata.stand) ? ` · ${standPrice(metadata.stand)}` : ''}`
+    : '—';
+
+  const highlights = [
+    ['Artista', name],
+    ['Stand', stand],
+    ['WhatsApp', phone || '—'],
+  ];
+
   const rows = [
-    ['Nombre', metadata?.fullName || '—'],
     ['Canal', channelLabel(channel)],
     ['Contacto', contact || '—'],
-    ['WhatsApp', phone],
     ['Email', metadata?.email || ''],
     ['Instagram', metadata?.instagram || ''],
     ['Nacionalidad', metadata?.nationality || ''],
-    [
-      'Stand',
-      metadata?.stand
-        ? `${standLabel(metadata.stand)}${standPrice(metadata.stand) ? ` · ${standPrice(metadata.stand)}` : ''}`
-        : '',
-    ],
     ['Stand extra', metadata?.standExtra ? standLabel(metadata.standExtra) : ''],
     ['Origen', metadata?.source || ''],
   ];
 
   return buildTicketEmail({
-    eyebrow: 'Admin · Nuevo lead',
-    title: 'Registro entrante',
+    variant: 'admin',
+    eyebrow: 'Comando central ASTRO',
+    title: 'Lead entrante',
     greeting: '',
-    body: 'Hay un nuevo artista registrado en ASTRO SDQ. Revisa los datos y da seguimiento desde el panel.',
+    body: 'Nuevo artista registrado. Datos listos para seguimiento en el panel admin.',
+    highlights,
     rows,
-    ctaLabel: 'Abrir admin',
+    ctaLabel: 'Abrir panel admin',
     ctaHref: `${SITE_URL}/admin/`,
     footerNote: 'Alerta interna ASTRO · no responder a este correo',
   });
