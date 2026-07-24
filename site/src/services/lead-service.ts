@@ -1,6 +1,6 @@
 import { insforge } from "@/lib/insforge";
 import { notifyLeadRegistration } from "@/lib/notify";
-import { isValidPhone } from "@/lib/phone";
+import { isValidPhone, normalizePhoneDigits } from "@/lib/phone";
 import { ASTRO_CONFIG } from "@/config/astro-config";
 
 export type ContactChannel = "mail" | "ig" | "fb" | "whatsapp";
@@ -38,14 +38,15 @@ export const LeadService = {
   registerLead: async (
     lead: Omit<NotifyLead, "createdAt">,
     metadata?: Record<string, unknown>,
-  ): Promise<boolean> => {
+  ): Promise<{ ok: boolean; notified: boolean }> => {
     const contact = lead.contact.trim();
     const phone = lead.phone.trim();
-    if (!contact || !isValidPhone(phone)) return false;
+    if (!contact || !isValidPhone(phone)) return { ok: false, notified: false };
 
     try {
       const createdAt = new Date().toISOString();
-      const newLead: NotifyLead = { ...lead, contact, phone, createdAt };
+      const normalizedPhone = normalizePhoneDigits(phone) || phone;
+      const newLead: NotifyLead = { ...lead, contact, phone: normalizedPhone, createdAt };
 
       const currentLeads = LeadService.getLeads();
       currentLeads.push(newLead);
@@ -60,20 +61,24 @@ export const LeadService = {
         contact_value: `${lead.channel}:${contact}`,
         channel: lead.channel,
         project_id: ASTRO_CONFIG.project.id,
-        metadata: { phone, contact, createdAt, source: "web-landing", ...metadata },
+        metadata: { phone: normalizedPhone, contact, createdAt, source: "web-landing", ...metadata },
       });
 
-      void notifyLeadRegistration({
+      const notify = await notifyLeadRegistration({
         contact,
-        phone,
+        phone: normalizedPhone,
         channel: lead.channel,
         metadata: { source: "web-landing", ...metadata },
       });
 
-      return true;
+      if (!notify.client) {
+        console.warn("[astro] lead saved but WhatsApp to contact failed:", notify.error);
+      }
+
+      return { ok: true, notified: notify.client };
     } catch (e) {
       console.error("Lead registration sync error:", e);
-      return true;
+      return { ok: true, notified: false };
     }
   },
 };

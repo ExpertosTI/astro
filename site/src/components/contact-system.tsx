@@ -51,8 +51,8 @@ export default function ContactSystem({ opacity, y, isMobile }: ContactSystemPro
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const success = await LeadService.registerLead({ contact: contact.trim(), phone: phone.trim(), channel });
-    if (success) {
+    const result = await LeadService.registerLead({ contact: contact.trim(), phone: phone.trim(), channel });
+    if (result.ok) {
       setSent(true);
       AudioService.play("transition");
     }
@@ -97,7 +97,7 @@ export default function ContactSystem({ opacity, y, isMobile }: ContactSystemPro
                   autoComplete="tel"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
-                  placeholder="Tu WhatsApp (Requerido)"
+                  placeholder="WhatsApp 809/829/849…"
                   required
                 />
               </div>

@@ -8,9 +8,9 @@ import {
 } from "framer-motion";
 import { editionData as localEditionData } from "@/content/edition";
 import { ASTRO_CONFIG } from "@/config/astro-config";
-import { verifyAdminPassword, createAdminSession } from "@/lib/admin-auth";
 import { LeadService, type ContactChannel } from "@/services/lead-service";
 import Link from "next/link";
+import AdminAccessModal from "@/components/admin-access-modal";
 import styles from "./astro-hero.module.css";
 
 /* ────────────────────────────────────────────────────────
@@ -57,13 +57,17 @@ function ChannelIcon({ channel }: { channel: ContactChannel }) {
   );
 }
 
+const PRELOADER_STEP_MS = 380;
+const PRELOADER_EXIT_MS = 420;
+const STORY_DURATION_S = 4.2;
+
 function Preloader({ onDone, ready }: { onDone: () => void; ready: boolean }) {
   const [step, setStep] = useState(0);
   const [isExiting, setIsExiting] = useState(false);
 
   useEffect(() => {
     if (step < PRELOADER_LOGO_STEP) {
-      const t = setTimeout(() => setStep((s) => s + 1), 850);
+      const t = setTimeout(() => setStep((s) => s + 1), PRELOADER_STEP_MS);
       return () => clearTimeout(t);
     }
 
@@ -77,7 +81,7 @@ function Preloader({ onDone, ready }: { onDone: () => void; ready: boolean }) {
 
   useEffect(() => {
     if (!isExiting) return;
-    const t = setTimeout(onDone, 950);
+    const t = setTimeout(onDone, PRELOADER_EXIT_MS);
     return () => clearTimeout(t);
   }, [isExiting, onDone]);
 
@@ -92,8 +96,8 @@ function Preloader({ onDone, ready }: { onDone: () => void; ready: boolean }) {
             filter: ["brightness(1) blur(0px)", "brightness(1.5) blur(2px)", "contrast(1.4) blur(0px)", "brightness(1.2) blur(4px)", "brightness(0) blur(10px)"],
           }
         : { opacity: 1, x: 0, filter: "brightness(1) blur(0px)" }}
-      transition={{ duration: isExiting ? 0.9 : 0.2, ease: "easeInOut" }}
-      exit={{ opacity: 0, transition: { duration: 0.3, ease: "easeInOut" } }}
+      transition={{ duration: isExiting ? 0.4 : 0.2, ease: "easeInOut" }}
+      exit={{ opacity: 0, transition: { duration: 0.2, ease: "easeInOut" } }}
     >
       <div className={`${styles.missionHud} ${isExiting ? styles.missionHudActive : ""}`}>
         <p className={styles.missionText}>MISSION CONTROL // ASTRO SDQ LINKED</p>
@@ -261,22 +265,89 @@ export default function AstroHero() {
   const [isTyping, setIsTyping] = useState(false);
   const [introFinished, setIntroFinished] = useState(false);
   const [collectedCount, setCollectedCount] = useState(0);
-  const [showRedirecting, setShowRedirecting] = useState(false);
   const [missionTime, setMissionTime] = useState("00:00");
+  const [adminModalOpen, setAdminModalOpen] = useState(false);
+  const adminGestureRef = useRef({ taps: 0, timer: 0 as ReturnType<typeof setTimeout> | number, pressAt: 0 });
+
+  const openAdminModal = () => {
+    setAdminModalOpen(true);
+  };
+
+  const onAdminBrandDown = () => {
+    adminGestureRef.current.pressAt = Date.now();
+  };
+
+  const onAdminBrandUp = () => {
+    const held = Date.now() - adminGestureRef.current.pressAt;
+    // Long-press (~1.2s) — funciona en móvil sin teclado
+    if (held >= 1200) {
+      adminGestureRef.current.taps = 0;
+      openAdminModal();
+      return;
+    }
+    // 5 toques rápidos en el título / edición
+    adminGestureRef.current.taps += 1;
+    clearTimeout(adminGestureRef.current.timer as ReturnType<typeof setTimeout>);
+    if (adminGestureRef.current.taps >= 5) {
+      adminGestureRef.current.taps = 0;
+      openAdminModal();
+      return;
+    }
+    adminGestureRef.current.timer = setTimeout(() => {
+      adminGestureRef.current.taps = 0;
+    }, 2200);
+  };
 
   const handleRingCollect = () => {
     setCollectedCount((prev) => {
       const next = prev + 1;
       if (next === 8) {
         playSound("transition");
-        setShowRedirecting(true);
-        setTimeout(() => {
-          window.location.href = "/admin";
-        }, 3200);
+        setAdminModalOpen(true);
       }
       return next;
     });
   };
+
+  useEffect(() => {
+    const ACTIVATION = "sdq";
+    const BUFFER_MS = 1800;
+    let typeBuf = "";
+    let lastKey = 0;
+
+    const isTypingTarget = (el: EventTarget | null) => {
+      if (!(el instanceof HTMLElement)) return false;
+      const tag = el.tagName.toUpperCase();
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return true;
+      return el.isContentEditable;
+    };
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (isTypingTarget(e.target)) return;
+      if (e.key.length !== 1) return;
+      const now = Date.now();
+      if (now - lastKey > BUFFER_MS) typeBuf = "";
+      lastKey = now;
+      typeBuf = (typeBuf + e.key.toLowerCase()).slice(-ACTIVATION.length);
+      if (typeBuf === ACTIVATION) {
+        typeBuf = "";
+        setAdminModalOpen(true);
+      }
+    };
+
+    const onHash = () => {
+      const hash = window.location.hash.toLowerCase();
+      if (hash === "#sdq" || hash === "#admin") setAdminModalOpen(true);
+    };
+
+    onHash();
+    window.addEventListener("hashchange", onHash);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("hashchange", onHash);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, []);
 
   useEffect(() => {
     if (!preloaderDone) return;
@@ -433,22 +504,30 @@ export default function AstroHero() {
   const { scrollYProgress } = useScroll();
   const storyProgress = useMotionValue(0);
   const interactionProgress = useMotionValue(0);
+  const storyControlsRef = useRef<{ stop: () => void } | null>(null);
   
   const smoothStory = useSpring(storyProgress, { stiffness: 45, damping: 20, restDelta: 0.0001, mass: 0.8 });
   const smoothInteraction = useSpring(interactionProgress, { stiffness: 35, damping: 25, restDelta: 0.0001, mass: 1 });
 
+  const skipToForm = () => {
+    storyControlsRef.current?.stop();
+    storyProgress.set(1);
+    setIntroFinished(true);
+    setTypingStarted(true);
+    setTypedLocation(editionData.location);
+  };
+
   const handleIntroDone = () => {
     setPreloaderDone(true);
-    // Iniciamos la animación con un pequeño delay para asegurar el montaje
     setTimeout(() => {
-      animate(storyProgress, 1, { 
-        duration: 10.5, 
+      storyControlsRef.current = animate(storyProgress, 1, {
+        duration: STORY_DURATION_S,
         ease: "linear",
         onComplete: () => {
           setIntroFinished(true);
-        }
+        },
       });
-    }, 100);
+    }, 60);
   };
 
   useMotionValueEvent(scrollYProgress, "change", (v) => {
@@ -480,7 +559,7 @@ export default function AstroHero() {
     return auto + effectiveScroll * scrollFactor * boost;
   });
 
-  const swipeOpacity = useTransform(smoothStory, [0, 0.03, 0.2, 0.28], [0, 1, 1, 0]);
+  const swipeOpacity = useTransform(smoothStory, [0, 0.03, 0.12, 0.2], [0, 1, 1, 0]);
   const desktopColorReveal = useTransform(smoothStory, [0.06, 0.56], [0, 1]);
   const desktopLowerMaskOpacity = useTransform(smoothStory, [0, 0.28], [0.8, 0.14]);
   
@@ -501,36 +580,39 @@ export default function AstroHero() {
   const cameraRotateX = useTransform(smoothInteraction, [0, 0.5, 1], [1.2, 0, -1.2]);
   const cameraRotateY = useTransform(smoothInteraction, [0, 0.5, 1], [-0.8, 0, 0.8]);
 
-  // Capas Mutuamente Exclusivas (Timeline de Narrativa)
-  const titleOpacity = useTransform(smoothStory, [0.01, 0.1, 0.45, 0.55], [0, 1, 1, 0]);
+  // Capas Mutuamente Exclusivas (Timeline de Narrativa — comprimida)
+  const titleOpacity = useTransform(smoothStory, [0.01, 0.08, 0.22, 0.30], [0, 1, 1, 0]);
   const titleDisplay = useTransform(titleOpacity, (v) => v > 0.01 ? "flex" : "none");
-  const titleY       = useTransform(smoothStory, [0.01, 0.12, 0.45, 0.55], [20, 0, 0, -40]);
-  const editionOpacity = useTransform(smoothStory, [0.05, 0.12, 0.45, 0.55], [0, 1, 1, 0]);
+  const titleY       = useTransform(smoothStory, [0.01, 0.08, 0.22, 0.30], [20, 0, 0, -40]);
+  const editionOpacity = useTransform(smoothStory, [0.04, 0.10, 0.22, 0.30], [0, 1, 1, 0]);
+
+  const storyOpacity = useTransform(smoothStory, [0.28, 0.36, 0.50, 0.58], [0, 1, 1, 0]);
+  const storyY       = useTransform(smoothStory, [0.28, 0.36, 0.50, 0.58], [40, 0, 0, -40]);
+  const storyDisplay = useTransform(storyOpacity, (v) => v > 0.01 ? "flex" : "none");
   
-  const coordsOpacity = useTransform(smoothStory, [0.58, 0.68, 0.85, 0.92], [0, 1, 1, 0]);
-  const coordsY       = useTransform(smoothStory, [0.58, 0.68, 0.85, 0.92], [40, 0, 0, -40]);
-  const coordsSkew    = useTransform(smoothStory, [0.58, 0.68], [5, 0]);
+  const coordsOpacity = useTransform(smoothStory, [0.56, 0.64, 0.74, 0.82], [0, 1, 1, 0]);
+  const coordsY       = useTransform(smoothStory, [0.56, 0.64, 0.74, 0.82], [40, 0, 0, -40]);
+  const coordsSkew    = useTransform(smoothStory, [0.56, 0.64], [5, 0]);
   
-  const contactOpacity = useTransform(smoothStory, [0.94, 0.99], [0, 1]);
-  const contactY       = useTransform(smoothStory, [0.94, 1.0], [20, 0]);
+  const contactOpacity = useTransform(smoothStory, [0.78, 0.88], [0, 1]);
+  const contactY       = useTransform(smoothStory, [0.78, 0.92], [20, 0]);
 
   const [isGlitchingOut, setIsGlitchingOut] = useState(false);
 
   useMotionValueEvent(smoothStory, "change", (v) => {
-    // Los glitches se activan en las transiciones de entrada/salida de cada bloque
-    const isGlitchingBlock = 
-      (v > 0.01 && v < 0.08) || // Title entry
-      (v > 0.48 && v < 0.55) || // Title exit
-      (v > 0.58 && v < 0.65) || // Coords entry
-      (v > 0.88 && v < 0.94);   // Contact entry
+    const isGlitchingBlock =
+      (v > 0.01 && v < 0.07) ||
+      (v > 0.26 && v < 0.32) ||
+      (v > 0.54 && v < 0.60) ||
+      (v > 0.76 && v < 0.82);
 
     setIsGlitchingOut(isGlitchingBlock);
 
-    if (v >= 0.98 && !introFinished) {
+    if (v >= 0.88 && !introFinished) {
       setIntroFinished(true);
     }
 
-    if (!typingStarted && v >= 0.65) {
+    if (!typingStarted && v >= 0.58) {
       setTypingStarted(true);
     }
   });
@@ -553,7 +635,7 @@ export default function AstroHero() {
         window.clearInterval(timer);
         setIsTyping(false);
       }
-    }, 55);
+    }, 32);
 
     return () => {
       clearTimeout(t);
@@ -574,18 +656,21 @@ export default function AstroHero() {
     const phoneValue = phone.trim();
     if (!contactValue || !phoneValue) return;
 
-    const ok = await LeadService.registerLead({
+    const result = await LeadService.registerLead({
       contact: contactValue,
       phone: phoneValue,
       channel: contactChannel,
     }, { viewport: `${viewport.w}x${viewport.h}` });
 
-    setNotifyMessage(ok
-      ? "MISIÓN CONFIRMADA. TE AVISAREMOS AL INSTANTE."
-      : "VERIFICA TU WHATSAPP E INTENTA DE NUEVO."
-    );
-    if (!ok) return;
+    if (!result.ok) {
+      setNotifyMessage("VERIFICA TU WHATSAPP E INTENTA DE NUEVO.");
+      return;
+    }
 
+    setNotifyMessage(result.notified
+      ? "MISIÓN CONFIRMADA. REVISA TU WHATSAPP — TE LLEGÓ LA CONFIRMACIÓN."
+      : "REGISTRO GUARDADO. SI NO LLEGA EL WHATSAPP, REVISA EL NÚMERO (809/829/849)."
+    );
     setNotifySent(true);
     playSound("transition");
     setContact("");
@@ -828,31 +913,10 @@ export default function AstroHero() {
         )}
       </AnimatePresence>
 
-      <AnimatePresence>
-        {showRedirecting && (
-          <motion.div
-            className={styles.redirectOverlay}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.8 }}
-          >
-            <div className={styles.redirectCard}>
-              <div className={styles.glitchTitle}>MISIÓN COMPLETADA</div>
-              <p className={styles.redirectSubtext}>SISTEMA DE ÓRBITA 100% ESTABILIZADO</p>
-              <div className={styles.progressBarContainer}>
-                <motion.div 
-                  className={styles.progressBarFill}
-                  initial={{ width: "0%" }}
-                  animate={{ width: "100%" }}
-                  transition={{ duration: 2.8, ease: "easeInOut" }}
-                />
-              </div>
-              <p className={styles.redirectStatusText}>ESTABLECIENDO ENLACE CON LA CONSOLA DE CONTROL...</p>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <AdminAccessModal
+        isOpen={adminModalOpen}
+        onClose={() => setAdminModalOpen(false)}
+      />
 
       <main className={`${styles.page} ${preloaderDone ? styles.pageMounted : ""} ${!introFinished ? styles.locked : ""}`}>
         <section className={styles.heroShell}>
@@ -961,16 +1025,20 @@ export default function AstroHero() {
             <canvas ref={canvasRef} className={styles.spaceCanvas} />
 
             {/* Zona secreta: Casco del Astronauta */}
+            {/* Acceso admin móvil: zona inferior-izquierda (mantener ~1.2s) */}
+            <button
+              type="button"
+              className={styles.mobileAdminPad}
+              aria-label="Acceso comando"
+              onPointerDown={onAdminBrandDown}
+              onPointerUp={onAdminBrandUp}
+              onPointerCancel={() => { adminGestureRef.current.pressAt = 0; }}
+            />
+
             <div 
               className={styles.secretTrigger} 
-              onDoubleClick={async () => {
-                const pass = prompt("ACCESO RESTRINGIDO. INGRESE CLAVE DE COMANDO:");
-                if (pass && await verifyAdminPassword(pass)) {
-                  createAdminSession();
-                  window.location.href = "/admin";
-                } else if (pass !== null) {
-                  alert("ACCESO DENEGADO.");
-                }
+              onDoubleClick={() => {
+                openAdminModal();
               }}
             />
 
@@ -1008,6 +1076,9 @@ export default function AstroHero() {
             <motion.div
               className={`${styles.titleBlock} ${(isGlitching || isGlitchingOut) ? styles.dirtyTransmission : ""} ${!isMobile && !isGlitchingOut ? styles.desktopGlitchReveal : ""}`}
               style={{ opacity: titleOpacity, y: titleY, display: titleDisplay, zIndex: 55 }}
+              onPointerDown={onAdminBrandDown}
+              onPointerUp={onAdminBrandUp}
+              onPointerCancel={() => { adminGestureRef.current.pressAt = 0; }}
             >
 
               <h2 className={styles.mainTitle}>ASTRO SDQ</h2>
@@ -1019,7 +1090,13 @@ export default function AstroHero() {
               </motion.p>
             </motion.div>
 
-
+            <motion.div
+              className={`${styles.storyBlock} ${(isGlitching || isGlitchingOut) ? styles.dirtyTransmission : ""} ${!isMobile && !isGlitchingOut ? styles.desktopGlitchReveal : ""}`}
+              style={{ opacity: storyOpacity, y: storyY, display: storyDisplay, zIndex: 52 }}
+            >
+              <p className={styles.storyParagraph}>{editionData.paragraph1}</p>
+              <p className={styles.storyHighlight}>{editionData.paragraph2}</p>
+            </motion.div>
 
             <motion.div
               className={`${styles.coordBlock} ${!isMobile && !isTyping && !isGlitchingOut ? styles.desktopGlitchReveal : ""}`}
@@ -1048,7 +1125,16 @@ export default function AstroHero() {
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0, y: -20, filter: "blur(10px)" }}
                     >
-                      <p className={styles.contactTitle}>SISTEMA DE NOTIFICACIÓN</p>
+                      <p
+                        className={styles.contactTitle}
+                        onPointerDown={onAdminBrandDown}
+                        onPointerUp={onAdminBrandUp}
+                      >
+                        DEJA TU CONTACTO PARA AVISO DE APERTURA
+                      </p>
+                      <p className={styles.contactInvite}>
+                        Sé de los primeros en enterarte de la {ASTRO_CONFIG.project.edition}. Te avisamos al instante.
+                      </p>
                       <div className={styles.channelToggle} role="group" aria-label="Canal de contacto">
                         {(["ig", "whatsapp", "mail", "fb"] as ContactChannel[]).map((channel) => (
                           <button
@@ -1082,7 +1168,7 @@ export default function AstroHero() {
                             inputMode="tel"
                             autoComplete="tel"
                             value={phone}
-                            placeholder="Tu WhatsApp (Requerido)"
+                            placeholder="WhatsApp 809/829/849…"
                             onChange={(e) => { setPhone(e.target.value); }}
                             required
                           />
@@ -1118,6 +1204,19 @@ export default function AstroHero() {
                 </AnimatePresence>
               </div>
             </motion.div>
+
+            {preloaderDone && !introFinished && (
+              <button
+                type="button"
+                className={styles.skipIntro}
+                onClick={() => {
+                  playSound("click");
+                  skipToForm();
+                }}
+              >
+                IR AL FORMULARIO →
+              </button>
+            )}
 
             {/* HUD corners */}
             <div className={styles.hudOverlay} aria-hidden="true">

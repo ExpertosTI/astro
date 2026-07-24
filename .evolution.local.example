@@ -1,5 +1,23 @@
 EVOLUTION_API_URL=https://evoapi.renace.tech
-EVOLUTION_API_KEY=C8CB0D26E817-4233-9279-C60B1B7FD897
+EVOLUTION_API_KEY=
 EVOLUTION_INSTANCE=RENACE.TECH
-# WhatsApp del equipo ASTRO (número del negocio en flyers / redes)
+
+# WhatsApp del equipo ASTRO (número del negocio)
 ADMIN_WHATSAPP=
+
+# Clave del panel admin (también hash client-side 2BK2)
+ADMIN_PASSWORD=2BK2
+
+# Correo Renace (Hostinger SMTP) — mismo relay que ZAV
+SMTP_HOST=smtp.hostinger.com
+SMTP_PORT=465
+SMTP_USER=info@renace.tech
+SMTP_PASS=
+SMTP_FROM=info@renace.tech
+SMTP_FROM_NAME=ASTRO SDQ
+SMTP_REPLY_TO=info@renace.tech
+SMTP_PROFILE=hostinger
+ADMIN_EMAIL=info@renace.tech
+
+# Opcional: secreto compartido front → notify
+NOTIFY_SECRET=

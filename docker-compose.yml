@@ -52,10 +52,20 @@ services:
     environment:
       PORT: "8789"
       NOTIFY_SECRET: ${NOTIFY_SECRET:-}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-2BK2}
       ADMIN_WHATSAPP: ${ADMIN_WHATSAPP:-}
-      EVOLUTION_API_URL: ${EVOLUTION_API_URL:-}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-info@renace.tech}
+      EVOLUTION_API_URL: ${EVOLUTION_API_URL:-https://evoapi.renace.tech}
       EVOLUTION_API_KEY: ${EVOLUTION_API_KEY:-}
-      EVOLUTION_INSTANCE: ${EVOLUTION_INSTANCE:-}
+      EVOLUTION_INSTANCE: ${EVOLUTION_INSTANCE:-RENACE.TECH}
+      SMTP_HOST: ${SMTP_HOST:-smtp.hostinger.com}
+      SMTP_PORT: ${SMTP_PORT:-465}
+      SMTP_USER: ${SMTP_USER:-info@renace.tech}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_FROM: ${SMTP_FROM:-info@renace.tech}
+      SMTP_FROM_NAME: ${SMTP_FROM_NAME:-ASTRO SDQ}
+      SMTP_REPLY_TO: ${SMTP_REPLY_TO:-info@renace.tech}
+      SMTP_PROFILE: ${SMTP_PROFILE:-hostinger}
       ASTRO_PROJECT_ID: ${ASTRO_PROJECT_ID:-ASTRO_SDQ_2026}
       ASTRO_EDITION: ${ASTRO_EDITION:-5TA EDICIÓN}
       SITE_URL: ${SITE_URL:-https://astro.renace.tech}

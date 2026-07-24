@@ -1,10 +1,12 @@
 import { sha256Hex, checkRateLimit } from "@/lib/security";
 
+/** SHA-256 of "2BK2" — override with NEXT_PUBLIC_ASTRO_ADMIN_HASH if needed. */
 const ADMIN_HASH =
   process.env.NEXT_PUBLIC_ASTRO_ADMIN_HASH ??
-  "59c01efdcf1b63e7709325d63183f1b0e03e01c8afca97a49904919e0b942bd2";
+  "42f1d13c590da7ebf7e1b2712e2a8b67b482359ef5f6a179593be70878a495e5";
 
 const ADMIN_SESSION_KEY = "astro-admin-session";
+const ADMIN_TOKEN_KEY = "astro-admin-token";
 const SESSION_TTL_MS = 30 * 60 * 1000;
 
 type AdminSession = {
@@ -20,13 +22,21 @@ export async function verifyAdminPassword(password: string): Promise<boolean> {
   return hash === ADMIN_HASH;
 }
 
-export function createAdminSession(): void {
+export function createAdminSession(serverToken?: string): void {
   if (typeof window === "undefined") return;
   const session: AdminSession = {
     token: crypto.randomUUID?.() ?? String(Date.now()),
     expiresAt: Date.now() + SESSION_TTL_MS,
   };
   sessionStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify(session));
+  if (serverToken) {
+    sessionStorage.setItem(ADMIN_TOKEN_KEY, serverToken);
+  }
+}
+
+export function getAdminApiToken(): string | null {
+  if (typeof window === "undefined") return null;
+  return sessionStorage.getItem(ADMIN_TOKEN_KEY);
 }
 
 export function isAdminAuthenticated(): boolean {
@@ -37,6 +47,7 @@ export function isAdminAuthenticated(): boolean {
     const session = JSON.parse(raw) as AdminSession;
     if (Date.now() > session.expiresAt) {
       sessionStorage.removeItem(ADMIN_SESSION_KEY);
+      sessionStorage.removeItem(ADMIN_TOKEN_KEY);
       return false;
     }
     return true;
@@ -48,4 +59,5 @@ export function isAdminAuthenticated(): boolean {
 export function clearAdminSession(): void {
   if (typeof window === "undefined") return;
   sessionStorage.removeItem(ADMIN_SESSION_KEY);
+  sessionStorage.removeItem(ADMIN_TOKEN_KEY);
 }

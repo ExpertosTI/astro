@@ -668,6 +668,82 @@ video::-webkit-media-controls-start-playback-button { display: none !important; 
   box-shadow: 0 0 2rem rgba(255, 100, 0, 0.15), inset 0 0 1rem rgba(255, 100, 0, 0.1);
 }
 
+.storyBlock {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  height: fit-content;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.1rem;
+  width: min(90vw, 42rem);
+  padding: 0 1rem;
+  text-align: center;
+  pointer-events: none;
+  z-index: 52;
+}
+
+.storyParagraph {
+  margin: 0;
+  font-family: var(--font-body), sans-serif;
+  font-size: clamp(0.78rem, 1.7vw, 1.05rem);
+  line-height: 1.55;
+  letter-spacing: 0.04em;
+  color: rgba(255, 246, 223, 0.88);
+  text-shadow: 0 0 1.2rem rgba(0, 0, 0, 0.75);
+  max-width: 46ch;
+}
+
+.storyHighlight {
+  margin: 0;
+  font-family: var(--font-display), sans-serif;
+  font-size: clamp(1rem, 2.6vw, 1.55rem);
+  line-height: 1.35;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: pre-line;
+  color: #ffd89a;
+  text-shadow: 0 0 1.6rem rgba(255, 140, 45, 0.55);
+}
+
+.contactInvite {
+  margin: -0.6rem auto 1.2rem;
+  font-family: var(--font-body), sans-serif;
+  font-size: clamp(0.72rem, 1.5vw, 0.92rem);
+  line-height: 1.45;
+  letter-spacing: 0.04em;
+  color: rgba(255, 236, 210, 0.78);
+  text-align: center;
+  max-width: 36ch;
+}
+
+.skipIntro {
+  position: absolute;
+  bottom: max(1.4rem, env(safe-area-inset-bottom));
+  right: max(1.2rem, env(safe-area-inset-right));
+  z-index: 80;
+  border: 1px solid rgba(255, 174, 84, 0.35);
+  background: rgba(10, 4, 0, 0.72);
+  color: #ffd89a;
+  font-family: var(--font-body), sans-serif;
+  font-size: clamp(0.62rem, 1.4vw, 0.78rem);
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 0.65rem 1rem;
+  border-radius: 0.7rem;
+  cursor: pointer;
+  backdrop-filter: blur(12px);
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+.skipIntro:hover {
+  background: rgba(255, 140, 45, 0.18);
+  border-color: rgba(255, 174, 84, 0.7);
+  transform: translateY(-1px);
+}
+
 /* ── COORDENADAS BLOCK ────────────────────────────── */
 .coordBlock {
   position: absolute;
@@ -749,7 +825,7 @@ video::-webkit-media-controls-start-playback-button { display: none !important; 
 }
 
 .contactTitle {
-  margin: 0 0 1.4rem;
+  margin: 0 0 0.7rem;
   font-family: var(--font-display), sans-serif;
   color: #ffb562;
   letter-spacing: 0.15em;
@@ -1103,6 +1179,29 @@ video::-webkit-media-controls-start-playback-button { display: none !important; 
   background: transparent;
 }
 
+/* Pad invisible para abrir admin en móvil (mantener pulsado) */
+.mobileAdminPad {
+  position: fixed;
+  left: 0;
+  bottom: 0;
+  width: 56px;
+  height: 56px;
+  z-index: 90;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  opacity: 0;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+@media (min-width: 769px) {
+  .mobileAdminPad {
+    display: none;
+  }
+}
+
 /* Evitar que los mensajes se oculten al scrollear una vez revelados */
 .mainTitle, .edition, .storyBlock {
   will-change: transform, opacity;
@@ -1110,7 +1209,15 @@ video::-webkit-media-controls-start-playback-button { display: none !important; 
 
 @media (max-width: 768px) {
   .secretTrigger {
+    /* En móvil el casco no se usa; el pad inferior + long-press en el título abren admin */
     display: none !important;
+  }
+
+  .titleBlock {
+    pointer-events: auto;
+    touch-action: manipulation;
+    -webkit-user-select: none;
+    user-select: none;
   }
 
   /* ── PERFORMANCE: GPU savings ── */
@@ -1268,7 +1375,7 @@ video::-webkit-media-controls-start-playback-button { display: none !important; 
     margin-top: 0.2rem;
   }
 
-  .titleBlock, .coordBlock, .contactBlock {
+  .titleBlock, .coordBlock, .contactBlock, .storyBlock {
     position: absolute;
     inset: 0 !important;
     margin: auto !important;
@@ -1292,6 +1399,29 @@ video::-webkit-media-controls-start-playback-button { display: none !important; 
     font-size: clamp(0.88rem, 3.8vw, 1.1rem);
     margin-bottom: 0.8rem;
     letter-spacing: 0.1em;
+  }
+
+  .contactInvite {
+    font-size: clamp(0.68rem, 3vw, 0.82rem);
+    margin-bottom: 1rem;
+  }
+
+  .storyParagraph {
+    font-size: clamp(0.72rem, 3.2vw, 0.9rem);
+    max-width: 34ch;
+  }
+
+  .storyHighlight {
+    font-size: clamp(0.9rem, 4vw, 1.2rem);
+  }
+
+  .skipIntro {
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    bottom: max(1rem, env(safe-area-inset-bottom));
+    font-size: 0.62rem;
+    padding: 0.55rem 0.9rem;
   }
 
   .textRow   { gap: 0.8rem; }
@@ -1581,6 +1711,30 @@ video::-webkit-media-controls-start-playback-button { display: none !important; 
 .modalBtnCancel:hover {
   background: rgba(142, 162, 191, 0.1);
   color: #fff;
+}
+
+.modalBtnEnter {
+  background: linear-gradient(135deg, #ff6a1a, #ff3d00);
+  border: none;
+  color: #fff;
+  padding: 10px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  letter-spacing: 0.1em;
+  font-weight: 700;
+  transition: opacity 0.2s;
+}
+
+.modalBtnEnter:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.modalError {
+  color: #ff6d6d;
+  font-size: 0.78rem;
+  margin: -0.6rem 0 1rem;
 }
 
 .ringImage {

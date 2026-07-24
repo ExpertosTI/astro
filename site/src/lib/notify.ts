@@ -1,4 +1,5 @@
 import type { ContactChannel } from "@/services/lead-service";
+import { normalizePhoneDigits } from "@/lib/phone";
 
 const NOTIFY_SECRET = process.env.NEXT_PUBLIC_NOTIFY_SECRET || "";
 
@@ -13,19 +14,57 @@ export type LeadNotifyPayload = {
   metadata?: Record<string, unknown>;
 };
 
-/** WhatsApp vía Evolution: confirmación al usuario + alerta al admin. */
-export async function notifyLeadRegistration(payload: LeadNotifyPayload): Promise<void> {
+export type LeadNotifyResult = {
+  ok: boolean;
+  client: boolean;
+  admin: boolean;
+  mail: boolean;
+  error?: string;
+};
+
+/** WhatsApp vía Evolution: confirmación al número del contacto + alerta admin. */
+export async function notifyLeadRegistration(
+  payload: LeadNotifyPayload,
+): Promise<LeadNotifyResult> {
+  const phone = normalizePhoneDigits(payload.phone);
   try {
     const res = await fetch("/api/notify/lead", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(notifyPayload(payload)),
+      body: JSON.stringify(
+        notifyPayload({
+          ...payload,
+          phone,
+        }),
+      ),
       keepalive: true,
     });
+    const data = (await res.json().catch(() => ({}))) as Record<string, unknown>;
     if (!res.ok) {
-      console.warn("[astro] notify lead:", res.status, await res.text().catch(() => ""));
+      console.warn("[astro] notify lead:", res.status, data);
+      return {
+        ok: false,
+        client: false,
+        admin: false,
+        mail: false,
+        error: String(data.error || `http_${res.status}`),
+      };
     }
-  } catch {
-    /* no bloquear al usuario si falla */
+    return {
+      ok: true,
+      client: Boolean(data.client),
+      admin: Boolean(data.admin),
+      mail: Boolean(data.mail),
+      error: data.clientError ? String(data.clientError) : undefined,
+    };
+  } catch (err) {
+    console.warn("[astro] notify lead network:", err);
+    return {
+      ok: false,
+      client: false,
+      admin: false,
+      mail: false,
+      error: "network_error",
+    };
   }
 }

@@ -37,8 +37,11 @@ export default function NarrativeLayers({
         className={`${styles.coordBlock} ${isGlitchingOut ? styles.dirtyTransmission : ""} ${!isMobile && !isGlitchingOut ? styles.desktopGlitchReveal : ""}`} 
         style={{ opacity: storyOpacity, y: storyY, zIndex: 45 }}
       >
-        <p className={styles.missionText} style={{ color: "white", fontSize: "1.2rem", maxWidth: "40ch" }}>
-            ESTAMOS PREPARANDO LA MAYOR EXPERIENCIA ASTRO HASTA LA FECHA.
+        <p className={styles.storyParagraph}>
+          {editionData.paragraph1}
+        </p>
+        <p className={styles.storyHighlight}>
+          {editionData.paragraph2}
         </p>
       </motion.div>
 

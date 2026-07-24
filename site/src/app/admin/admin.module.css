@@ -138,3 +138,127 @@
   font-weight: 700;
   cursor: pointer;
 }
+
+.loginHint {
+  color: #8ea2bf;
+  font-size: 0.78rem;
+  margin: 0 0 1.2rem;
+  line-height: 1.45;
+}
+
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.tab {
+  background: rgba(9, 16, 30, 0.7);
+  border: 1px solid rgba(125, 211, 252, 0.15);
+  color: #8ea2bf;
+  border-radius: 999px;
+  padding: 0.55rem 1rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.tabActive {
+  color: #e0f2fe;
+  border-color: rgba(125, 211, 252, 0.55);
+  background: rgba(37, 99, 235, 0.25);
+}
+
+.panelCard {
+  background: rgba(9, 16, 30, 0.6);
+  border: 1px solid rgba(125, 211, 252, 0.12);
+  border-radius: 16px;
+  padding: 1.4rem 1.5rem;
+}
+
+.panelTitle {
+  margin: 0 0 0.4rem;
+  font-size: 1.15rem;
+  color: #e2e8f0;
+}
+
+.panelLead {
+  margin: 0 0 1rem;
+  color: #8ea2bf;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  max-width: 52ch;
+}
+
+.statusRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem 1rem;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.badge {
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  padding: 0.3rem 0.55rem;
+  border-radius: 6px;
+  border: 1px solid transparent;
+}
+
+.badgeOk {
+  color: #86efac;
+  background: rgba(22, 163, 74, 0.15);
+  border-color: rgba(74, 222, 128, 0.35);
+}
+
+.badgeWarn {
+  color: #fdba74;
+  background: rgba(234, 88, 12, 0.12);
+  border-color: rgba(251, 146, 60, 0.35);
+}
+
+.meta {
+  color: #8ea2bf;
+  font-size: 0.78rem;
+}
+
+.actionRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin-bottom: 0.8rem;
+}
+
+.actionRow .button {
+  width: auto;
+  padding: 0.55rem 0.9rem;
+  font-size: 0.75rem;
+}
+
+.panelMsg {
+  margin: 0.4rem 0 0;
+  color: #bae6fd;
+  font-size: 0.85rem;
+}
+
+.qrWrap {
+  margin-top: 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.6rem;
+}
+
+.qrImg {
+  width: min(240px, 70vw);
+  height: auto;
+  border-radius: 12px;
+  border: 1px solid rgba(125, 211, 252, 0.25);
+  background: #fff;
+  padding: 8px;
+}
