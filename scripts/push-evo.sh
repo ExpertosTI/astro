@@ -70,7 +70,7 @@ for src in (
 
 smtp_pass = zav_env.get("SMTP_PASS") or existing.get("SMTP_PASS") or ""
 smtp_user = zav_env.get("SMTP_USER") or existing.get("SMTP_USER") or "info@renace.tech"
-admin_email = zav_env.get("ADMIN_EMAIL") or existing.get("ADMIN_EMAIL") or "astrsdq@gmail.com"
+admin_email = zav_env.get("ADMIN_EMAIL") or existing.get("ADMIN_EMAIL") or "astrosdq@gmail.com"
 admin_password = existing.get("ADMIN_PASSWORD") or "2BK2"
 
 out = f"""# ASTRO SDQ — synced from Renace (rnv-manger + ZAV). DO NOT COMMIT.

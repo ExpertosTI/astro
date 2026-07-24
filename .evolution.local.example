@@ -10,7 +10,7 @@ EVOLUTION_INSTANCE=renace
 # WhatsApp admin (desde env / rnv-manger — sin hardcode)
 ADMIN_WHATSAPP=
 ADMIN_PASSWORD=2BK2
-ADMIN_EMAIL=astrsdq@gmail.com
+ADMIN_EMAIL=astrosdq@gmail.com
 
 # Hostinger relay — mismo que ZAV / Renace
 SMTP_PROFILE=hostinger

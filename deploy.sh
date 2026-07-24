@@ -65,7 +65,7 @@ export SMTP_USER="${SMTP_USER:-info@renace.tech}"
 export SMTP_FROM="${SMTP_FROM:-info@renace.tech}"
 export SMTP_FROM_NAME="${SMTP_FROM_NAME:-ASTRO SDQ}"
 export SMTP_REPLY_TO="${SMTP_REPLY_TO:-${SMTP_USER}}"
-export ADMIN_EMAIL="${ADMIN_EMAIL:-astrsdq@gmail.com}"
+export ADMIN_EMAIL="${ADMIN_EMAIL:-astrosdq@gmail.com}"
 export ADMIN_PASSWORD="${ADMIN_PASSWORD:-2BK2}"
 export SITE_URL="${SITE_URL:-https://astro.renace.tech}"
 
