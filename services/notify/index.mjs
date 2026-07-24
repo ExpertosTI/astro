@@ -400,6 +400,150 @@ function resolveClientEmail(contact, channel, metadata) {
   return '';
 }
 
+function standLabel(stand) {
+  if (stand === 'regular') return 'Premium';
+  if (stand === 'doble') return 'Doble';
+  return stand || '—';
+}
+
+function standPrice(stand) {
+  if (stand === 'regular') return 'US$500';
+  if (stand === 'doble') return 'US$800';
+  return '';
+}
+
+const LOGO_URL = `${SITE_URL}/astro/logo-icon.png`;
+const EVENT_DATES = process.env.ASTRO_DATES || '30 ABR · 1–2 MAY 2027';
+const EVENT_VENUE = process.env.ASTRO_VENUE || 'Salón de eventos Sambil · Santo Domingo';
+
+function esc(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+/** Ticket HTML compartido — oscuro, naranja ASTRO, compatible Outlook */
+function buildTicketEmail({
+  eyebrow,
+  title,
+  greeting,
+  body,
+  rows = [],
+  ctaLabel,
+  ctaHref,
+  footerNote,
+}) {
+  const detailRows = rows
+    .filter(([, v]) => v != null && String(v).trim() !== '')
+    .map(
+      ([label, value], i) => `
+      <tr>
+        <td style="padding:12px 0;${i ? 'border-top:1px solid rgba(255,174,84,0.14);' : ''}">
+          <p style="margin:0 0 4px;font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:#c9a07a;font-family:Arial,Helvetica,sans-serif;">${esc(label)}</p>
+          <p style="margin:0;font-size:15px;font-weight:700;color:#fff6df;font-family:Arial,Helvetica,sans-serif;">${esc(value)}</p>
+        </td>
+      </tr>`,
+    )
+    .join('');
+
+  return `<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>${esc(title)}</title>
+</head>
+<body style="margin:0;padding:0;background:#0a0502;-webkit-font-smoothing:antialiased;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#0a0502;padding:28px 12px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;border-collapse:separate;">
+          <!-- Ticket shell -->
+          <tr>
+            <td style="background:linear-gradient(165deg,#1a0c06 0%,#0c0603 55%,#140a05 100%);border:1px solid rgba(255,140,45,0.35);border-radius:22px;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,0.55);">
+
+              <!-- Header brand -->
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="padding:28px 28px 18px;background:radial-gradient(ellipse at top,rgba(255,120,34,0.22),transparent 65%);text-align:center;">
+                    <img src="${LOGO_URL}" width="64" height="64" alt="ASTRO SDQ" style="display:block;margin:0 auto 14px;border:0;border-radius:50%;"/>
+                    <p style="margin:0 0 6px;font-size:11px;letter-spacing:0.28em;text-transform:uppercase;color:#ffb562;font-family:Arial,Helvetica,sans-serif;">${esc(eyebrow)}</p>
+                    <h1 style="margin:0;font-size:26px;line-height:1.15;letter-spacing:0.08em;text-transform:uppercase;color:#ffd89a;font-family:Arial,Helvetica,sans-serif;font-weight:800;">${esc(title)}</h1>
+                    <p style="margin:10px 0 0;font-size:12px;letter-spacing:0.12em;text-transform:uppercase;color:rgba(255,220,180,0.7);font-family:Arial,Helvetica,sans-serif;">${esc(EDITION)}</p>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Perforation -->
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="height:1px;background:repeating-linear-gradient(90deg,rgba(255,174,84,0.35) 0 8px,transparent 8px 16px);"></td>
+                </tr>
+              </table>
+
+              <!-- Body -->
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="padding:24px 28px 8px;">
+                    ${greeting ? `<p style="margin:0 0 10px;font-size:16px;color:#fff6df;font-family:Arial,Helvetica,sans-serif;">${greeting}</p>` : ''}
+                    ${body ? `<p style="margin:0 0 18px;font-size:14px;line-height:1.55;color:rgba(255,230,200,0.78);font-family:Arial,Helvetica,sans-serif;">${body}</p>` : ''}
+
+                    <!-- Event strip -->
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 18px;background:rgba(255,120,34,0.1);border:1px solid rgba(255,174,84,0.22);border-radius:14px;">
+                      <tr>
+                        <td style="padding:14px 16px;">
+                          <p style="margin:0 0 4px;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#ffb562;font-family:Arial,Helvetica,sans-serif;">Evento</p>
+                          <p style="margin:0 0 6px;font-size:15px;font-weight:700;color:#fff;font-family:Arial,Helvetica,sans-serif;">${esc(EVENT_DATES)}</p>
+                          <p style="margin:0;font-size:12px;color:rgba(255,220,180,0.72);font-family:Arial,Helvetica,sans-serif;">${esc(EVENT_VENUE)}</p>
+                        </td>
+                      </tr>
+                    </table>
+
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                      ${detailRows}
+                    </table>
+                  </td>
+                </tr>
+              </table>
+
+              ${
+                ctaHref
+                  ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td align="center" style="padding:8px 28px 28px;">
+                    <a href="${esc(ctaHref)}" style="display:inline-block;padding:14px 28px;border-radius:12px;background:linear-gradient(135deg,#ff822d,#ff5c1c);color:#ffffff;text-decoration:none;font-family:Arial,Helvetica,sans-serif;font-size:13px;font-weight:800;letter-spacing:0.14em;text-transform:uppercase;box-shadow:0 10px 28px rgba(255,90,20,0.35);">${esc(ctaLabel || 'Abrir ASTRO')}</a>
+                  </td>
+                </tr>
+              </table>`
+                  : ''
+              }
+
+              <!-- Footer -->
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="padding:0 28px 24px;text-align:center;">
+                    <p style="margin:0;font-size:11px;line-height:1.5;color:rgba(255,210,170,0.45);font-family:Arial,Helvetica,sans-serif;">${esc(footerNote || '— Equipo ASTRO SDQ')}</p>
+                  </td>
+                </tr>
+              </table>
+
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:16px 8px 0;text-align:center;">
+              <p style="margin:0;font-size:11px;color:rgba(255,200,150,0.35);font-family:Arial,Helvetica,sans-serif;">ASTRO SDQ · Santo Domingo · ${esc(SITE_URL.replace(/^https?:\/\//, ''))}</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+}
+
 function buildClientEmailText({ contact, metadata }) {
   const name = metadata?.fullName || metadata?.firstName || contact || 'artista';
   return [
@@ -407,8 +551,10 @@ function buildClientEmailText({ contact, metadata }) {
     '',
     'Recibimos tu registro para ASTRO SDQ.',
     EDITION,
+    EVENT_DATES,
+    EVENT_VENUE,
     '',
-    metadata?.stand ? `Stand: ${standLabel(metadata.stand)}` : '',
+    metadata?.stand ? `Stand: ${standLabel(metadata.stand)} ${standPrice(metadata.stand)}`.trim() : '',
     metadata?.standExtra ? `Stand extra: ${standLabel(metadata.standExtra)}` : '',
     '',
     'Pronto te contactaremos con los siguientes pasos.',
@@ -416,28 +562,32 @@ function buildClientEmailText({ contact, metadata }) {
     SITE_URL,
     '',
     '— Equipo ASTRO SDQ',
-  ].filter((line) => line !== undefined).join('\n');
+  ].filter((line) => line !== undefined && line !== '').join('\n');
 }
 
 function buildClientEmailHtml({ contact, metadata }) {
   const name = metadata?.fullName || metadata?.firstName || contact || 'artista';
-  return `
-    <div style="font-family:sans-serif;max-width:560px;color:#111;line-height:1.55">
-      <h2 style="margin:0 0 8px;color:#c2410c">Registro recibido · ASTRO SDQ</h2>
-      <p style="margin:0 0 12px;color:#444">${EDITION}</p>
-      <p>Hola <strong>${name}</strong>,</p>
-      <p>Confirmamos que recibimos tu registro. Pronto te contactaremos con los siguientes pasos.</p>
-      ${metadata?.stand ? `<p><strong>Stand:</strong> ${standLabel(metadata.stand)}${metadata?.standExtra ? ` · Extra: ${standLabel(metadata.standExtra)}` : ''}</p>` : ''}
-      <p style="margin-top:18px"><a href="${SITE_URL}" style="color:#c2410c">astro.renace.tech</a></p>
-      <p style="color:#777;font-size:13px">— Equipo ASTRO SDQ</p>
-    </div>
-  `;
-}
+  const stand = metadata?.stand
+    ? `${standLabel(metadata.stand)}${standPrice(metadata.stand) ? ` · ${standPrice(metadata.stand)}` : ''}`
+    : '';
+  const rows = [
+    ['Artista', name],
+    ['Stand', stand],
+    ['Stand extra', metadata?.standExtra ? standLabel(metadata.standExtra) : ''],
+    ['WhatsApp', metadata?.phone || ''],
+    ['Email', metadata?.email || ''],
+  ];
 
-function standLabel(stand) {
-  if (stand === 'regular') return 'Premium';
-  if (stand === 'doble') return 'Doble';
-  return stand || '—';
+  return buildTicketEmail({
+    eyebrow: 'Confirmación de registro',
+    title: 'Tu ticket ASTRO',
+    greeting: `Hola <strong style="color:#ffd89a">${esc(name)}</strong>,`,
+    body: 'Confirmamos que recibimos tu registro. Guarda este correo como comprobante — pronto te contactaremos con los siguientes pasos.',
+    rows,
+    ctaLabel: 'Ver ASTRO SDQ',
+    ctaHref: SITE_URL,
+    footerNote: 'Este es tu comprobante digital de registro · Equipo ASTRO SDQ',
+  });
 }
 
 function buildAdminMessage({ contact, phone, channel, metadata }) {
@@ -453,7 +603,7 @@ function buildAdminMessage({ contact, phone, channel, metadata }) {
   if (metadata?.email) lines.push(`Email: ${metadata.email}`);
   if (metadata?.instagram) lines.push(`Instagram: ${metadata.instagram}`);
   if (metadata?.nationality) lines.push(`Nacionalidad: ${metadata.nationality}`);
-  if (metadata?.stand) lines.push(`Stand: ${standLabel(metadata.stand)}`);
+  if (metadata?.stand) lines.push(`Stand: ${standLabel(metadata.stand)} ${standPrice(metadata.stand)}`.trim());
   if (metadata?.standExtra) lines.push(`Stand extra: ${standLabel(metadata.standExtra)}`);
   if (metadata?.source) lines.push(`Origen: ${metadata.source}`);
   if (metadata?.viewport) lines.push(`Viewport: ${metadata.viewport}`);
@@ -463,30 +613,33 @@ function buildAdminMessage({ contact, phone, channel, metadata }) {
 
 function buildAdminEmailHtml({ contact, phone, channel, metadata }) {
   const rows = [
+    ['Nombre', metadata?.fullName || '—'],
     ['Canal', channelLabel(channel)],
     ['Contacto', contact || '—'],
     ['WhatsApp', phone],
+    ['Email', metadata?.email || ''],
+    ['Instagram', metadata?.instagram || ''],
+    ['Nacionalidad', metadata?.nationality || ''],
+    [
+      'Stand',
+      metadata?.stand
+        ? `${standLabel(metadata.stand)}${standPrice(metadata.stand) ? ` · ${standPrice(metadata.stand)}` : ''}`
+        : '',
+    ],
+    ['Stand extra', metadata?.standExtra ? standLabel(metadata.standExtra) : ''],
+    ['Origen', metadata?.source || ''],
   ];
-  if (metadata?.fullName) rows.push(['Nombre', metadata.fullName]);
-  if (metadata?.email) rows.push(['Email', metadata.email]);
-  if (metadata?.instagram) rows.push(['Instagram', metadata.instagram]);
-  if (metadata?.nationality) rows.push(['Nacionalidad', metadata.nationality]);
-  if (metadata?.stand) rows.push(['Stand', standLabel(metadata.stand)]);
-  if (metadata?.standExtra) rows.push(['Stand extra', standLabel(metadata.standExtra)]);
-  if (metadata?.source) rows.push(['Origen', metadata.source]);
 
-  const lis = rows
-    .map(([k, v]) => `<li><strong>${k}:</strong> ${String(v)}</li>`)
-    .join('');
-
-  return `
-    <div style="font-family:sans-serif;max-width:560px;color:#111;line-height:1.5">
-      <h2 style="margin:0 0 8px;color:#c2410c">Nuevo registro · ASTRO SDQ</h2>
-      <p style="margin:0 0 14px;color:#444">${EDITION}</p>
-      <ul style="padding-left:18px;margin:0 0 16px">${lis}</ul>
-      <p style="margin:0"><a href="${SITE_URL}/admin/" style="color:#c2410c">Abrir admin ASTRO</a></p>
-    </div>
-  `;
+  return buildTicketEmail({
+    eyebrow: 'Admin · Nuevo lead',
+    title: 'Registro entrante',
+    greeting: '',
+    body: 'Hay un nuevo artista registrado en ASTRO SDQ. Revisa los datos y da seguimiento desde el panel.',
+    rows,
+    ctaLabel: 'Abrir admin',
+    ctaHref: `${SITE_URL}/admin/`,
+    footerNote: 'Alerta interna ASTRO · no responder a este correo',
+  });
 }
 
 async function handleLead(req, res) {
@@ -549,7 +702,7 @@ async function handleLead(req, res) {
     try {
       await sendMail({
         to: clientEmail,
-        subject: 'Registro recibido · ASTRO SDQ',
+        subject: 'Tu ticket ASTRO SDQ · Registro confirmado',
         text: buildClientEmailText({ contact, metadata }),
         html: buildClientEmailHtml({ contact, metadata }),
       });
