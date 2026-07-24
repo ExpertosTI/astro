@@ -28,6 +28,11 @@ type RemoteProfile = {
   body_part_photos: unknown;
   availability: unknown;
   badges: unknown;
+  willing_to_pay?: boolean | null;
+  budget_min?: number | string | null;
+  budget_max?: number | string | null;
+  session_min_rate?: number | string | null;
+  rate_open_to_discuss?: boolean | null;
   created_at: string;
   updated_at: string;
 };
@@ -85,6 +90,12 @@ function asArray<T>(value: unknown): T[] {
   return Array.isArray(value) ? (value as T[]) : [];
 }
 
+function asMoney(value: unknown): number | null {
+  if (value === null || value === undefined || value === "") return null;
+  const n = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(n) && n >= 0 ? n : null;
+}
+
 function profileFromRemote(row: RemoteProfile): AstroProfile {
   return {
     id: row.id,
@@ -98,6 +109,11 @@ function profileFromRemote(row: RemoteProfile): AstroProfile {
     bodyPartPhotos: asArray<AstroProfile["bodyPartPhotos"][number]>(row.body_part_photos),
     availability: asArray<AstroProfile["availability"][number]>(row.availability),
     badges: asArray<AstroProfile["badges"][number]>(row.badges),
+    willingToPay: Boolean(row.willing_to_pay),
+    budgetMin: asMoney(row.budget_min),
+    budgetMax: asMoney(row.budget_max),
+    sessionMinRate: asMoney(row.session_min_rate),
+    rateOpenToDiscuss: Boolean(row.rate_open_to_discuss),
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -117,6 +133,11 @@ function profileToRemote(profile: AstroProfile): RemoteProfile {
     body_part_photos: profile.bodyPartPhotos,
     availability: profile.availability,
     badges: profile.badges,
+    willing_to_pay: profile.willingToPay,
+    budget_min: profile.budgetMin,
+    budget_max: profile.budgetMax,
+    session_min_rate: profile.sessionMinRate,
+    rate_open_to_discuss: profile.rateOpenToDiscuss,
     created_at: profile.createdAt,
     updated_at: new Date().toISOString(),
   };

@@ -182,6 +182,15 @@ apply_schema() {
     echo "   Respuesta: $http_body"
     echo "   Puede requerir reiniciar PostgREST: docker service update --force insforge_postgrest"
   fi
+
+  local leads_url="${LEADS_API_VERIFY_URL:-https://astro.renace.tech/api/insforge/leads?limit=1}"
+  local leads_code
+  leads_code="$(curl -s -o /dev/null -w '%{http_code}' "$leads_url" 2>/dev/null || echo '000')"
+  if [ "$leads_code" = "200" ]; then
+    echo "✓ API leads responde OK (HTTP $leads_code)"
+  else
+    echo "⚠️  API leads HTTP $leads_code — si es 404, reaplica schema o reinicia PostgREST"
+  fi
 }
 
 case "${1:-apply}" in

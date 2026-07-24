@@ -54,7 +54,7 @@ services:
       NOTIFY_SECRET: ${NOTIFY_SECRET:-}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-2BK2}
       ADMIN_WHATSAPP: ${ADMIN_WHATSAPP:-}
-      ADMIN_EMAIL: ${ADMIN_EMAIL:-info@renace.tech}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-astrsdq@gmail.com}
       EVOLUTION_API_URL: ${EVOLUTION_API_URL:-https://evoapi.renace.tech}
       EVOLUTION_API_KEY: ${EVOLUTION_API_KEY:-}
       EVOLUTION_INSTANCE: ${EVOLUTION_INSTANCE:-renace}
@@ -69,6 +69,9 @@ services:
       ASTRO_PROJECT_ID: ${ASTRO_PROJECT_ID:-ASTRO_SDQ_2027}
       ASTRO_EDITION: ${ASTRO_EDITION:-5TA EDICIÓN · 2027}
       SITE_URL: ${SITE_URL:-https://astro.renace.tech}
+      LEADS_API_URL: ${LEADS_API_URL:-http://insforge_postgrest:3000/leads}
+      WEEKLY_REPORT_DAY: ${WEEKLY_REPORT_DAY:-1}
+      WEEKLY_REPORT_HOUR: ${WEEKLY_REPORT_HOUR:-9}
     networks:
       RenaceNet:
         aliases:

@@ -7,6 +7,7 @@ import { useMatch } from "@/components/match/MatchProvider";
 import { BadgeRow } from "@/components/match/BadgeRow";
 import { MatchSettingsPanel } from "@/components/match/MatchSettingsPanel";
 import { BODY_PARTS, DAYS, TIME_SLOTS } from "@/lib/match-constants";
+import { formatProfilePricing } from "@/lib/match-pricing";
 import styles from "../match.module.css";
 
 export default function ProfilePage() {
@@ -38,6 +39,9 @@ export default function ProfilePage() {
           <img src={profile.avatarUrl} alt={profile.displayName} className={styles.profileAvatar} />
         )}
         <h1 className={styles.profileName}>{profile.displayName}</h1>
+        {formatProfilePricing(profile) && (
+          <span className={styles.pricingChip}>{formatProfilePricing(profile)}</span>
+        )}
         <p className={styles.profileRole}>{roleLabel} · {profile.city}</p>
         <BadgeRow badges={profile.badges} />
       </div>

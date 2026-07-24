@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import type { AstroProfile } from "@/types/match";
 import { BadgeRow } from "./BadgeRow";
 import { BODY_PARTS, DAYS, TIME_SLOTS } from "@/lib/match-constants";
+import { formatProfilePricing } from "@/lib/match-pricing";
 import styles from "@/app/match/match.module.css";
 
 type Props = {
@@ -77,6 +78,9 @@ export function ProfileDetailModal({ profile, open, onClose, onBlock }: Props) {
               <p className={styles.detailRole}>
                 {profile.role === "lienzo" ? `Lienzo · ${partsLabel}` : "Tatuador"}
               </p>
+              {formatProfilePricing(profile) && (
+                <span className={styles.pricingChip}>{formatProfilePricing(profile)}</span>
+              )}
               <BadgeRow badges={profile.badges} />
               <p className={styles.detailBio}>{profile.bio}</p>
 

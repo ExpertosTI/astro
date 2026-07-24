@@ -63,6 +63,13 @@ export type AstroProfile = {
   bodyPartPhotos: BodyPartPhoto[];
   availability: AvailabilitySlot[];
   badges: BadgeId[];
+  /** Lienzo: disposición a pagar por sesión */
+  willingToPay: boolean;
+  budgetMin: number | null;
+  budgetMax: number | null;
+  /** Tatuador: mínimo por sesión o abierto a DM */
+  sessionMinRate: number | null;
+  rateOpenToDiscuss: boolean;
   createdAt: string;
   updatedAt: string;
 };

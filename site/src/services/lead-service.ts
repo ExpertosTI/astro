@@ -71,12 +71,16 @@ export const LeadService = {
         );
       }
 
-      await insforge.saveLead({
+      // Persistencia remota no debe bloquear la notificación WhatsApp
+      const saved = await insforge.saveLead({
         contact_value: `${lead.channel}:${contact}`,
         channel: lead.channel,
         project_id: ASTRO_CONFIG.project.id,
         metadata: { phone: normalizedPhone, contact, createdAt, source: "web-landing", ...metadata },
       });
+      if (!saved) {
+        console.warn("[astro] lead kept locally; remote /leads unavailable");
+      }
 
       const notify = await notifyLeadRegistration({
         contact,

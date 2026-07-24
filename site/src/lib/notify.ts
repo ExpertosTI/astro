@@ -38,6 +38,7 @@ export async function notifyLeadRegistration(
         }),
       ),
       keepalive: true,
+      signal: AbortSignal.timeout(28_000),
     });
     const data = (await res.json().catch(() => ({}))) as Record<string, unknown>;
     if (!res.ok) {

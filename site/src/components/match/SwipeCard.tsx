@@ -4,6 +4,7 @@ import { motion, useMotionValue, useTransform, type PanInfo } from "framer-motio
 import type { AstroProfile, SwipeAction } from "@/types/match";
 import { BadgeRow } from "./BadgeRow";
 import { BODY_PARTS } from "@/lib/match-constants";
+import { formatProfilePricing } from "@/lib/match-pricing";
 import styles from "@/app/match/match.module.css";
 
 type Props = {
@@ -76,6 +77,9 @@ export function SwipeCard({ profile, onSwipe, onDetail, active = true }: Props) 
           <p className={styles.matchCardMeta}>
             {profile.role === "lienzo" ? `Lienzo · ${partsLabel}` : `Tatuador · ${profile.city}`}
           </p>
+          {formatProfilePricing(profile) && (
+            <span className={styles.pricingChip}>{formatProfilePricing(profile)}</span>
+          )}
           <p className={styles.matchCardBio}>{profile.bio}</p>
           <BadgeRow badges={profile.badges} />
           {onDetail && (

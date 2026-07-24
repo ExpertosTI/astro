@@ -478,6 +478,40 @@
   resize: vertical;
 }
 
+.payBlock {
+  margin: 0.4rem 0 1rem;
+  padding: 0.85rem 0.9rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 174, 84, 0.22);
+  background: linear-gradient(160deg, rgba(255, 120, 34, 0.1), rgba(8, 4, 2, 0.55));
+}
+
+.payRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.65rem;
+  margin-top: 0.65rem;
+}
+
+.payRow .formGroup {
+  margin-bottom: 0;
+}
+
+.pricingChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.45rem;
+  padding: 0.35rem 0.65rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 174, 84, 0.35);
+  background: rgba(255, 120, 34, 0.14);
+  color: #ffd89a;
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  font-weight: 700;
+}
+
 .chipGrid {
   display: flex;
   flex-wrap: wrap;

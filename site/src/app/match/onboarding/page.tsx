@@ -64,6 +64,19 @@ export default function OnboardingPage() {
   const [portfolioUrls, setPortfolioUrls] = useState<string[]>(
     state.session?.profile.portfolioUrls ?? []
   );
+  const [willingToPay, setWillingToPay] = useState(state.session?.profile.willingToPay ?? false);
+  const [budgetMin, setBudgetMin] = useState(
+    state.session?.profile.budgetMin != null ? String(state.session.profile.budgetMin) : "",
+  );
+  const [budgetMax, setBudgetMax] = useState(
+    state.session?.profile.budgetMax != null ? String(state.session.profile.budgetMax) : "",
+  );
+  const [sessionMinRate, setSessionMinRate] = useState(
+    state.session?.profile.sessionMinRate != null ? String(state.session.profile.sessionMinRate) : "",
+  );
+  const [rateOpenToDiscuss, setRateOpenToDiscuss] = useState(
+    state.session?.profile.rateOpenToDiscuss ?? false,
+  );
   const [error, setError] = useState("");
   const [syncing, setSyncing] = useState(false);
 
@@ -99,6 +112,27 @@ export default function OnboardingPage() {
       setError("Tu nombre es requerido");
       return;
     }
+    if (step === 1 && role === "lienzo" && willingToPay) {
+      const min = Number(budgetMin);
+      const max = Number(budgetMax);
+      if ((!budgetMin && !budgetMax) || (budgetMin && !Number.isFinite(min)) || (budgetMax && !Number.isFinite(max))) {
+        setError("Indica el monto o rango que puedes pagar (USD)");
+        return;
+      }
+      if (budgetMin && budgetMax && min > max) {
+        setError("El mínimo no puede ser mayor que el máximo");
+        return;
+      }
+    }
+    if (step === 1 && role === "tatuador") {
+      if (!rateOpenToDiscuss) {
+        const min = Number(sessionMinRate);
+        if (!sessionMinRate || !Number.isFinite(min) || min <= 0) {
+          setError("Indica tu mínimo por sesión o elige abierto a discusión en DM");
+          return;
+        }
+      }
+    }
     if (step === 2 && role === "lienzo" && !bodyParts.length) {
       setError("Selecciona al menos una zona del cuerpo");
       return;
@@ -107,6 +141,10 @@ export default function OnboardingPage() {
   };
 
   const finish = async () => {
+    const parseMoney = (raw: string) => {
+      const n = Number(raw);
+      return raw.trim() && Number.isFinite(n) && n >= 0 ? n : null;
+    };
     const data = {
       displayName: displayName.trim(),
       bio: bio.trim(),
@@ -116,6 +154,11 @@ export default function OnboardingPage() {
       bodyPartPhotos,
       availability,
       portfolioUrls,
+      willingToPay: role === "lienzo" ? willingToPay : false,
+      budgetMin: role === "lienzo" && willingToPay ? parseMoney(budgetMin) : null,
+      budgetMax: role === "lienzo" && willingToPay ? parseMoney(budgetMax) : null,
+      sessionMinRate: role === "tatuador" && !rateOpenToDiscuss ? parseMoney(sessionMinRate) : null,
+      rateOpenToDiscuss: role === "tatuador" ? rateOpenToDiscuss : false,
     };
 
     setError("");
@@ -238,6 +281,99 @@ export default function OnboardingPage() {
                   }
                 />
               </div>
+
+              {role === "lienzo" && (
+                <div className={styles.payBlock}>
+                  <label className={styles.formLabel}>Disposición a pagar</label>
+                  <div className={styles.chipGrid}>
+                    <button
+                      type="button"
+                      className={`${styles.chip} ${willingToPay ? styles.chipActive : ""}`}
+                      onClick={() => setWillingToPay(true)}
+                    >
+                      Sí, tengo presupuesto
+                    </button>
+                    <button
+                      type="button"
+                      className={`${styles.chip} ${!willingToPay ? styles.chipActive : ""}`}
+                      onClick={() => {
+                        setWillingToPay(false);
+                        setBudgetMin("");
+                        setBudgetMax("");
+                      }}
+                    >
+                      Aún no / por definir
+                    </button>
+                  </div>
+                  {willingToPay && (
+                    <div className={styles.payRow}>
+                      <div className={styles.formGroup}>
+                        <label className={styles.formLabel}>Mínimo USD</label>
+                        <input
+                          className={styles.formInput}
+                          type="number"
+                          min={0}
+                          inputMode="decimal"
+                          value={budgetMin}
+                          onChange={(e) => setBudgetMin(e.target.value)}
+                          placeholder="80"
+                        />
+                      </div>
+                      <div className={styles.formGroup}>
+                        <label className={styles.formLabel}>Máximo USD</label>
+                        <input
+                          className={styles.formInput}
+                          type="number"
+                          min={0}
+                          inputMode="decimal"
+                          value={budgetMax}
+                          onChange={(e) => setBudgetMax(e.target.value)}
+                          placeholder="200"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {role === "tatuador" && (
+                <div className={styles.payBlock}>
+                  <label className={styles.formLabel}>Tarifa por sesión</label>
+                  <div className={styles.chipGrid}>
+                    <button
+                      type="button"
+                      className={`${styles.chip} ${!rateOpenToDiscuss ? styles.chipActive : ""}`}
+                      onClick={() => setRateOpenToDiscuss(false)}
+                    >
+                      Mínimo a recibir
+                    </button>
+                    <button
+                      type="button"
+                      className={`${styles.chip} ${rateOpenToDiscuss ? styles.chipActive : ""}`}
+                      onClick={() => {
+                        setRateOpenToDiscuss(true);
+                        setSessionMinRate("");
+                      }}
+                    >
+                      Abierto a discusión en DM
+                    </button>
+                  </div>
+                  {!rateOpenToDiscuss && (
+                    <div className={styles.formGroup}>
+                      <label className={styles.formLabel}>Mínimo USD / sesión</label>
+                      <input
+                        className={styles.formInput}
+                        type="number"
+                        min={0}
+                        inputMode="decimal"
+                        value={sessionMinRate}
+                        onChange={(e) => setSessionMinRate(e.target.value)}
+                        placeholder="100"
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
             </>
           )}
 

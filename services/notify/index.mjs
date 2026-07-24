@@ -1,15 +1,20 @@
 import http from 'node:http';
 import crypto from 'node:crypto';
+import fs from 'node:fs';
+import path from 'node:path';
 import nodemailer from 'nodemailer';
 
 const PORT = Number(process.env.PORT || 8789);
 const NOTIFY_SECRET = process.env.NOTIFY_SECRET || '';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '2BK2';
 const ADMIN_WHATSAPP = process.env.ADMIN_WHATSAPP || '';
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || '';
-const PROJECT_ID = process.env.ASTRO_PROJECT_ID || 'ASTRO_SDQ_2026';
-const EDITION = process.env.ASTRO_EDITION || '5TA EDICIÓN';
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'astrsdq@gmail.com';
+const PROJECT_ID = process.env.ASTRO_PROJECT_ID || 'ASTRO_SDQ_2027';
+const EDITION = process.env.ASTRO_EDITION || '5TA EDICIÓN · 2027';
 const SITE_URL = (process.env.SITE_URL || 'https://astro.renace.tech').replace(/\/$/, '');
+const LEADS_API_URL = (process.env.LEADS_API_URL || 'http://insforge_postgrest:3000/leads').replace(/\/$/, '');
+const WEEKLY_REPORT_DAY = Number(process.env.WEEKLY_REPORT_DAY || 1); // 1=Mon … 0=Sun (JS getDay)
+const WEEKLY_REPORT_HOUR = Number(process.env.WEEKLY_REPORT_HOUR || 9); // local server hour
 
 const EVOLUTION = {
   baseUrl: (process.env.EVOLUTION_API_URL || 'https://evoapi.renace.tech').replace(/\/$/, ''),
@@ -387,15 +392,27 @@ function buildClientMessage({ contact, channel }) {
   ].filter(Boolean).join('\n');
 }
 
+function standLabel(stand) {
+  if (stand === 'regular') return 'Premium';
+  if (stand === 'doble') return 'Doble';
+  return stand || '—';
+}
+
 function buildAdminMessage({ contact, phone, channel, metadata }) {
   const lines = [
-    `📬 Nuevo lead · ${PROJECT_ID}`,
+    `📬 Nuevo registro · ${PROJECT_ID}`,
     EDITION,
     '',
     `Canal: ${channelLabel(channel)}`,
     `Contacto: ${contact || '—'}`,
     `WhatsApp: ${phone}`,
   ];
+  if (metadata?.fullName) lines.push(`Nombre: ${metadata.fullName}`);
+  if (metadata?.email) lines.push(`Email: ${metadata.email}`);
+  if (metadata?.instagram) lines.push(`Instagram: ${metadata.instagram}`);
+  if (metadata?.nationality) lines.push(`Nacionalidad: ${metadata.nationality}`);
+  if (metadata?.stand) lines.push(`Stand: ${standLabel(metadata.stand)}`);
+  if (metadata?.standExtra) lines.push(`Stand extra: ${standLabel(metadata.standExtra)}`);
   if (metadata?.source) lines.push(`Origen: ${metadata.source}`);
   if (metadata?.viewport) lines.push(`Viewport: ${metadata.viewport}`);
   lines.push('', `Admin: ${SITE_URL}/admin/`);
@@ -403,17 +420,29 @@ function buildAdminMessage({ contact, phone, channel, metadata }) {
 }
 
 function buildAdminEmailHtml({ contact, phone, channel, metadata }) {
+  const rows = [
+    ['Canal', channelLabel(channel)],
+    ['Contacto', contact || '—'],
+    ['WhatsApp', phone],
+  ];
+  if (metadata?.fullName) rows.push(['Nombre', metadata.fullName]);
+  if (metadata?.email) rows.push(['Email', metadata.email]);
+  if (metadata?.instagram) rows.push(['Instagram', metadata.instagram]);
+  if (metadata?.nationality) rows.push(['Nacionalidad', metadata.nationality]);
+  if (metadata?.stand) rows.push(['Stand', standLabel(metadata.stand)]);
+  if (metadata?.standExtra) rows.push(['Stand extra', standLabel(metadata.standExtra)]);
+  if (metadata?.source) rows.push(['Origen', metadata.source]);
+
+  const lis = rows
+    .map(([k, v]) => `<li><strong>${k}:</strong> ${String(v)}</li>`)
+    .join('');
+
   return `
-    <div style="font-family:sans-serif;max-width:520px;color:#111">
-      <h2 style="margin:0 0 12px">Nuevo lead · ${PROJECT_ID}</h2>
-      <p style="margin:0 0 8px"><strong>${EDITION}</strong></p>
-      <ul style="padding-left:18px;line-height:1.6">
-        <li>Canal: ${channelLabel(channel)}</li>
-        <li>Contacto: ${contact || '—'}</li>
-        <li>WhatsApp: ${phone}</li>
-        ${metadata?.source ? `<li>Origen: ${metadata.source}</li>` : ''}
-      </ul>
-      <p><a href="${SITE_URL}/admin/">Abrir admin ASTRO</a></p>
+    <div style="font-family:sans-serif;max-width:560px;color:#111;line-height:1.5">
+      <h2 style="margin:0 0 8px;color:#c2410c">Nuevo registro · ASTRO SDQ</h2>
+      <p style="margin:0 0 14px;color:#444">${EDITION}</p>
+      <ul style="padding-left:18px;margin:0 0 16px">${lis}</ul>
+      <p style="margin:0"><a href="${SITE_URL}/admin/" style="color:#c2410c">Abrir admin ASTRO</a></p>
     </div>
   `;
 }
@@ -488,7 +517,7 @@ async function handleLead(req, res) {
     try {
       await sendMail({
         to: ADMIN_EMAIL,
-        subject: `Nuevo lead ASTRO · ${channelLabel(channel)}`,
+        subject: `Nuevo registro ASTRO · ${metadata?.fullName || contact || channelLabel(channel)}`,
         text: buildAdminMessage({ contact, phone, channel, metadata }),
         html: buildAdminEmailHtml({ contact, phone, channel, metadata }),
       });
@@ -513,6 +542,14 @@ async function handleLead(req, res) {
   }
 
   // Si el contacto no recibió WA pero sí llegó alerta admin/mail, reportamos ok parcial
+  rememberLead({
+    contact,
+    phone,
+    channel,
+    metadata,
+    created_at: new Date().toISOString(),
+  });
+
   return json(res, 200, {
     ok: true,
     client: clientOk,
@@ -733,6 +770,10 @@ const server = http.createServer(async (req, res) => {
       return handleMailTest(req, res);
     }
 
+    if (req.method === 'POST' && path === '/report/weekly') {
+      return handleWeeklyReport(req, res);
+    }
+
     return json(res, 404, { ok: false, error: 'not_found' });
   } catch (err) {
     console.error('[astro-notify] unhandled', err);
@@ -740,8 +781,211 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
+const recentLeads = [];
+const WEEKLY_STATE_FILE = path.join('/tmp', 'astro-weekly-report.json');
+
+function rememberLead(entry) {
+  recentLeads.unshift(entry);
+  if (recentLeads.length > 500) recentLeads.length = 500;
+}
+
+function readWeeklyState() {
+  try {
+    return JSON.parse(fs.readFileSync(WEEKLY_STATE_FILE, 'utf8'));
+  } catch {
+    return {};
+  }
+}
+
+function writeWeeklyState(state) {
+  try {
+    fs.writeFileSync(WEEKLY_STATE_FILE, JSON.stringify(state));
+  } catch (err) {
+    console.warn('[astro-notify] weekly state write failed:', err.message);
+  }
+}
+
+function weekKey(date = new Date()) {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+  return `${d.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
+}
+
+async function fetchLeadsFromApi(sinceIso) {
+  const url = new URL(LEADS_API_URL);
+  url.searchParams.set('order', 'created_at.desc');
+  url.searchParams.set('limit', '500');
+  if (PROJECT_ID) url.searchParams.set('project_id', `eq.${PROJECT_ID}`);
+  if (sinceIso) url.searchParams.set('created_at', `gte.${sinceIso}`);
+
+  const res = await fetch(url.toString(), {
+    headers: { Accept: 'application/json' },
+    signal: AbortSignal.timeout(15_000),
+  });
+  if (!res.ok) throw new Error(`leads_http_${res.status}`);
+  const data = await res.json();
+  return Array.isArray(data) ? data : [];
+}
+
+function sevenDaysAgoIso() {
+  const d = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  return d.toISOString();
+}
+
+function buildWeeklyReport(leads, sinceIso) {
+  const byStand = {};
+  const byChannel = {};
+  for (const lead of leads) {
+    const meta = lead.metadata && typeof lead.metadata === 'object' ? lead.metadata : {};
+    const stand = standLabel(meta.stand || '—');
+    byStand[stand] = (byStand[stand] || 0) + 1;
+    const ch = channelLabel(lead.channel || meta.channel || '—');
+    byChannel[ch] = (byChannel[ch] || 0) + 1;
+  }
+
+  const standLines = Object.entries(byStand).map(([k, v]) => `  · ${k}: ${v}`).join('\n') || '  · sin datos';
+  const channelLines = Object.entries(byChannel).map(([k, v]) => `  · ${k}: ${v}`).join('\n') || '  · sin datos';
+
+  const recentRows = leads.slice(0, 40).map((lead) => {
+    const meta = lead.metadata && typeof lead.metadata === 'object' ? lead.metadata : {};
+    const name = meta.fullName || meta.contact || lead.contact_value || '—';
+    const phone = meta.phone || lead.contact_value_2 || '—';
+    const stand = standLabel(meta.stand || '');
+    const when = String(lead.created_at || '').slice(0, 16).replace('T', ' ');
+    return `· ${when} · ${name} · ${phone} · ${stand}`;
+  });
+
+  const text = [
+    `📊 Reporte semanal ASTRO · ${PROJECT_ID}`,
+    EDITION,
+    '',
+    `Periodo: desde ${sinceIso.slice(0, 10)}`,
+    `Total registros: ${leads.length}`,
+    '',
+    'Por stand:',
+    standLines,
+    '',
+    'Por canal:',
+    channelLines,
+    '',
+    'Últimos registros:',
+    ...(recentRows.length ? recentRows : ['· (sin registros esta semana)']),
+    '',
+    `Admin: ${SITE_URL}/admin/`,
+  ].join('\n');
+
+  const htmlRows = leads.slice(0, 40).map((lead) => {
+    const meta = lead.metadata && typeof lead.metadata === 'object' ? lead.metadata : {};
+    const name = meta.fullName || meta.contact || lead.contact_value || '—';
+    const phone = meta.phone || lead.contact_value_2 || '—';
+    const stand = standLabel(meta.stand || '');
+    const when = String(lead.created_at || '').slice(0, 16).replace('T', ' ');
+    return `<tr><td style="padding:6px 8px;border-bottom:1px solid #eee">${when}</td><td style="padding:6px 8px;border-bottom:1px solid #eee">${name}</td><td style="padding:6px 8px;border-bottom:1px solid #eee">${phone}</td><td style="padding:6px 8px;border-bottom:1px solid #eee">${stand}</td></tr>`;
+  }).join('');
+
+  const html = `
+    <div style="font-family:sans-serif;max-width:680px;color:#111">
+      <h2 style="margin:0 0 6px;color:#c2410c">Reporte semanal · ASTRO SDQ</h2>
+      <p style="margin:0 0 12px;color:#555">${EDITION}</p>
+      <p><strong>Total:</strong> ${leads.length} registros desde ${sinceIso.slice(0, 10)}</p>
+      <h3 style="margin:18px 0 8px">Por stand</h3>
+      <pre style="background:#f7f7f7;padding:10px;border-radius:8px">${standLines}</pre>
+      <h3 style="margin:18px 0 8px">Por canal</h3>
+      <pre style="background:#f7f7f7;padding:10px;border-radius:8px">${channelLines}</pre>
+      <h3 style="margin:18px 0 8px">Detalle</h3>
+      <table style="width:100%;border-collapse:collapse;font-size:13px">
+        <thead><tr style="text-align:left;background:#fff7ed"><th style="padding:6px 8px">Fecha</th><th style="padding:6px 8px">Nombre</th><th style="padding:6px 8px">WhatsApp</th><th style="padding:6px 8px">Stand</th></tr></thead>
+        <tbody>${htmlRows || '<tr><td colspan="4" style="padding:8px">Sin registros</td></tr>'}</tbody>
+      </table>
+      <p style="margin-top:16px"><a href="${SITE_URL}/admin/">Abrir admin</a></p>
+    </div>
+  `;
+
+  return { text, html, total: leads.length };
+}
+
+async function collectWeeklyLeads(sinceIso) {
+  try {
+    const remote = await fetchLeadsFromApi(sinceIso);
+    if (remote.length) return remote;
+  } catch (err) {
+    console.warn('[astro-notify] weekly leads API:', err.message);
+  }
+  return recentLeads
+    .filter((l) => !l.created_at || l.created_at >= sinceIso)
+    .map((l) => ({
+      contact_value: l.contact,
+      channel: l.channel,
+      created_at: l.created_at,
+      metadata: l.metadata,
+      contact_value_2: l.phone,
+    }));
+}
+
+async function sendWeeklyReport({ force = false } = {}) {
+  if (!mailConfigured() || !ADMIN_EMAIL) {
+    return { ok: false, error: 'mail_not_configured' };
+  }
+
+  const key = weekKey();
+  const state = readWeeklyState();
+  if (!force && state.lastWeekKey === key) {
+    return { ok: true, skipped: true, week: key };
+  }
+
+  const sinceIso = sevenDaysAgoIso();
+  const leads = await collectWeeklyLeads(sinceIso);
+  const report = buildWeeklyReport(leads, sinceIso);
+
+  await sendMail({
+    to: ADMIN_EMAIL,
+    subject: `Reporte semanal ASTRO · ${leads.length} registros · ${key}`,
+    text: report.text,
+    html: report.html,
+  });
+
+  writeWeeklyState({ ...state, lastWeekKey: key, lastSentAt: new Date().toISOString(), lastCount: leads.length });
+  return { ok: true, week: key, total: leads.length };
+}
+
+async function handleWeeklyReport(req, res) {
+  const body = await readBody(req);
+  if (!checkNotifySecret(body || {})) {
+    return json(res, 401, { ok: false, error: 'unauthorized' });
+  }
+  try {
+    const result = await sendWeeklyReport({ force: Boolean(body?.force) });
+    return json(res, result.ok ? 200 : 503, result);
+  } catch (err) {
+    console.warn('[astro-notify] weekly report failed:', err.message);
+    return json(res, 502, { ok: false, error: err.message || 'weekly_failed' });
+  }
+}
+
+function scheduleWeeklyReport() {
+  const tick = async () => {
+    try {
+      const now = new Date();
+      if (now.getDay() !== WEEKLY_REPORT_DAY) return;
+      if (now.getHours() !== WEEKLY_REPORT_HOUR) return;
+      const result = await sendWeeklyReport({ force: false });
+      if (result.ok && !result.skipped) {
+        console.log(`[astro-notify] weekly report sent (${result.total} leads, ${result.week})`);
+      }
+    } catch (err) {
+      console.warn('[astro-notify] weekly tick:', err.message);
+    }
+  };
+  setInterval(tick, 30 * 60 * 1000);
+  setTimeout(tick, 20_000);
+}
+
 server.listen(PORT, () => {
   console.log(
-    `[astro-notify] :${PORT} wa=${whatsappApiConfigured()} mail=${mailConfigured()} instance=${activeInstance()}`,
+    `[astro-notify] :${PORT} wa=${whatsappApiConfigured()} mail=${mailConfigured()} instance=${activeInstance()} adminMail=${ADMIN_EMAIL || '—'}`,
   );
+  scheduleWeeklyReport();
 });

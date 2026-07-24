@@ -73,6 +73,11 @@ const SEED_PROFILES: AstroProfile[] = [
       { day: "dom", slots: ["manana", "tarde"] },
     ],
     badges: ["early_adopter"],
+    willingToPay: true,
+    budgetMin: 80,
+    budgetMax: 180,
+    sessionMinRate: null,
+    rateOpenToDiscuss: false,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   },
@@ -100,6 +105,11 @@ const SEED_PROFILES: AstroProfile[] = [
       { day: "sab", slots: ["manana", "tarde", "noche"] },
     ],
     badges: ["early_adopter", "lienzo_verificado"],
+    willingToPay: true,
+    budgetMin: 120,
+    budgetMax: 350,
+    sessionMinRate: null,
+    rateOpenToDiscuss: false,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   },
@@ -123,6 +133,11 @@ const SEED_PROFILES: AstroProfile[] = [
       { day: "jue", slots: ["tarde", "noche"] },
     ],
     badges: ["early_adopter"],
+    willingToPay: true,
+    budgetMin: 60,
+    budgetMax: 150,
+    sessionMinRate: null,
+    rateOpenToDiscuss: false,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   },
@@ -146,6 +161,11 @@ const SEED_PROFILES: AstroProfile[] = [
       { day: "mie", slots: ["tarde", "noche"] },
     ],
     badges: ["early_adopter"],
+    willingToPay: false,
+    budgetMin: null,
+    budgetMax: null,
+    sessionMinRate: null,
+    rateOpenToDiscuss: false,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   },
@@ -168,11 +188,15 @@ const SEED_PROFILES: AstroProfile[] = [
       { day: "vie", slots: ["tarde"] },
     ],
     badges: ["artista_destacado", "early_adopter"],
+    willingToPay: false,
+    budgetMin: null,
+    budgetMax: null,
+    sessionMinRate: 100,
+    rateOpenToDiscuss: false,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   },
 ];
-
 function defaultState(): MatchAppState {
   return {
     session: null,
@@ -288,10 +312,18 @@ export function loadMatchState(): MatchAppState {
     if (!parsed) return defaultState();
 
     const seedIds = new Set(SEED_PROFILES.map((p) => p.id));
+    const normalizeProfile = (p: AstroProfile): AstroProfile => ({
+      ...p,
+      willingToPay: Boolean(p.willingToPay),
+      budgetMin: p.budgetMin ?? null,
+      budgetMax: p.budgetMax ?? null,
+      sessionMinRate: p.sessionMinRate ?? null,
+      rateOpenToDiscuss: Boolean(p.rateOpenToDiscuss),
+    });
     const mergedProfiles = [
       ...SEED_PROFILES,
       ...parsed.profiles.filter((p) => !seedIds.has(p.id)),
-    ];
+    ].map(normalizeProfile);
 
     let session = parsed.session;
     if (session && !isSessionValid(session.expiresAt)) {
@@ -357,6 +389,11 @@ export function createProfile(
     bodyPartPhotos: (data.bodyPartPhotos ?? []).filter((p) => isValidUrl(p.url)).slice(0, 10),
     availability: data.availability ?? [],
     badges: ["early_adopter"],
+    willingToPay: Boolean(data.willingToPay),
+    budgetMin: data.budgetMin ?? null,
+    budgetMax: data.budgetMax ?? null,
+    sessionMinRate: data.sessionMinRate ?? null,
+    rateOpenToDiscuss: Boolean(data.rateOpenToDiscuss),
     createdAt: now,
     updatedAt: now,
   };
@@ -400,6 +437,12 @@ export function updateProfile(
           ? data.bodyPartPhotos.filter((bp) => isValidUrl(bp.url)).slice(0, 10)
           : p.bodyPartPhotos,
       availability: data.availability ?? p.availability,
+      willingToPay: data.willingToPay !== undefined ? Boolean(data.willingToPay) : p.willingToPay,
+      budgetMin: data.budgetMin !== undefined ? data.budgetMin : p.budgetMin,
+      budgetMax: data.budgetMax !== undefined ? data.budgetMax : p.budgetMax,
+      sessionMinRate: data.sessionMinRate !== undefined ? data.sessionMinRate : p.sessionMinRate,
+      rateOpenToDiscuss:
+        data.rateOpenToDiscuss !== undefined ? Boolean(data.rateOpenToDiscuss) : p.rateOpenToDiscuss,
       updatedAt: new Date().toISOString(),
     };
     const matchCount = state.matches.filter(
