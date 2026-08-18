@@ -23,3 +23,11 @@ site/.env*
 .env.*
 !.env.example
 !.evolution.local.example
+
+# Build artifacts & IDEs
+site/ios/build/
+*.xcarchive
+*.ipa
+.cursor/
+.idea/
+

@@ -1,0 +1,63 @@
+.page {
+  width: min(720px, 100%);
+  margin: 0 auto;
+  padding: 48px 20px 80px;
+  color: var(--text);
+}
+
+.brand {
+  margin: 0 0 8px;
+  font-family: var(--font-display), serif;
+  font-size: 1.4rem;
+  letter-spacing: 0.04em;
+  color: var(--ember-bright);
+}
+
+.title {
+  margin: 0 0 8px;
+  font-size: clamp(1.8rem, 4vw, 2.4rem);
+  line-height: 1.15;
+}
+
+.meta {
+  margin: 0 0 28px;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.section {
+  margin-bottom: 28px;
+}
+
+.section h2 {
+  margin: 0 0 10px;
+  font-size: 1.15rem;
+  color: var(--signal);
+}
+
+.section p,
+.section li {
+  margin: 0 0 10px;
+  line-height: 1.55;
+  color: var(--text);
+}
+
+.section ul {
+  margin: 0;
+  padding-left: 1.2rem;
+}
+
+.section a {
+  color: var(--ember-bright);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.footer {
+  margin-top: 40px;
+  color: var(--muted);
+}
+
+.footer a {
+  color: var(--ember-bright);
+}

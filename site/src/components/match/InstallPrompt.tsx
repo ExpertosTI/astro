@@ -28,7 +28,7 @@ export function InstallPrompt() {
   return (
     <div className={styles.installBanner}>
       <div>
-        <p className={styles.installTitle}>Instala ASTRO Match</p>
+        <p className={styles.installTitle}>Instala ASTRO</p>
         <p className={styles.installBody}>Acceso rápido como app en tu teléfono</p>
       </div>
       <div className={styles.installActions}>

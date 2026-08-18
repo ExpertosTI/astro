@@ -3,7 +3,7 @@
 
 CREATE TABLE IF NOT EXISTS match_profiles (
   id TEXT PRIMARY KEY,
-  project_id TEXT NOT NULL DEFAULT 'ASTRO_SDQ_2026',
+  project_id TEXT NOT NULL DEFAULT 'ASTRO_SDQ_2027',
   role TEXT NOT NULL CHECK (role IN ('tatuador', 'lienzo')),
   display_name TEXT NOT NULL,
   bio TEXT DEFAULT '',
@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS match_profiles (
 
 CREATE TABLE IF NOT EXISTS match_swipes (
   id TEXT PRIMARY KEY,
-  project_id TEXT NOT NULL DEFAULT 'ASTRO_SDQ_2026',
+  project_id TEXT NOT NULL DEFAULT 'ASTRO_SDQ_2027',
   from_user_id TEXT NOT NULL,
   to_user_id TEXT NOT NULL,
   action TEXT NOT NULL CHECK (action IN ('like', 'pass', 'superlike')),
@@ -35,7 +35,7 @@ CREATE TABLE IF NOT EXISTS match_swipes (
 
 CREATE TABLE IF NOT EXISTS match_connections (
   id TEXT PRIMARY KEY,
-  project_id TEXT NOT NULL DEFAULT 'ASTRO_SDQ_2026',
+  project_id TEXT NOT NULL DEFAULT 'ASTRO_SDQ_2027',
   tatuador_id TEXT NOT NULL,
   lienzo_id TEXT NOT NULL,
   status TEXT NOT NULL CHECK (status IN ('pending', 'matched', 'rejected')),
@@ -48,7 +48,7 @@ CREATE TABLE IF NOT EXISTS match_connections (
 
 CREATE TABLE IF NOT EXISTS match_messages (
   id TEXT PRIMARY KEY,
-  project_id TEXT NOT NULL DEFAULT 'ASTRO_SDQ_2026',
+  project_id TEXT NOT NULL DEFAULT 'ASTRO_SDQ_2027',
   match_id TEXT NOT NULL,
   sender_id TEXT NOT NULL,
   text TEXT NOT NULL,
@@ -59,7 +59,7 @@ CREATE TABLE IF NOT EXISTS match_messages (
 CREATE TABLE IF NOT EXISTS match_typing (
   match_id TEXT NOT NULL,
   user_id TEXT NOT NULL,
-  project_id TEXT NOT NULL DEFAULT 'ASTRO_SDQ_2026',
+  project_id TEXT NOT NULL DEFAULT 'ASTRO_SDQ_2027',
   updated_at TIMESTAMPTZ DEFAULT NOW(),
   PRIMARY KEY (match_id, user_id)
 );
@@ -75,7 +75,7 @@ ALTER TABLE match_profiles ADD COLUMN IF NOT EXISTS rate_open_to_discuss BOOLEAN
 
 CREATE TABLE IF NOT EXISTS match_push_tokens (
   id TEXT PRIMARY KEY,
-  project_id TEXT NOT NULL DEFAULT 'ASTRO_SDQ_2026',
+  project_id TEXT NOT NULL DEFAULT 'ASTRO_SDQ_2027',
   user_id TEXT NOT NULL,
   token TEXT NOT NULL,
   platform TEXT NOT NULL CHECK (platform IN ('web', 'android', 'ios')),

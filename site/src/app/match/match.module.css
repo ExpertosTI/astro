@@ -129,7 +129,7 @@
   width: min(100%, var(--match-max));
   height: var(--match-nav-h);
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   align-items: center;
   background: rgba(8, 4, 4, 0.88);
   border-top: 1px solid rgba(255, 194, 117, 0.2);

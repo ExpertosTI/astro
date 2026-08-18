@@ -1,0 +1,27 @@
+{
+  "name": "ASTRO",
+  "short_name": "ASTRO",
+  "description": "ASTRO Match, noticias, comunidad y toda la experiencia ASTRO SDQ.",
+  "start_url": "/app/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0a0505",
+  "theme_color": "#ff5c1c",
+  "lang": "es",
+  "categories": ["social", "lifestyle", "events"],
+  "icons": [
+    {
+      "src": "/astro/logo-icon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/astro/logo-icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -1,0 +1,38 @@
+.dock {
+  --astro-max: 520px;
+  position: fixed;
+  z-index: 40;
+  right: 0;
+  bottom: 0;
+  left: 50%;
+  display: grid;
+  width: min(100%, var(--astro-max));
+  height: calc(74px + env(safe-area-inset-bottom));
+  padding-bottom: env(safe-area-inset-bottom);
+  grid-template-columns: repeat(4, 1fr);
+  border-top: 1px solid rgba(255, 194, 117, 0.16);
+  background: rgba(5, 2, 2, 0.9);
+  backdrop-filter: blur(22px);
+  transform: translateX(-50%);
+}
+
+.dock a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 0.25rem;
+  color: #8e7562;
+  font-size: 0.58rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-decoration: none;
+}
+
+.dock a span {
+  font-size: 1.1rem;
+}
+
+.active {
+  color: #ff9b52 !important;
+}

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
+import { AstroNativeBridge } from "@/components/AstroNativeBridge";
 import "./globals.css";
-import { editionData } from "@/content/edition";
 
 const climax = localFont({
   src: "./fonts/Climax.woff2",
@@ -27,11 +27,21 @@ const gotham = localFont({
 });
 
 export const metadata: Metadata = {
-  title: `ASTRO SDQ — ${editionData.location.replace("\n", " ")}`,
-  description: `${editionData.title} · ${editionData.coordinates}`,
+  title: {
+    default: "ASTRO — Santo Domingo",
+    template: "%s",
+  },
+  description:
+    "ASTRO Match, noticias, comunidad y toda la experiencia ASTRO SDQ.",
+  manifest: "/astro-manifest.json",
   icons: {
     icon: "/astro/logo-icon.png",
     apple: "/astro/logo-icon.png",
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "ASTRO",
   },
 };
 
@@ -42,7 +52,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es" className={`${climax.variable} ${gotham.variable}`}>
-      <body>{children}</body>
+      <body>
+        <AstroNativeBridge />
+        {children}
+      </body>
     </html>
   );
 }

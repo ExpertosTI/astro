@@ -1,0 +1,159 @@
+.page {
+  --astro-max: 520px;
+  width: min(100%, var(--astro-max));
+  min-height: 100dvh;
+  margin: 0 auto;
+  padding: calc(1.25rem + env(safe-area-inset-top)) 1.15rem
+    calc(6.5rem + env(safe-area-inset-bottom));
+  color: #f7e8d8;
+  background:
+    radial-gradient(circle at 80% 0%, rgba(255, 104, 34, 0.2), transparent 28%),
+    linear-gradient(180deg, #150806, #050202 60%);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.header > a {
+  display: grid;
+  width: 2.65rem;
+  height: 2.65rem;
+  place-items: center;
+  border: 1px solid rgba(255, 183, 112, 0.2);
+  border-radius: 50%;
+  color: #ff9a52;
+  background: rgba(255, 255, 255, 0.03);
+  text-decoration: none;
+}
+
+.header p,
+.header h1,
+.kicker,
+.label {
+  margin: 0;
+}
+
+.header p,
+.kicker,
+.label {
+  color: #e77a39;
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.header h1 {
+  margin-top: 0.2rem;
+  font-size: 1.45rem;
+}
+
+.hero {
+  padding: 2.4rem 0 1.5rem;
+}
+
+.hero h2 {
+  margin: 0.55rem 0 0;
+  font-family: var(--font-display), sans-serif;
+  font-size: clamp(2rem, 9vw, 2.8rem);
+  font-weight: 500;
+  line-height: 1.05;
+}
+
+.venue,
+.coords {
+  margin: 0.65rem 0 0;
+  color: #c9aa83;
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.coords {
+  color: #8e7562;
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+}
+
+.card,
+.stand {
+  margin-bottom: 0.85rem;
+  padding: 1.15rem;
+  border: 1px solid rgba(255, 188, 118, 0.14);
+  border-radius: 1.25rem;
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.body,
+.bodyStrong {
+  margin: 0.7rem 0 0;
+  color: #a78c76;
+  font-size: 0.82rem;
+  line-height: 1.55;
+}
+
+.bodyStrong {
+  color: #f0d4b4;
+  white-space: pre-line;
+}
+
+.stands {
+  margin-top: 1.5rem;
+}
+
+.stand {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.stand h3 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.stand p {
+  margin: 0.45rem 0 0;
+  color: #997e68;
+  font-size: 0.72rem;
+  line-height: 1.45;
+}
+
+.stand strong {
+  flex-shrink: 0;
+  color: #ff9b52;
+  font-size: 0.95rem;
+}
+
+.actions {
+  display: grid;
+  gap: 0.65rem;
+  margin-top: 1.5rem;
+}
+
+.primary,
+.secondary {
+  display: grid;
+  place-items: center;
+  min-height: 3.1rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-decoration: none;
+}
+
+.primary {
+  color: #1a0906;
+  background: linear-gradient(135deg, #ff8a3d, #ff5a1f);
+}
+
+.secondary {
+  color: #ffd2a8;
+  border: 1px solid rgba(255, 188, 118, 0.28);
+  background: rgba(255, 255, 255, 0.03);
+}

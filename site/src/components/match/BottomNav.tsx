@@ -6,6 +6,7 @@ import { useMatch } from "@/components/match/MatchProvider";
 import styles from "@/app/match/match.module.css";
 
 const NAV = [
+  { href: "/app/", label: "ASTRO", icon: "⌂", external: true },
   { href: "/match/discover/", label: "Swipe", icon: "◎" },
   { href: "/match/activity/", label: "Actividad", icon: "⚡" },
   { href: "/match/matches/", label: "Matches", icon: "✦" },
@@ -31,7 +32,8 @@ export function BottomNav() {
   return (
     <nav className={styles.matchBottomNav} aria-label="Navegación principal">
       {NAV.map((item) => {
-        const active = pathname.startsWith(item.href);
+        const external = "external" in item && item.external;
+        const active = !external && pathname.startsWith(item.href);
         const badge =
           item.href === "/match/matches/" ? matchBadge :
           item.href === "/match/activity/" ? unreadCount + unreadMessagesCount : 0;

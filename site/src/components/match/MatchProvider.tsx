@@ -120,7 +120,9 @@ export function MatchProvider({ children }: { children: ReactNode }) {
   const syncingRef = useRef(false);
   const typingTimersRef = useRef<Map<string, number>>(new Map());
 
-  stateRef.current = state;
+  useEffect(() => {
+    stateRef.current = state;
+  }, [state]);
 
   const applyPull = useCallback((prev: MatchAppState, result: { state: MatchAppState; typing: TypingRecord[] }) => {
     const toast = pickNewToast(prev, result.state);

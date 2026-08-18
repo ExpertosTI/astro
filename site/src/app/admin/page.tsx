@@ -23,7 +23,10 @@ import styles from "./admin.module.css";
 type Tab = "leads" | "whatsapp" | "mail";
 
 export default function AdminPage() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    if (typeof window !== "undefined") return isAdminAuthenticated();
+    return false;
+  });
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState("");
   const [tab, setTab] = useState<Tab>("leads");
@@ -39,50 +42,6 @@ export default function AdminPage() {
   const [mailStatus, setMailStatus] = useState<Record<string, unknown> | null>(null);
   const [mailMsg, setMailMsg] = useState("");
   const [mailBusy, setMailBusy] = useState(false);
-
-  useEffect(() => {
-    if (isAdminAuthenticated()) {
-      setIsAuthenticated(true);
-      fetchData();
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!isAuthenticated) return;
-    if (tab === "whatsapp") void refreshWa();
-    if (tab === "mail") void refreshMail();
-  }, [tab, isAuthenticated]);
-
-  const completeLogin = async (pass: string) => {
-    const valid = await verifyAdminPassword(pass);
-    if (!valid) {
-      setLoginError("Acceso denegado. Intentos limitados.");
-      return false;
-    }
-    const api = await loginAdminApi(pass);
-    createAdminSession(api.ok ? String(api.data.token || "") : undefined);
-    setIsAuthenticated(true);
-    setPassword("");
-    setLoginError("");
-    fetchData();
-    return true;
-  };
-
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoginError("");
-    await completeLogin(password);
-  };
-
-  const handleLogout = () => {
-    clearAdminSession();
-    setIsAuthenticated(false);
-    setLeads([]);
-    setStats(null);
-    setWaStatus(null);
-    setMailStatus(null);
-    setWaQr(null);
-  };
 
   const fetchData = async () => {
     setLoading(true);
@@ -105,6 +64,71 @@ export default function AdminPage() {
     setWaStatus(data);
     if (data.connected) setWaQr(null);
     setWaBusy(false);
+  };
+
+  const refreshMail = async () => {
+    setMailBusy(true);
+    setMailMsg("");
+    const { ok, data } = await fetchMailStatus();
+    if (!ok) {
+      setMailMsg(String(data.error || "No se pudo leer SMTP"));
+      setMailBusy(false);
+      return;
+    }
+    setMailStatus(data);
+    const verify = data.verify as { ok?: boolean; error?: string } | undefined;
+    setMailMsg(verify?.ok ? "SMTP Renace listo" : String(verify?.error || "SMTP pendiente — sync con ./scripts/push-evo.sh"));
+    setMailBusy(false);
+  };
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      const init = async () => {
+        await fetchData();
+      };
+      void init();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const update = async () => {
+      if (tab === "whatsapp") await refreshWa();
+      if (tab === "mail") await refreshMail();
+    };
+    void update();
+  }, [tab, isAuthenticated]);
+
+  const completeLogin = async (pass: string) => {
+    const valid = await verifyAdminPassword(pass);
+    if (!valid) {
+      setLoginError("Acceso denegado. Intentos limitados.");
+      return false;
+    }
+    const api = await loginAdminApi(pass);
+    createAdminSession(api.ok ? String(api.data.token || "") : undefined);
+    setIsAuthenticated(true);
+    setPassword("");
+    setLoginError("");
+    void fetchData();
+    return true;
+  };
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoginError("");
+    await completeLogin(password);
+  };
+
+  const handleLogout = () => {
+    clearAdminSession();
+    setIsAuthenticated(false);
+    setLeads([]);
+    setStats(null);
+    setWaStatus(null);
+    setMailStatus(null);
+    setWaQr(null);
   };
 
   const connectWa = async () => {
@@ -159,25 +183,10 @@ export default function AdminPage() {
     setWaBusy(false);
   };
 
-  const refreshMail = async () => {
-    setMailBusy(true);
-    setMailMsg("");
-    const { ok, data } = await fetchMailStatus();
-    if (!ok) {
-      setMailMsg(String(data.error || "No se pudo leer SMTP"));
-      setMailBusy(false);
-      return;
-    }
-    setMailStatus(data);
-    const verify = data.verify as { ok?: boolean; error?: string } | undefined;
-    setMailMsg(verify?.ok ? "SMTP Renace listo" : String(verify?.error || "SMTP pendiente — sync con ./scripts/push-evo.sh"));
-    setMailBusy(false);
-  };
-
   const sendMailTest = async () => {
     setMailBusy(true);
     const { ok, data } = await testMail();
-    setMailMsg(ok ? `Correo de prueba enviado a ${data.to}` : String(data.error || "Fallo prueba mail"));
+    setMailMsg(ok ? `Prueba enviada a ${data.to}` : String(data.error || "Fallo prueba mail"));
     setMailBusy(false);
   };
 

@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import { editionData } from "@/content/edition";
 import styles from "@/app/match/match.module.css";
 
@@ -10,7 +11,7 @@ type Props = {
 export function MatchBrand({ subtitle, compact = false }: Props) {
   return (
     <header className={`${styles.brandHeader} ${compact ? styles.brandHeaderCompact : ""}`}>
-      <div className={styles.brandRow}>
+      <Link href="/app/" className={styles.brandRow} aria-label="Volver al inicio de ASTRO">
         <div className={styles.brandLogoWrap}>
           <Image
             src={editionData.logo}
@@ -26,7 +27,7 @@ export function MatchBrand({ subtitle, compact = false }: Props) {
           <p className={styles.brandAstro}>ASTRO</p>
           <p className={styles.brandMatch}>MATCH</p>
         </div>
-      </div>
+      </Link>
       {subtitle && !compact && <p className={styles.brandSubtitle}>{subtitle}</p>}
     </header>
   );

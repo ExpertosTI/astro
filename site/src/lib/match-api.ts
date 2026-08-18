@@ -171,23 +171,38 @@ async function apiUpsert(path: string, rows: unknown[]): Promise<boolean> {
 
 export async function checkMatchApiHealth(): Promise<ApiHealth> {
   try {
+    const controller = new AbortController();
+    const id = setTimeout(() => controller.abort(), 4000);
+
     const response = await fetch(
       `${API_URL}/match_profiles?project_id=eq.${PROJECT_ID}&limit=1`,
-      { headers: { Accept: "application/json" }, cache: "no-store" }
+      {
+        headers: { Accept: "application/json" },
+        cache: "no-store",
+        signal: controller.signal
+      }
     );
+    clearTimeout(id);
+
     if (response.ok) return { online: true, tablesReady: true };
+
     const detail = await response.text();
-    const tablesReady = !detail.includes("does not exist") && !detail.includes("42P01");
+    const tablesReady = !detail.includes("does not exist") && !detail.includes("42P01") && !detail.includes("not found");
+
     return {
       online: false,
       tablesReady,
       error: tablesReady
-        ? `API ${response.status}`
-        : "Tablas Match no creadas. Ejecuta scripts/apply-match-schema.sh en el servidor.",
+        ? `API Error ${response.status}: ${detail.slice(0, 50)}`
+        : "Servidor activo pero tablas ASTRO Match no encontradas. Reaplica el schema SQL.",
     };
   } catch (err) {
-    const message = err instanceof Error ? err.message : "API error";
-    return { online: false, tablesReady: false, error: message };
+    const isTimeout = err instanceof Error && err.name === "AbortError";
+    return {
+      online: false,
+      tablesReady: false,
+      error: isTimeout ? "Tiempo de espera agotado (Servidor lento)" : "Servidor de base de datos no responde"
+    };
   }
 }
 

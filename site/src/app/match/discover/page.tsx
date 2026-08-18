@@ -29,6 +29,13 @@ export default function DiscoverPage() {
   } = useMatch();
 
   const [index, setIndex] = useState(0);
+  const [prevFilters, setPrevFilters] = useState(state.filters);
+
+  if (state.filters.city !== prevFilters.city || state.filters.bodyPart !== prevFilters.bodyPart) {
+    setPrevFilters(state.filters);
+    setIndex(0);
+  }
+
   const [showOverlay, setShowOverlay] = useState(false);
   const [overlayTitle, setOverlayTitle] = useState("");
   const [overlayBody, setOverlayBody] = useState("");
@@ -40,10 +47,6 @@ export default function DiscoverPage() {
     if (!ready) return;
     if (!state.session) router.replace("/match/onboarding/");
   }, [ready, state.session, router]);
-
-  useEffect(() => {
-    setIndex(0);
-  }, [state.filters.city, state.filters.bodyPart]);
 
   const current = discover[index];
   const cities = useMemo(

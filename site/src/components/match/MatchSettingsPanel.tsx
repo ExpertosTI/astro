@@ -21,11 +21,13 @@ type Props = {
 };
 
 export function MatchSettingsPanel({ userId }: Props) {
-  const [prefs, setPrefs] = useState<MatchPreferences>(DEFAULT_MATCH_PREFS);
+  const [prefs, setPrefs] = useState<MatchPreferences>(() => {
+    if (typeof window !== "undefined") return loadMatchPreferences();
+    return DEFAULT_MATCH_PREFS;
+  });
   const [pushStatus, setPushStatus] = useState<string>("");
 
   useEffect(() => {
-    setPrefs(loadMatchPreferences());
     void registerMatchServiceWorker();
   }, []);
 

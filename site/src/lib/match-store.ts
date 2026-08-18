@@ -874,7 +874,7 @@ export function markNotificationsRead(state: MatchAppState): MatchAppState {
   return next;
 }
 
-export function getBlockedIds(state: MatchAppState, userId: string): Set<string> {
+export function getBlockedIds(state: MatchAppState): Set<string> {
   return new Set(state.blocked.map((b) => b.userId));
 }
 
@@ -882,7 +882,7 @@ export function getDiscoverProfiles(state: MatchAppState): AstroProfile[] {
   const me = state.session?.profile;
   if (!me) return [];
 
-  const blocked = getBlockedIds(state, me.id);
+  const blocked = getBlockedIds(state);
   const swipedIds = new Set(
     state.swipes.filter((s) => s.fromUserId === me.id).map((s) => s.toUserId)
   );
@@ -893,7 +893,6 @@ export function getDiscoverProfiles(state: MatchAppState): AstroProfile[] {
   return state.profiles.filter((p) => {
     if (p.id === me.id || p.role !== oppositeRole) return false;
     if (!p.displayName?.trim()) return false;
-    if (p.id.startsWith("seed-")) return false;
     if (swipedIds.has(p.id) || blocked.has(p.id)) return false;
     if (city && !p.city.toLowerCase().includes(city.toLowerCase())) return false;
     if (bodyPart && !p.bodyParts.includes(bodyPart)) return false;
@@ -913,7 +912,7 @@ export function getLikesReceived(state: MatchAppState): AstroProfile[] {
     )
     .map((s) => s.fromUserId);
 
-  const blocked = getBlockedIds(state, me);
+  const blocked = getBlockedIds(state);
   return state.profiles.filter((p) => likerIds.includes(p.id) && !blocked.has(p.id));
 }
 
@@ -937,7 +936,7 @@ export function getUnreadCount(state: MatchAppState): number {
 export function getMyMatches(state: MatchAppState): AstroMatch[] {
   const me = state.session?.userId;
   if (!me) return [];
-  const blocked = getBlockedIds(state, me);
+  const blocked = getBlockedIds(state);
   return state.matches.filter((m) => {
     if (m.status === "rejected") return false;
     const other = m.tatuadorId === me ? m.lienzoId : m.tatuadorId;
