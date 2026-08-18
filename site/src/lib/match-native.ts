@@ -1,1 +1,11 @@
-export { initAstroNativeShell as initMatchNativeShell, isStandalonePwa } from "./astro-native";
+export {
+  initAstroNativeShell as initMatchNativeShell,
+  isNativePlatform,
+  isStandalonePwa,
+  triggerNativeHaptic,
+  nativeConfirm,
+  nativeAlert,
+  nativePrompt,
+  requestNativeNotificationPermissions,
+  sendNativeNotification,
+} from "./astro-native";

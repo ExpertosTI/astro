@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import { useMatch } from "@/components/match/MatchProvider";
 import { formatRelativeTime } from "@/lib/chat-utils";
 import { PullToRefresh } from "@/components/match/PullToRefresh";
+import { triggerHaptic } from "@/lib/match-haptics";
+import { nativeConfirm, sendNativeNotification } from "@/lib/astro-native";
 import styles from "../match.module.css";
 
 export default function MatchesPage() {
@@ -102,20 +104,40 @@ export default function MatchesPage() {
                     <button
                       type="button"
                       className={`${styles.miniBtn} ${styles.miniBtnAccept}`}
-                      onClick={() => accept(match.id)}
+                      onClick={async () => {
+                        accept(match.id);
+                        void triggerHaptic("success");
+                        void sendNativeNotification({
+                          title: "🎉 ¡Match Conectado!",
+                          body: `Aceptaste conectar con ${other.displayName}.`,
+                        });
+                      }}
+                      title="Aceptar Match"
                     >
                       ✓
                     </button>
                     <button
                       type="button"
                       className={`${styles.miniBtn} ${styles.miniBtnReject}`}
-                      onClick={() => reject(match.id)}
+                      onClick={async () => {
+                        const confirmReject = await nativeConfirm({
+                          title: "Descartar Conexión",
+                          message: `¿Deseas rechazar la solicitud de ${other.displayName}?`,
+                          okTitle: "Rechazar",
+                          cancelTitle: "Volver",
+                        });
+                        if (confirmReject) {
+                          reject(match.id);
+                          void triggerHaptic("warning");
+                        }
+                      }}
+                      title="Rechazar"
                     >
                       ✕
                     </button>
                   </div>
                 ) : match.status === "matched" ? (
-                  <Link href={`/match/chat/?id=${match.id}`} className={styles.miniBtn}>
+                  <Link href={`/match/chat/?id=${match.id}`} className={styles.miniBtn} onClick={() => void triggerHaptic("light")}>
                     Chat
                   </Link>
                 ) : null}

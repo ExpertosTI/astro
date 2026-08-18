@@ -9,6 +9,8 @@ import { SwipeCard } from "@/components/match/SwipeCard";
 import { ProfileDetailModal } from "@/components/match/ProfileDetailModal";
 import { FilterPanel } from "@/components/match/FilterPanel";
 import { PullToRefresh } from "@/components/match/PullToRefresh";
+import { triggerHaptic } from "@/lib/match-haptics";
+import { nativePrompt, sendNativeNotification } from "@/lib/astro-native";
 import styles from "../match.module.css";
 
 export default function DiscoverPage() {
@@ -62,27 +64,41 @@ export default function DiscoverPage() {
   const handleSwipe = (direction: "like" | "pass" | "superlike") => {
     if (!current) return;
     if (direction === "superlike") viewProfile(current.id);
+    
+    // Trigger native haptic feedback
+    void triggerHaptic(direction === "superlike" ? "heavy" : direction === "like" ? "medium" : "light");
+
     const result = swipe(current.id, direction);
     if (!result.ok) {
       showToast(result.error ?? "No se pudo completar");
       return;
     }
     if (direction === "like" || direction === "superlike") {
-      setOverlayTitle(direction === "superlike" ? "⭐ SUPER LIKE" : "¡INTERÉS ENVIADO!");
-      setOverlayBody(
-        result.matched
-          ? `¡Match instantáneo con ${current.displayName}!`
-          : direction === "superlike"
-            ? `${current.displayName} verá tu super like primero`
-            : `Esperando respuesta de ${current.displayName}`
-      );
+      const titleText = direction === "superlike" ? "⭐ SUPER LIKE" : "¡INTERÉS ENVIADO!";
+      const bodyText = result.matched
+        ? `¡Match instantáneo con ${current.displayName}!`
+        : direction === "superlike"
+          ? `${current.displayName} verá tu super like primero`
+          : `Esperando respuesta de ${current.displayName}`;
+
+      setOverlayTitle(titleText);
+      setOverlayBody(bodyText);
       setShowOverlay(true);
       setTimeout(() => setShowOverlay(false), 2400);
+
+      if (result.matched) {
+        void triggerHaptic("success");
+        void sendNativeNotification({
+          title: "🎉 ¡ES UN MATCH!",
+          body: `Conectaste con ${current.displayName}. Ya pueden chatear.`,
+        });
+      }
     }
     setIndex((i) => i + 1);
   };
 
   const handleRewind = () => {
+    void triggerHaptic("selection");
     const result = rewind();
     if (!result.ok) {
       showToast(result.error ?? "No se pudo deshacer");
@@ -94,17 +110,26 @@ export default function DiscoverPage() {
 
   const openDetail = () => {
     if (!current) return;
+    void triggerHaptic("light");
     viewProfile(current.id);
     setDetailOpen(true);
   };
 
-  const handleBlock = () => {
+  const handleBlock = async () => {
     if (!current) return;
-    const reason = prompt("Motivo del reporte (opcional):") ?? "Reportado por usuario";
-    block(current.id, reason);
+    const reasonInput = await nativePrompt({
+      title: "Reportar y Bloquear Usuario",
+      message: `Escribe el motivo del reporte para ${current.displayName}:`,
+      placeholder: "Motivo del reporte...",
+      defaultText: "Comportamiento inadecuado",
+    });
+
+    if (reasonInput === null) return; // User cancelled
+
+    block(current.id, reasonInput || "Reportado por usuario");
     setDetailOpen(false);
     setIndex((i) => i + 1);
-    showToast("Usuario bloqueado");
+    showToast("Usuario bloqueado ✓");
   };
 
   const roleLabel = state.session?.profile.role === "tatuador" ? "Lienzos" : "Tatuadores";
